@@ -2,396 +2,431 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IRAQ MEDICAL | لوحة الطبيب</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    *{box-sizing:border-box}
-    body{margin:0;background:#f3f6fa;color:#172b4d;font-family:Arial,sans-serif}
-    header{background:#102b46;color:white;padding:22px}
-    header h2{margin:0;color:#50d4c3}
-    main{max-width:900px;margin:25px auto;padding:15px}
-    .card{background:white;border-radius:16px;padding:22px;margin-bottom:18px;box-shadow:0 4px 18px #102b4610}
-    h3{margin-top:0}
-    .info{padding:13px;background:#f4f8fb;border-radius:10px;margin:9px 0}
-    button{border:0;border-radius:10px;padding:12px 18px;background:#087f8c;color:white;font-size:15px;cursor:pointer}
-    button:disabled{opacity:.5}
-    .logout{background:#a33}
-    .muted{color:#68798d}
-    #app{display:none}
-    .status{padding:12px;border-radius:10px;background:#eef5f8;margin-top:12px}
-    input[type=email],input[type=password],input[type=time]{
-      width:100%;padding:12px;margin:7px 0;border:1px solid #ccd5df;border-radius:9px
-    }
-    .day{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;align-items:center;padding:13px 0;border-bottom:1px solid #edf0f4}
-    .day strong{font-size:14px}
-    .day label{font-size:13px}
-    .day input[type=time]{margin:0}
-    .appointment{border:1px solid #e4eaf0;border-radius:12px;padding:15px;margin:12px 0}
-    .appointment p{margin:7px 0;overflow-wrap:anywhere}
-    .tag{display:inline-block;background:#e8f5f4;color:#087f8c;padding:5px 10px;border-radius:20px;font-size:12px}
-    .section-title{color:#087f8c}
-    @media(max-width:600px){
-      .day{grid-template-columns:1fr 1fr}
-      .day strong{grid-column:1/-1}
-      .card{padding:16px}
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IRAQ MEDICAL | لوحة الطبيب</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f3f6fa;color:#172b4d;font-family:Arial,sans-serif}
+header{background:#102b46;color:white;padding:22px}
+header h2{margin:0;color:#50d4c3}
+main{max-width:900px;margin:25px auto;padding:15px}
+.card{background:white;border-radius:16px;padding:22px;margin-bottom:18px;box-shadow:0 4px 18px #102b4610}
+h3{margin-top:0}
+.info{padding:13px;background:#f4f8fb;border-radius:10px;margin:9px 0}
+button{border:0;border-radius:10px;padding:11px 15px;background:#087f8c;color:white;font-size:14px;cursor:pointer;margin:4px}
+button:disabled{opacity:.5}
+.logout,.reject{background:#a33}
+.complete{background:#416b9b}
+.muted{color:#68798d}
+#app{display:none}
+.status{padding:12px;border-radius:10px;background:#eef5f8;margin-top:12px;overflow-wrap:anywhere}
+input[type=email],input[type=password],input[type=time]{
+width:100%;padding:12px;margin:7px 0;border:1px solid #ccd5df;border-radius:9px
+}
+.day{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;align-items:center;padding:13px 0;border-bottom:1px solid #edf0f4}
+.day strong{font-size:14px}
+.day label{font-size:13px}
+.day input[type=time]{margin:0}
+.appointment{border:1px solid #e4eaf0;border-radius:12px;padding:15px;margin:12px 0}
+.appointment p{margin:7px 0;overflow-wrap:anywhere}
+.tag{display:inline-block;background:#e8f5f4;color:#087f8c;padding:5px 10px;border-radius:20px;font-size:12px}
+.section-title{color:#087f8c}
+.actions{margin-top:12px}
+@media(max-width:600px){
+.day{grid-template-columns:1fr 1fr}
+.day strong{grid-column:1/-1}
+.card{padding:16px}
+}
+</style>
 </head>
 <body>
 
 <header>
-  <h2>IRAQ MEDICAL</h2>
-  <p>لوحة الطبيب</p>
+<h2>IRAQ MEDICAL</h2>
+<p>لوحة الطبيب</p>
 </header>
 
 <main>
-  <section class="card" id="login">
-    <h3>دخول الطبيب</h3>
-    <p class="muted">سجل الدخول باستخدام البريد الإلكتروني وكلمة المرور.</p>
-    <input id="email" type="email" placeholder="البريد الإلكتروني">
-    <input id="password" type="password" placeholder="كلمة المرور">
-    <button id="loginButton" onclick="loginDoctor()">تسجيل الدخول</button>
-    <div id="loginStatus" class="status"></div>
-  </section>
+<section class="card" id="login">
+<h3>دخول الطبيب</h3>
+<p class="muted">سجل الدخول باستخدام البريد الإلكتروني وكلمة المرور.</p>
+<input id="email" type="email" placeholder="البريد الإلكتروني">
+<input id="password" type="password" placeholder="كلمة المرور">
+<button id="loginButton" onclick="loginDoctor()">تسجيل الدخول</button>
+<div id="loginStatus" class="status"></div>
+</section>
 
-  <section id="app">
-    <div class="card">
-      <h3>مرحباً بك دكتور</h3>
-      <div class="info">الاسم: <strong id="name">—</strong></div>
-      <div class="info">رقم الهاتف: <strong id="phone">—</strong></div>
-      <div class="info">الاختصاص: <strong id="specialty">—</strong></div>
-      <div class="info">العيادة: <strong id="clinic">—</strong></div>
-      <div class="info">المؤهل: <strong id="qualification">—</strong></div>
-      <div class="info">سنوات الخبرة: <strong id="experience">—</strong></div>
-      <div class="info">أجور الاستشارة: <strong id="fee">—</strong></div>
-      <div class="info">نبذة الطبيب: <strong id="bio">—</strong></div>
-      <div id="status" class="status">تم تسجيل الدخول</div>
-      <br>
-      <button class="logout" onclick="logoutDoctor()">تسجيل الخروج</button>
-    </div>
+<section id="app">
+<div class="card">
+<h3>مرحباً بك دكتور</h3>
+<div class="info">الاسم: <strong id="name">—</strong></div>
+<div class="info">رقم الهاتف: <strong id="phone">—</strong></div>
+<div class="info">الاختصاص: <strong id="specialty">—</strong></div>
+<div class="info">العيادة: <strong id="clinic">—</strong></div>
+<div class="info">المؤهل: <strong id="qualification">—</strong></div>
+<div class="info">سنوات الخبرة: <strong id="experience">—</strong></div>
+<div class="info">أجور الاستشارة: <strong id="fee">—</strong></div>
+<div class="info">نبذة الطبيب: <strong id="bio">—</strong></div>
+<div id="status" class="status">جارٍ تحميل البيانات...</div>
+<br>
+<button class="logout" onclick="logoutDoctor()">تسجيل الخروج</button>
+</div>
 
-    <div class="card">
-      <h3 class="section-title">إدارة الدوام الأسبوعي</h3>
-      <p class="muted">حدد أيام العمل وساعات استقبال المراجعين.</p>
-      <div id="scheduleList">جارٍ تحميل الدوام...</div>
-      <br>
-      <button id="saveScheduleButton" onclick="saveSchedule()">حفظ الدوام الأسبوعي</button>
-      <div id="scheduleStatus" class="status"></div>
-    </div>
+<div class="card">
+<h3 class="section-title">إدارة الدوام الأسبوعي</h3>
+<p class="muted">حدد أيام العمل وساعات استقبال المراجعين.</p>
+<div id="scheduleList">جارٍ تحميل الدوام...</div>
+<br>
+<button id="saveScheduleButton" onclick="saveSchedule()">حفظ الدوام الأسبوعي</button>
+<div id="scheduleStatus" class="status"></div>
+</div>
 
-    <div class="card">
-      <h3 class="section-title">حجوزات المرضى</h3>
-      <p class="muted">قائمة الحجوزات المرتبطة بحساب الطبيب.</p>
-      <button onclick="loadAppointments()">تحديث الحجوزات</button>
-      <div id="appointmentsStatus" class="status">جارٍ تحميل الحجوزات...</div>
-      <div id="appointmentsList"></div>
-    </div>
-  </section>
+<div class="card">
+<h3 class="section-title">إدارة حجوزات المرضى</h3>
+<button onclick="loadAppointments()">تحديث الحجوزات</button>
+<div id="appointmentsStatus" class="status">جارٍ تحميل الحجوزات...</div>
+<div id="appointmentsList"></div>
+</div>
+</section>
 </main>
 
 <script>
-const SUPABASE_URL = "https://oejkeqlqkwdfropylxsv.supabase.co";
-const SUPABASE_KEY = "sb_publishable_Ue8nsJFsLpDLFUgSTB24cw_rckeqWag";
+const SUPABASE_URL="https://oejkeqlqkwdfropylxsv.supabase.co";
+const SUPABASE_KEY="sb_publishable_Ue8nsJFsLpDLFUgSTB24cw_rckeqWag";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let currentDoctorId=null;
 
-let currentDoctorId = null;
-
-// ترتيب العرض يبدأ بالسبت.
-// أرقام الأيام المستخدمة في قاعدة البيانات:
-// الأحد 0، الاثنين 1، الثلاثاء 2، الأربعاء 3، الخميس 4، الجمعة 5، السبت 6.
-const days = [
-  {number:6,name:"السبت"},
-  {number:0,name:"الأحد"},
-  {number:1,name:"الاثنين"},
-  {number:2,name:"الثلاثاء"},
-  {number:3,name:"الأربعاء"},
-  {number:4,name:"الخميس"},
-  {number:5,name:"الجمعة"}
+const days=[
+{number:6,name:"السبت"},
+{number:0,name:"الأحد"},
+{number:1,name:"الاثنين"},
+{number:2,name:"الثلاثاء"},
+{number:3,name:"الأربعاء"},
+{number:4,name:"الخميس"},
+{number:5,name:"الجمعة"}
 ];
 
 function showMessage(id,message){
-  document.getElementById(id).textContent = message;
+document.getElementById(id).textContent=message;
 }
 
 async function loginDoctor(){
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
-  const button = document.getElementById("loginButton");
+const email=document.getElementById("email").value.trim();
+const password=document.getElementById("password").value;
+const button=document.getElementById("loginButton");
 
-  showMessage("loginStatus","جارٍ تسجيل الدخول...");
-  button.disabled = true;
+showMessage("loginStatus","جارٍ تسجيل الدخول...");
+button.disabled=true;
 
-  const {data,error} = await db.auth.signInWithPassword({email,password});
+const {data,error}=await db.auth.signInWithPassword({email,password});
 
-  button.disabled = false;
+button.disabled=false;
 
-  if(error){
-    showMessage("loginStatus","تعذر تسجيل الدخول: " + error.message);
-    return;
-  }
+if(error){
+showMessage("loginStatus","تعذر تسجيل الدخول: "+error.message);
+return;
+}
 
-  await loadDoctor();
+await loadDoctor();
 }
 
 async function loadDoctor(){
-  const {data:{user},error:authError} = await db.auth.getUser();
+const {data:{user},error:authError}=await db.auth.getUser();
 
-  if(authError || !user){
-    document.getElementById("login").style.display = "block";
-    document.getElementById("app").style.display = "none";
-    return;
-  }
+if(authError||!user){
+document.getElementById("login").style.display="block";
+document.getElementById("app").style.display="none";
+return;
+}
 
-  const {data:profile,error:profileError} = await db
-    .from("profiles")
-    .select("full_name,phone,role,approval_status")
-    .eq("id",user.id)
-    .maybeSingle();
+const {data:profile,error:profileError}=await db
+.from("profiles")
+.select("full_name,phone,role,approval_status")
+.eq("id",user.id)
+.maybeSingle();
 
-  if(profileError || !profile){
-    showMessage("loginStatus","تعذر تحميل الملف الشخصي: " + (profileError?.message || "لا توجد بيانات"));
-    return;
-  }
+if(profileError||!profile){
+showMessage("loginStatus","تعذر تحميل الملف الشخصي: "+(profileError?.message||"لا توجد بيانات"));
+return;
+}
 
-  if(profile.role !== "doctor" || profile.approval_status !== "approved"){
-    showMessage("loginStatus","هذا الحساب غير معتمد كحساب طبيب.");
-    return;
-  }
+if(profile.role!=="doctor"||profile.approval_status!=="approved"){
+showMessage("loginStatus","هذا الحساب غير معتمد كحساب طبيب.");
+return;
+}
 
-  const {data:doctor,error:doctorError} = await db
-    .from("doctors")
-    .select("id,qualification,experience_years,consultation_fee,bio,specialties(name_ar),clinics(name)")
-    .eq("profile_id",user.id)
-    .maybeSingle();
+const {data:doctor,error:doctorError}=await db
+.from("doctors")
+.select("id,qualification,experience_years,consultation_fee,bio,specialties(name_ar),clinics(name)")
+.eq("profile_id",user.id)
+.maybeSingle();
 
-  if(doctorError || !doctor){
-    showMessage("loginStatus","تعذر تحميل بيانات الطبيب: " + (doctorError?.message || "لا توجد بيانات"));
-    return;
-  }
+if(doctorError||!doctor){
+showMessage("loginStatus","تعذر تحميل بيانات الطبيب: "+(doctorError?.message||"لا توجد بيانات"));
+return;
+}
 
-  currentDoctorId = doctor.id;
+currentDoctorId=doctor.id;
 
-  document.getElementById("name").textContent = profile.full_name || "—";
-  document.getElementById("phone").textContent = profile.phone || "—";
-  document.getElementById("specialty").textContent = doctor.specialties?.name_ar || "—";
-  document.getElementById("clinic").textContent = doctor.clinics?.name || "—";
-  document.getElementById("qualification").textContent = doctor.qualification || "—";
-  document.getElementById("experience").textContent = doctor.experience_years ?? "—";
-  document.getElementById("fee").textContent = doctor.consultation_fee ?? "—";
-  document.getElementById("bio").textContent = doctor.bio || "—";
+document.getElementById("name").textContent=profile.full_name||"—";
+document.getElementById("phone").textContent=profile.phone||"—";
+document.getElementById("specialty").textContent=doctor.specialties?.name_ar||"—";
+document.getElementById("clinic").textContent=doctor.clinics?.name||"—";
+document.getElementById("qualification").textContent=doctor.qualification||"—";
+document.getElementById("experience").textContent=doctor.experience_years??"—";
+document.getElementById("fee").textContent=doctor.consultation_fee??"—";
+document.getElementById("bio").textContent=doctor.bio||"—";
 
-  document.getElementById("login").style.display = "none";
-  document.getElementById("app").style.display = "block";
+document.getElementById("login").style.display="none";
+document.getElementById("app").style.display="block";
 
-  showMessage("status","تم تحميل بيانات الطبيب بنجاح");
+showMessage("status","تم تحميل بيانات الطبيب بنجاح");
 
-  await Promise.all([
-    loadSchedule(),
-    loadAppointments()
-  ]);
+await Promise.all([loadSchedule(),loadAppointments()]);
 }
 
 function renderSchedule(records){
-  const container = document.getElementById("scheduleList");
-  container.innerHTML = "";
+const container=document.getElementById("scheduleList");
+container.innerHTML="";
 
-  days.forEach(day => {
-    const record = records.find(item => Number(item.day_of_week) === day.number);
+days.forEach(day=>{
+const record=records.find(item=>Number(item.day_of_week)===day.number);
 
-    const row = document.createElement("div");
-    row.className = "day";
+const row=document.createElement("div");
+row.className="day";
 
-    const title = document.createElement("strong");
-    title.textContent = day.name;
+const title=document.createElement("strong");
+title.textContent=day.name;
 
-    const label = document.createElement("label");
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.id = "available_" + day.number;
-    checkbox.checked = record ? record.is_available : false;
-    label.appendChild(checkbox);
-    label.append(" متاح");
+const label=document.createElement("label");
+const checkbox=document.createElement("input");
+checkbox.type="checkbox";
+checkbox.id="available_"+day.number;
+checkbox.checked=record?record.is_available:false;
+label.appendChild(checkbox);
+label.append(" متاح");
 
-    const start = document.createElement("input");
-    start.type = "time";
-    start.id = "start_" + day.number;
-    start.value = record?.start_time ? record.start_time.slice(0,5) : "09:00";
-    start.setAttribute("aria-label","وقت بداية الدوام " + day.name);
+const start=document.createElement("input");
+start.type="time";
+start.id="start_"+day.number;
+start.value=record?.start_time?record.start_time.slice(0,5):"09:00";
 
-    const end = document.createElement("input");
-    end.type = "time";
-    end.id = "end_" + day.number;
-    end.value = record?.end_time ? record.end_time.slice(0,5) : "14:00";
-    end.setAttribute("aria-label","وقت نهاية الدوام " + day.name);
+const end=document.createElement("input");
+end.type="time";
+end.id="end_"+day.number;
+end.value=record?.end_time?record.end_time.slice(0,5):"14:00";
 
-    row.append(title,label,start,end);
-    container.appendChild(row);
-  });
+row.append(title,label,start,end);
+container.appendChild(row);
+});
 }
 
 async function loadSchedule(){
-  if(!currentDoctorId) return;
+if(!currentDoctorId)return;
 
-  showMessage("scheduleStatus","جارٍ تحميل الدوام...");
+showMessage("scheduleStatus","جارٍ تحميل الدوام...");
 
-  const {data,error} = await db
-    .from("doctor_schedules")
-    .select("id,doctor_id,day_of_week,start_time,end_time,is_available")
-    .eq("doctor_id",currentDoctorId);
+const {data,error}=await db
+.from("doctor_schedules")
+.select("id,doctor_id,day_of_week,start_time,end_time,is_available")
+.eq("doctor_id",currentDoctorId);
 
-  if(error){
-    showMessage("scheduleStatus","تعذر تحميل الدوام. تحقق من صلاحيات الجدول: " + error.message);
-    return;
-  }
+if(error){
+showMessage("scheduleStatus","تعذر تحميل الدوام: "+error.message);
+return;
+}
 
-  renderSchedule(data || []);
-  showMessage("scheduleStatus","تم تحميل الدوام الأسبوعي.");
+renderSchedule(data||[]);
+showMessage("scheduleStatus","تم تحميل الدوام الأسبوعي.");
 }
 
 async function saveSchedule(){
-  if(!currentDoctorId) return;
+if(!currentDoctorId)return;
 
-  const button = document.getElementById("saveScheduleButton");
-  button.disabled = true;
-  showMessage("scheduleStatus","جارٍ حفظ الدوام...");
+const button=document.getElementById("saveScheduleButton");
+button.disabled=true;
+showMessage("scheduleStatus","جارٍ حفظ الدوام...");
 
-  try{
-    for(const day of days){
-      const available = document.getElementById("available_" + day.number).checked;
-      const start = document.getElementById("start_" + day.number).value;
-      const end = document.getElementById("end_" + day.number).value;
+try{
+for(const day of days){
+const available=document.getElementById("available_"+day.number).checked;
+const start=document.getElementById("start_"+day.number).value;
+const end=document.getElementById("end_"+day.number).value;
 
-      if(available && (!start || !end || start >= end)){
-        showMessage("scheduleStatus","تحقق من وقت بداية ونهاية دوام يوم " + day.name);
-        return;
-      }
+if(available&&(!start||!end||start>=end)){
+showMessage("scheduleStatus","تحقق من وقت بداية ونهاية دوام يوم "+day.name);
+return;
+}
 
-      const {data:existing,error:findError} = await db
-        .from("doctor_schedules")
-        .select("id")
-        .eq("doctor_id",currentDoctorId)
-        .eq("day_of_week",day.number)
-        .limit(1)
-        .maybeSingle();
+const {data:existing,error:findError}=await db
+.from("doctor_schedules")
+.select("id")
+.eq("doctor_id",currentDoctorId)
+.eq("day_of_week",day.number)
+.limit(1)
+.maybeSingle();
 
-      if(findError) throw findError;
+if(findError)throw findError;
 
-      const values = {
-        doctor_id:currentDoctorId,
-        day_of_week:day.number,
-        start_time:start || "09:00",
-        end_time:end || "14:00",
-        is_available:available
-      };
+const values={
+doctor_id:currentDoctorId,
+day_of_week:day.number,
+start_time:start||"09:00",
+end_time:end||"14:00",
+is_available:available
+};
 
-      let result;
+let result;
 
-      if(existing){
-        result = await db
-          .from("doctor_schedules")
-          .update(values)
-          .eq("id",existing.id);
-      }else{
-        result = await db
-          .from("doctor_schedules")
-          .insert(values);
-      }
+if(existing){
+result=await db.from("doctor_schedules").update(values).eq("id",existing.id);
+}else{
+result=await db.from("doctor_schedules").insert(values);
+}
 
-      if(result.error) throw result.error;
-    }
+if(result.error)throw result.error;
+}
 
-    showMessage("scheduleStatus","تم حفظ الدوام الأسبوعي بنجاح.");
-    await loadSchedule();
+showMessage("scheduleStatus","تم حفظ الدوام الأسبوعي بنجاح.");
+await loadSchedule();
 
-  }catch(error){
-    showMessage("scheduleStatus","تعذر حفظ الدوام: " + error.message);
-  }finally{
-    button.disabled = false;
-  }
+}catch(error){
+showMessage("scheduleStatus","تعذر حفظ الدوام: "+error.message);
+}finally{
+button.disabled=false;
+}
 }
 
 function statusArabic(status){
-  const labels = {
-    pending:"قيد الانتظار",
-    approved:"مقبول",
-    confirmed:"مؤكد",
-    rejected:"مرفوض",
-    cancelled:"ملغي",
-    completed:"مكتمل"
-  };
-  return labels[status] || status || "غير محدد";
+const labels={
+pending:"قيد الانتظار",
+approved:"مقبول",
+confirmed:"مؤكد",
+rejected:"مرفوض",
+cancelled:"ملغي",
+completed:"مكتمل"
+};
+return labels[status]||status||"غير محدد";
 }
 
 async function loadAppointments(){
-  if(!currentDoctorId) return;
+if(!currentDoctorId)return;
 
-  const list = document.getElementById("appointmentsList");
-  list.innerHTML = "";
-  showMessage("appointmentsStatus","جارٍ تحميل الحجوزات...");
+const list=document.getElementById("appointmentsList");
+list.innerHTML="";
+showMessage("appointmentsStatus","جارٍ تحميل الحجوزات...");
 
-  const {data,error} = await db
-    .from("appointments")
-    .select("id,patient_id,appointment_at,status,notes,created_at")
-    .eq("doctor_id",currentDoctorId)
-    .order("appointment_at",{ascending:true});
+const {data,error}=await db
+.from("appointments")
+.select("id,patient_id,appointment_at,status,notes,created_at")
+.eq("doctor_id",currentDoctorId)
+.order("appointment_at",{ascending:true});
 
-  if(error){
-    showMessage("appointmentsStatus","تعذر تحميل الحجوزات. تحقق من صلاحيات الجدول: " + error.message);
-    return;
-  }
+if(error){
+showMessage("appointmentsStatus","تعذر تحميل الحجوزات: "+error.message);
+return;
+}
 
-  if(!data || data.length === 0){
-    showMessage("appointmentsStatus","لا توجد حجوزات حالياً.");
-    return;
-  }
+if(!data||data.length===0){
+showMessage("appointmentsStatus","لا توجد حجوزات حالياً.");
+return;
+}
 
-  showMessage("appointmentsStatus","عدد الحجوزات: " + data.length);
+showMessage("appointmentsStatus","عدد الحجوزات: "+data.length);
 
-  data.forEach(item => {
-    const card = document.createElement("div");
-    card.className = "appointment";
+data.forEach(item=>{
+const card=document.createElement("div");
+card.className="appointment";
 
-    const date = new Date(item.appointment_at);
-    const dateText = isNaN(date.getTime())
-      ? "موعد غير صالح"
-      : date.toLocaleString("ar-IQ",{
-          dateStyle:"medium",
-          timeStyle:"short"
-        });
+const title=document.createElement("strong");
+title.textContent="موعد الحجز";
 
-    const title = document.createElement("strong");
-    title.textContent = "موعد الحجز";
+const date=document.createElement("p");
+const parsedDate=new Date(item.appointment_at);
+date.textContent="التاريخ والوقت: "+(
+isNaN(parsedDate.getTime())?"غير متوفر":
+parsedDate.toLocaleString("ar-IQ",{dateStyle:"medium",timeStyle:"short"})
+);
 
-    const dateLine = document.createElement("p");
-    dateLine.textContent = "التاريخ والوقت: " + dateText;
+const patient=document.createElement("p");
+patient.textContent="رقم المريض التعريفي: "+(item.patient_id||"غير متوفر");
 
-    const status = document.createElement("span");
-    status.className = "tag";
-    status.textContent = statusArabic(item.status);
+const notes=document.createElement("p");
+notes.textContent="ملاحظات: "+(item.notes||"لا توجد ملاحظات");
 
-    const patient = document.createElement("p");
-    patient.textContent = "رقم المريض التعريفي: " + (item.patient_id || "غير متوفر");
+const status=document.createElement("span");
+status.className="tag";
+status.textContent=statusArabic(item.status);
 
-    const notes = document.createElement("p");
-    notes.textContent = "ملاحظات: " + (item.notes || "لا توجد ملاحظات");
+const actions=document.createElement("div");
+actions.className="actions";
 
-    card.append(title,dateLine,status,patient,notes);
-    list.appendChild(card);
-  });
+if(item.status==="pending"){
+actions.appendChild(makeActionButton("قبول الحجز","",()=>updateAppointment(item.id,"approved")));
+actions.appendChild(makeActionButton("رفض الحجز","reject",()=>updateAppointment(item.id,"rejected")));
+}else if(item.status==="approved"||item.status==="confirmed"){
+actions.appendChild(makeActionButton("إكمال الزيارة","complete",()=>updateAppointment(item.id,"completed")));
+actions.appendChild(makeActionButton("رفض الحجز","reject",()=>updateAppointment(item.id,"rejected")));
+}
+
+card.append(title,date,patient,notes,status,actions);
+list.appendChild(card);
+});
+}
+
+function makeActionButton(label,className,callback){
+const button=document.createElement("button");
+button.textContent=label;
+if(className)button.className=className;
+button.addEventListener("click",callback);
+return button;
+}
+
+async function updateAppointment(appointmentId,newStatus){
+if(!currentDoctorId)return;
+
+const labels={
+approved:"قبول هذا الحجز",
+rejected:"رفض هذا الحجز",
+completed:"تسجيل الزيارة كمكتملة"
+};
+
+if(!confirm("هل تريد "+labels[newStatus]+"؟"))return;
+
+showMessage("appointmentsStatus","جارٍ تحديث حالة الحجز...");
+
+const {data,error}=await db
+.from("appointments")
+.update({status:newStatus})
+.eq("id",appointmentId)
+.eq("doctor_id",currentDoctorId)
+.select("id");
+
+if(error){
+showMessage("appointmentsStatus","تعذر تحديث الحجز: "+error.message);
+return;
+}
+
+if(!data||data.length===0){
+showMessage("appointmentsStatus","لم يتم تحديث الحجز. تحقق من صلاحيات التعديل RLS.");
+return;
+}
+
+showMessage("appointmentsStatus","تم تحديث حالة الحجز بنجاح.");
+await loadAppointments();
 }
 
 async function logoutDoctor(){
-  await db.auth.signOut();
-  location.reload();
+await db.auth.signOut();
+location.reload();
 }
 
 db.auth.getSession().then(({data})=>{
-  if(data.session) loadDoctor();
+if(data.session)loadDoctor();
 });
 </script>
-
 </body>
 </html>
