@@ -1,309 +1,246 @@
 
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>IRAQ MEDICAL | الإدارة</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-*{box-sizing:border-box}
-body{margin:0;background:#081522;color:#f4f8fb;font-family:Arial,sans-serif}
-header{background:#102536;padding:22px;border-bottom:1px solid #254354}
-.brand{color:#37d6bd;font-size:25px;font-weight:bold}
-header p,.muted{color:#a8bdc9}
-main{max-width:1150px;margin:auto;padding:18px}
-.card{background:#102536;border:1px solid #254354;border-radius:15px;padding:20px;margin-bottom:18px}
-input{width:100%;padding:13px;margin:8px 0;border:1px solid #355568;border-radius:9px;background:#091a28;color:white}
-button{padding:11px 15px;background:#22bda9;color:#071a25;border:0;border-radius:8px;font-weight:bold;cursor:pointer}
-button:disabled{opacity:.5}
-.danger{background:#773b48;color:white}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
-.stat{background:#142f40;padding:18px;border-radius:12px}
-.stat strong{display:block;font-size:27px;color:#37d6bd;margin-top:10px}
-.hidden{display:none!important}
-.table-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;min-width:650px}
-th,td{padding:13px;text-align:right;border-bottom:1px solid #294353}
-th{color:#37d6bd}
-.status{padding:5px 9px;border-radius:20px;font-size:12px;background:#493d22;color:#f4d78a}
-.approved{background:#174c40;color:#8ce4c8}
-#error{color:#ff9b9b}
-#message{color:#8ce4c8}
-.actions{display:flex;gap:7px;align-items:center}
-nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
-nav button{background:#19394a;color:white}
-nav button.active{background:#22bda9;color:#071a25}
-</style>
-</head>
-<body>
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-<header>
- <div class="brand">IRAQ MEDICAL</div>
- <p>لوحة الإدارة المركزية</p>
-</header>
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
-<main>
-<section class="card" id="login">
- <h2>تسجيل دخول المدير</h2>
- <input id="email" type="email" placeholder="البريد الإلكتروني">
- <input id="password" type="password" placeholder="كلمة المرور">
- <button onclick="login()">تسجيل الدخول</button>
- <p id="error"></p>
-</section>
+const reply = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 
-<section id="dashboard" class="hidden">
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
 
- <div class="card">
-  <h2>مرحباً بك في الإدارة</h2>
-  <p class="muted" id="adminEmail"></p>
-  <button onclick="logout()">تسجيل الخروج</button>
- </div>
+  if (req.method !== "POST") {
+    return reply({ error: "Method not allowed" }, 405);
+  }
 
- <div class="grid">
-  <div class="stat">الأطباء<strong id="doctors">—</strong></div>
-  <div class="stat">المراجعون<strong id="patients">—</strong></div>
-  <div class="stat">الحجوزات<strong id="appointments">—</strong></div>
-  <div class="stat">طلبات الانتظار<strong id="pending">—</strong></div>
- </div>
+  const url = Deno.env.get("SUPABASE_URL");
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  const serviceKey = Deno.env.get("SERVICE_ROLE_KEY");
 
- <div class="card" style="margin-top:20px">
-  <h2>إدارة المنصة</h2>
-  <nav>
-   <button class="active" onclick="showSection('patientsSection',this)">المراجعون</button>
-   <button onclick="showSection('homeSection',this)">الرئيسية</button>
-  </nav>
- </div>
+  if (!url || !anonKey || !serviceKey) {
+    return reply({ error: "Server configuration is incomplete" }, 500);
+  }
 
- <section id="homeSection" class="card hidden">
-  <h2>الرئيسية</h2>
-  <p class="muted">مرحباً بك في نظام IRAQ MEDICAL لإدارة الخدمات الطبية.</p>
- </section>
+  const authHeader = req.headers.get("Authorization") || "";
+  const token = authHeader.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : "";
 
- <section id="patientsSection" class="card">
-  <h2>إدارة المراجعين</h2>
-  <p class="muted">مراجعة الحسابات الجديدة والموافقة عليها.</p>
-  <input id="search" placeholder="ابحث بالاسم أو رقم الهاتف..." oninput="renderPatients()">
-  <button onclick="loadPatients()">تحديث القائمة</button>
-  <p id="message"></p>
-  <p id="errorPatients"></p>
-  <div class="table-wrap">
-   <table>
-    <thead>
-     <tr>
-      <th>الاسم</th>
-      <th>الهاتف</th>
-      <th>الحالة</th>
-      <th>تاريخ التسجيل</th>
-      <th>الإجراء</th>
-     </tr>
-    </thead>
-    <tbody id="patientsTable">
-     <tr><td colspan="5">جارٍ تحميل البيانات...</td></tr>
-    </tbody>
-   </table>
-  </div>
- </section>
-</section>
-</main>
+  if (!token) {
+    return reply({ error: "Authentication required" }, 401);
+  }
 
-<script>
-const SUPABASE_URL="https://oejkeqlqkwdfropylxsv.supabase.co";
-const SUPABASE_KEY="sb_publishable_Ue8nsJFsLpDLFUgSTB24cw_rckeqWag";
+  const authClient = createClient(url, anonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 
-const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+  const adminClient = createClient(url, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 
-let patientList=[];
+  const { data: authData, error: authError } =
+    await authClient.auth.getUser(token);
 
-function showError(id,message){
- document.getElementById(id).textContent=message;
-}
+  if (authError || !authData.user) {
+    return reply({ error: "Invalid session" }, 401);
+  }
 
-async function verifyAdmin(user){
- const {data,error}=await db.from("profiles")
-  .select("role,approval_status")
-  .eq("id",user.id)
-  .single();
+  const { data: adminProfile, error: profileError } =
+    await adminClient
+      .from("profiles")
+      .select("role, approval_status")
+      .eq("id", authData.user.id)
+      .maybeSingle();
 
- return !error && data?.role==="admin" &&
-  data?.approval_status==="approved";
-}
+  if (
+    profileError ||
+    adminProfile?.role !== "admin" ||
+    adminProfile?.approval_status !== "approved"
+  ) {
+    return reply({ error: "Administrator permission required" }, 403);
+  }
 
-async function login(){
- const email=document.getElementById("email").value.trim();
- const password=document.getElementById("password").value;
- showError("error","");
+  let input: Record<string, unknown>;
 
- if(!email||!password){
-  showError("error","أدخل البريد الإلكتروني وكلمة المرور.");
-  return;
- }
+  try {
+    input = await req.json();
+  } catch {
+    return reply({ error: "Invalid JSON body" }, 400);
+  }
 
- const {data,error}=await db.auth.signInWithPassword({email,password});
+  const fullName =
+    typeof input.full_name === "string" ? input.full_name.trim() : "";
 
- if(error){
-  showError("error","تعذر تسجيل الدخول. تحقق من البيانات.");
-  return;
- }
+  const phone =
+    typeof input.phone === "string" ? input.phone.trim() : "";
 
- if(!await verifyAdmin(data.user)){
-  await db.auth.signOut();
-  showError("error","هذا الحساب لا يملك صلاحية المدير.");
-  return;
- }
+  const email =
+    typeof input.email === "string"
+      ? input.email.trim().toLowerCase()
+      : "";
 
- await showDashboard(data.user);
-}
+  const password =
+    typeof input.password === "string" ? input.password : "";
 
-async function showDashboard(user){
- document.getElementById("login").classList.add("hidden");
- document.getElementById("dashboard").classList.remove("hidden");
- document.getElementById("adminEmail").textContent=user.email||"";
+  const specialtyId =
+    typeof input.specialty_id === "string" ? input.specialty_id : "";
 
- await Promise.all([loadStats(),loadPatients()]);
-}
+  const clinicId =
+    typeof input.clinic_id === "string" ? input.clinic_id : "";
 
-async function loadStats(){
- const requests=[
-  db.from("doctors").select("*",{count:"exact",head:true}),
-  db.from("profiles").select("*",{count:"exact",head:true}).eq("role","patient"),
-  db.from("appointments").select("*",{count:"exact",head:true}),
-  db.from("profiles").select("*",{count:"exact",head:true})
-   .eq("role","patient").eq("approval_status","pending")
- ];
+  const qualification =
+    typeof input.qualification === "string"
+      ? input.qualification.trim()
+      : "";
 
- const results=await Promise.all(requests);
- const ids=["doctors","patients","appointments","pending"];
+  const bio =
+    typeof input.bio === "string" ? input.bio.trim() : "";
 
- results.forEach((result,index)=>{
-  document.getElementById(ids[index]).textContent=
-   result.error?"—":result.count??0;
- });
-}
+  const experience = Number(input.experience_years ?? 0);
+  const fee = Number(input.consultation_fee ?? 0);
 
-async function loadPatients(){
- const tbody=document.getElementById("patientsTable");
- showError("errorPatients","");
- tbody.innerHTML="<tr><td colspan='5'>جارٍ التحميل...</td></tr>";
+  const uuidPattern =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
- const {data,error}=await db.from("profiles")
-  .select("id,full_name,phone,role,approval_status,created_at")
-  .eq("role","patient")
-  .order("created_at",{ascending:false});
+  if (!fullName || fullName.length > 150) {
+    return reply({ error: "Enter a valid doctor name" }, 400);
+  }
 
- if(error){
-  tbody.innerHTML="";
-  showError("errorPatients","تعذر تحميل المراجعين: "+error.message);
-  return;
- }
+  if (!phone || phone.length > 30) {
+    return reply({ error: "Enter a valid phone number" }, 400);
+  }
 
- patientList=data||[];
- renderPatients();
-}
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return reply({ error: "Enter a valid email" }, 400);
+  }
 
-function renderPatients(){
- const tbody=document.getElementById("patientsTable");
- const term=document.getElementById("search").value.trim().toLowerCase();
+  if (password.length < 10) {
+    return reply(
+      { error: "Initial password must be at least 10 characters" },
+      400
+    );
+  }
 
- const filtered=patientList.filter(p=>
-  (p.full_name||"").toLowerCase().includes(term)||
-  (p.phone||"").toLowerCase().includes(term)
- );
+  if (!uuidPattern.test(specialtyId) || !uuidPattern.test(clinicId)) {
+    return reply({ error: "Choose a valid specialty and clinic" }, 400);
+  }
 
- if(!filtered.length){
-  tbody.innerHTML="<tr><td colspan='5'>لا توجد نتائج.</td></tr>";
-  return;
- }
+  if (
+    !Number.isInteger(experience) ||
+    experience < 0 ||
+    experience > 70
+  ) {
+    return reply({ error: "Invalid experience years" }, 400);
+  }
 
- tbody.innerHTML=filtered.map(p=>{
-  const approved=p.approval_status==="approved";
-  const date=p.created_at
-   ?new Date(p.created_at).toLocaleDateString("ar-IQ")
-   :"—";
+  if (!Number.isFinite(fee) || fee < 0 || fee > 10000000) {
+    return reply({ error: "Invalid consultation fee" }, 400);
+  }
 
-  return `
-   <tr>
-    <td>${escapeHTML(p.full_name||"غير محدد")}</td>
-    <td>${escapeHTML(p.phone||"—")}</td>
-    <td><span class="status ${approved?"approved":""}">
-      ${approved?"مقبول":escapeHTML(p.approval_status||"غير محدد")}
-    </span></td>
-    <td>${date}</td>
-    <td>
-     ${!approved&&p.approval_status==="pending"
-      ?`<button onclick="approvePatient('${p.id}',this)">موافقة</button>`
-      :"—"}
-    </td>
-   </tr>`;
- }).join("");
-}
+  const [{ data: specialty }, { data: clinic }] = await Promise.all([
+    adminClient
+      .from("specialties")
+      .select("id")
+      .eq("id", specialtyId)
+      .eq("is_active", true)
+      .maybeSingle(),
 
-function escapeHTML(value){
- return String(value).replace(/[&<>"']/g,char=>({
-  "&":"&amp;","<":"&lt;",">":"&gt;",
-  '"':"&quot;","'":"&#39;"
- }[char]));
-}
+    adminClient
+      .from("clinics")
+      .select("id")
+      .eq("id", clinicId)
+      .eq("is_active", true)
+      .maybeSingle(),
+  ]);
 
-async function approvePatient(id,button){
- if(!confirm("هل تريد الموافقة على حساب هذا المراجع؟"))return;
+  if (!specialty || !clinic) {
+    return reply(
+      { error: "Selected specialty or clinic is unavailable" },
+      400
+    );
+  }
 
- button.disabled=true;
- showError("message","جارٍ تحديث الحساب...");
+  const { data: created, error: createError } =
+    await adminClient.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: fullName },
+    });
 
- const {data,error}=await db.from("profiles")
-  .update({
-   approval_status:"approved",
-   updated_at:new Date().toISOString()
-  })
-  .eq("id",id)
-  .eq("role","patient")
-  .eq("approval_status","pending")
-  .select("id");
+  if (createError || !created.user) {
+    return reply(
+      { error: createError?.message || "Could not create auth user" },
+      400
+    );
+  }
 
- if(error){
-  showError("message","");
-  showError("errorPatients","فشلت الموافقة: "+error.message);
-  button.disabled=false;
-  return;
- }
+  const userId = created.user.id;
 
- if(!data||data.length===0){
-  showError("message","");
-  showError("errorPatients","لم يتم تحديث الحساب. تحقق من صلاحيات RLS وحالة الحساب.");
-  button.disabled=false;
-  return;
- }
+  const { error: insertProfileError } =
+    await adminClient.from("profiles").insert({
+      id: userId,
+      full_name: fullName,
+      phone,
+      role: "doctor",
+      approval_status: "approved",
+    });
 
- showError("errorPatients","");
- showError("message","تمت الموافقة على حساب المراجع بنجاح.");
- await Promise.all([loadPatients(),loadStats()]);
-}
+  if (insertProfileError) {
+    await adminClient.auth.admin.deleteUser(userId);
 
-function showSection(id,button){
- document.getElementById("homeSection").classList.add("hidden");
- document.getElementById("patientsSection").classList.add("hidden");
- document.getElementById(id).classList.remove("hidden");
+    return reply(
+      {
+        error:
+          "Could not create doctor profile: " +
+          insertProfileError.message,
+      },
+      500
+    );
+  }
 
- document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
- button.classList.add("active");
-}
+  const { error: insertDoctorError } =
+    await adminClient.from("doctors").insert({
+      profile_id: userId,
+      specialty_id: specialtyId,
+      clinic_id: clinicId,
+      qualification: qualification || null,
+      experience_years: experience,
+      consultation_fee: fee,
+      bio: bio || null,
+      is_active: true,
+    });
 
-async function logout(){
- await db.auth.signOut();
- location.reload();
-}
+  if (insertDoctorError) {
+    await adminClient.from("profiles").delete().eq("id", userId);
+    await adminClient.auth.admin.deleteUser(userId);
 
-db.auth.getSession().then(async({data})=>{
- const user=data.session?.user;
- if(!user)return;
+    return reply(
+      {
+        error:
+          "Could not create doctor record: " +
+          insertDoctorError.message,
+      },
+      500
+    );
+  }
 
- if(await verifyAdmin(user)){
-  await showDashboard(user);
- }else{
-  await db.auth.signOut();
- }
+  return reply(
+    {
+      success: true,
+      doctor_id: userId,
+      message: "Doctor account created",
+    },
+    201
+  );
 });
-</script>
-</body>
-</html>
