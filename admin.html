@@ -3,123 +3,290 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IRAQ MEDICAL | لوحة الإدارة</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IRAQ MEDICAL | الإدارة</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#081522;color:#f4f8fb;font-family:Arial,sans-serif}
-header{padding:22px;background:#102536;border-bottom:1px solid #234454}
+header{background:#102536;padding:22px;border-bottom:1px solid #254354}
 .brand{color:#37d6bd;font-size:25px;font-weight:bold}
-header p{color:#a8bdc9;margin-bottom:0}
-main{max-width:1100px;margin:35px auto;padding:18px}
-.card{background:#102536;border:1px solid #254354;border-radius:16px;padding:24px;margin-bottom:20px}
-h2{margin-top:0}
-input{width:100%;padding:14px;margin:9px 0;border-radius:9px;border:1px solid #355568;background:#091a28;color:white}
-button{padding:13px 20px;background:#22bda9;color:#071a25;border:0;border-radius:9px;font-weight:bold;cursor:pointer}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px}
-.stat{background:#142f40;border-radius:12px;padding:20px}
-.stat strong{display:block;font-size:30px;color:#37d6bd;margin-top:12px}
-.muted{color:#a8bdc9}
-.hidden{display:none}
+header p,.muted{color:#a8bdc9}
+main{max-width:1150px;margin:auto;padding:18px}
+.card{background:#102536;border:1px solid #254354;border-radius:15px;padding:20px;margin-bottom:18px}
+input{width:100%;padding:13px;margin:8px 0;border:1px solid #355568;border-radius:9px;background:#091a28;color:white}
+button{padding:11px 15px;background:#22bda9;color:#071a25;border:0;border-radius:8px;font-weight:bold;cursor:pointer}
+button:disabled{opacity:.5}
+.danger{background:#773b48;color:white}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.stat{background:#142f40;padding:18px;border-radius:12px}
+.stat strong{display:block;font-size:27px;color:#37d6bd;margin-top:10px}
+.hidden{display:none!important}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:650px}
+th,td{padding:13px;text-align:right;border-bottom:1px solid #294353}
+th{color:#37d6bd}
+.status{padding:5px 9px;border-radius:20px;font-size:12px;background:#493d22;color:#f4d78a}
+.approved{background:#174c40;color:#8ce4c8}
 #error{color:#ff9b9b}
+#message{color:#8ce4c8}
+.actions{display:flex;gap:7px;align-items:center}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+nav button{background:#19394a;color:white}
+nav button.active{background:#22bda9;color:#071a25}
 </style>
 </head>
 <body>
 
 <header>
  <div class="brand">IRAQ MEDICAL</div>
- <p>منظومة الإدارة الطبية الذكية</p>
+ <p>لوحة الإدارة المركزية</p>
 </header>
 
 <main>
- <section class="card" id="login">
-  <h2>تسجيل دخول المدير</h2>
-  <p class="muted">أدخل بيانات حسابك الإداري</p>
-  <input id="email" type="email" placeholder="البريد الإلكتروني">
-  <input id="password" type="password" placeholder="كلمة المرور">
-  <button onclick="login()">تسجيل الدخول</button>
-  <p id="error"></p>
+<section class="card" id="login">
+ <h2>تسجيل دخول المدير</h2>
+ <input id="email" type="email" placeholder="البريد الإلكتروني">
+ <input id="password" type="password" placeholder="كلمة المرور">
+ <button onclick="login()">تسجيل الدخول</button>
+ <p id="error"></p>
+</section>
+
+<section id="dashboard" class="hidden">
+
+ <div class="card">
+  <h2>مرحباً بك في الإدارة</h2>
+  <p class="muted" id="adminEmail"></p>
+  <button onclick="logout()">تسجيل الخروج</button>
+ </div>
+
+ <div class="grid">
+  <div class="stat">الأطباء<strong id="doctors">—</strong></div>
+  <div class="stat">المراجعون<strong id="patients">—</strong></div>
+  <div class="stat">الحجوزات<strong id="appointments">—</strong></div>
+  <div class="stat">طلبات الانتظار<strong id="pending">—</strong></div>
+ </div>
+
+ <div class="card" style="margin-top:20px">
+  <h2>إدارة المنصة</h2>
+  <nav>
+   <button class="active" onclick="showSection('patientsSection',this)">المراجعون</button>
+   <button onclick="showSection('homeSection',this)">الرئيسية</button>
+  </nav>
+ </div>
+
+ <section id="homeSection" class="card hidden">
+  <h2>الرئيسية</h2>
+  <p class="muted">مرحباً بك في نظام IRAQ MEDICAL لإدارة الخدمات الطبية.</p>
  </section>
 
- <section id="dashboard" class="hidden">
-  <div class="card">
-   <h2>مرحباً بك في لوحة الإدارة</h2>
-   <p class="muted" id="adminEmail"></p>
-   <button onclick="logout()">تسجيل الخروج</button>
-  </div>
-
-  <div class="grid">
-   <div class="stat">الأطباء<strong id="doctors">—</strong></div>
-   <div class="stat">المراجعون<strong id="patients">—</strong></div>
-   <div class="stat">الحجوزات<strong id="appointments">—</strong></div>
-   <div class="stat">طلبات الانتظار<strong id="pending">—</strong></div>
+ <section id="patientsSection" class="card">
+  <h2>إدارة المراجعين</h2>
+  <p class="muted">مراجعة الحسابات الجديدة والموافقة عليها.</p>
+  <input id="search" placeholder="ابحث بالاسم أو رقم الهاتف..." oninput="renderPatients()">
+  <button onclick="loadPatients()">تحديث القائمة</button>
+  <p id="message"></p>
+  <p id="errorPatients"></p>
+  <div class="table-wrap">
+   <table>
+    <thead>
+     <tr>
+      <th>الاسم</th>
+      <th>الهاتف</th>
+      <th>الحالة</th>
+      <th>تاريخ التسجيل</th>
+      <th>الإجراء</th>
+     </tr>
+    </thead>
+    <tbody id="patientsTable">
+     <tr><td colspan="5">جارٍ تحميل البيانات...</td></tr>
+    </tbody>
+   </table>
   </div>
  </section>
+</section>
 </main>
 
 <script>
-const SUPABASE_URL = "https://oejkeqlqkwdfropylxsv.supabase.co";
-const SUPABASE_KEY = "sb_publishable_Ue8nsJFsLpDLFUgSTB24cw_rckeqWag";
+const SUPABASE_URL="https://oejkeqlqkwdfropylxsv.supabase.co";
+const SUPABASE_KEY="sb_publishable_Ue8nsJFsLpDLFUgSTB24cw_rckeqWag";
 
-const db = window.supabase.createClient(
- SUPABASE_URL,
- SUPABASE_KEY
-);
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let patientList=[];
+
+function showError(id,message){
+ document.getElementById(id).textContent=message;
+}
+
+async function verifyAdmin(user){
+ const {data,error}=await db.from("profiles")
+  .select("role,approval_status")
+  .eq("id",user.id)
+  .single();
+
+ return !error && data?.role==="admin" &&
+  data?.approval_status==="approved";
+}
 
 async function login(){
  const email=document.getElementById("email").value.trim();
  const password=document.getElementById("password").value;
- const error=document.getElementById("error");
+ showError("error","");
 
- error.textContent="";
-
- if(!email || !password){
-  error.textContent="يرجى إدخال البريد وكلمة المرور";
+ if(!email||!password){
+  showError("error","أدخل البريد الإلكتروني وكلمة المرور.");
   return;
  }
 
- const {data,error:authError}=await db.auth.signInWithPassword({
-  email,
-  password
- });
+ const {data,error}=await db.auth.signInWithPassword({email,password});
 
- if(authError){
-  error.textContent="تعذر تسجيل الدخول. تحقق من البيانات.";
+ if(error){
+  showError("error","تعذر تسجيل الدخول. تحقق من البيانات.");
   return;
  }
 
- const {data:profile,error:profileError}=await db
-  .from("profiles")
-  .select("role,approval_status")
-  .eq("id",data.user.id)
-  .single();
-
- if(profileError || profile.role!=="admin" || profile.approval_status!=="approved"){
+ if(!await verifyAdmin(data.user)){
   await db.auth.signOut();
-  error.textContent="هذا الحساب لا يملك صلاحية الإدارة.";
+  showError("error","هذا الحساب لا يملك صلاحية المدير.");
   return;
  }
 
- showDashboard(email);
+ await showDashboard(data.user);
 }
 
-async function showDashboard(email){
+async function showDashboard(user){
  document.getElementById("login").classList.add("hidden");
  document.getElementById("dashboard").classList.remove("hidden");
- document.getElementById("adminEmail").textContent=email;
+ document.getElementById("adminEmail").textContent=user.email||"";
 
- const [doctors,patients,appointments,pending]=await Promise.all([
+ await Promise.all([loadStats(),loadPatients()]);
+}
+
+async function loadStats(){
+ const requests=[
   db.from("doctors").select("*",{count:"exact",head:true}),
   db.from("profiles").select("*",{count:"exact",head:true}).eq("role","patient"),
   db.from("appointments").select("*",{count:"exact",head:true}),
-  db.from("profiles").select("*",{count:"exact",head:true}).eq("approval_status","pending")
- ]);
+  db.from("profiles").select("*",{count:"exact",head:true})
+   .eq("role","patient").eq("approval_status","pending")
+ ];
 
- document.getElementById("doctors").textContent=doctors.count ?? "—";
- document.getElementById("patients").textContent=patients.count ?? "—";
- document.getElementById("appointments").textContent=appointments.count ?? "—";
- document.getElementById("pending").textContent=pending.count ?? "—";
+ const results=await Promise.all(requests);
+ const ids=["doctors","patients","appointments","pending"];
+
+ results.forEach((result,index)=>{
+  document.getElementById(ids[index]).textContent=
+   result.error?"—":result.count??0;
+ });
+}
+
+async function loadPatients(){
+ const tbody=document.getElementById("patientsTable");
+ showError("errorPatients","");
+ tbody.innerHTML="<tr><td colspan='5'>جارٍ التحميل...</td></tr>";
+
+ const {data,error}=await db.from("profiles")
+  .select("id,full_name,phone,role,approval_status,created_at")
+  .eq("role","patient")
+  .order("created_at",{ascending:false});
+
+ if(error){
+  tbody.innerHTML="";
+  showError("errorPatients","تعذر تحميل المراجعين: "+error.message);
+  return;
+ }
+
+ patientList=data||[];
+ renderPatients();
+}
+
+function renderPatients(){
+ const tbody=document.getElementById("patientsTable");
+ const term=document.getElementById("search").value.trim().toLowerCase();
+
+ const filtered=patientList.filter(p=>
+  (p.full_name||"").toLowerCase().includes(term)||
+  (p.phone||"").toLowerCase().includes(term)
+ );
+
+ if(!filtered.length){
+  tbody.innerHTML="<tr><td colspan='5'>لا توجد نتائج.</td></tr>";
+  return;
+ }
+
+ tbody.innerHTML=filtered.map(p=>{
+  const approved=p.approval_status==="approved";
+  const date=p.created_at
+   ?new Date(p.created_at).toLocaleDateString("ar-IQ")
+   :"—";
+
+  return `
+   <tr>
+    <td>${escapeHTML(p.full_name||"غير محدد")}</td>
+    <td>${escapeHTML(p.phone||"—")}</td>
+    <td><span class="status ${approved?"approved":""}">
+      ${approved?"مقبول":escapeHTML(p.approval_status||"غير محدد")}
+    </span></td>
+    <td>${date}</td>
+    <td>
+     ${!approved&&p.approval_status==="pending"
+      ?`<button onclick="approvePatient('${p.id}',this)">موافقة</button>`
+      :"—"}
+    </td>
+   </tr>`;
+ }).join("");
+}
+
+function escapeHTML(value){
+ return String(value).replace(/[&<>"']/g,char=>({
+  "&":"&amp;","<":"&lt;",">":"&gt;",
+  '"':"&quot;","'":"&#39;"
+ }[char]));
+}
+
+async function approvePatient(id,button){
+ if(!confirm("هل تريد الموافقة على حساب هذا المراجع؟"))return;
+
+ button.disabled=true;
+ showError("message","جارٍ تحديث الحساب...");
+
+ const {data,error}=await db.from("profiles")
+  .update({
+   approval_status:"approved",
+   updated_at:new Date().toISOString()
+  })
+  .eq("id",id)
+  .eq("role","patient")
+  .eq("approval_status","pending")
+  .select("id");
+
+ if(error){
+  showError("message","");
+  showError("errorPatients","فشلت الموافقة: "+error.message);
+  button.disabled=false;
+  return;
+ }
+
+ if(!data||data.length===0){
+  showError("message","");
+  showError("errorPatients","لم يتم تحديث الحساب. تحقق من صلاحيات RLS وحالة الحساب.");
+  button.disabled=false;
+  return;
+ }
+
+ showError("errorPatients","");
+ showError("message","تمت الموافقة على حساب المراجع بنجاح.");
+ await Promise.all([loadPatients(),loadStats()]);
+}
+
+function showSection(id,button){
+ document.getElementById("homeSection").classList.add("hidden");
+ document.getElementById("patientsSection").classList.add("hidden");
+ document.getElementById(id).classList.remove("hidden");
+
+ document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
+ button.classList.add("active");
 }
 
 async function logout(){
@@ -128,19 +295,13 @@ async function logout(){
 }
 
 db.auth.getSession().then(async({data})=>{
- if(data.session){
-  const user=data.session.user;
+ const user=data.session?.user;
+ if(!user)return;
 
-  const {data:profile}=await db.from("profiles")
-   .select("role,approval_status")
-   .eq("id",user.id)
-   .single();
-
-  if(profile?.role==="admin" && profile?.approval_status==="approved"){
-   showDashboard(user.email);
-  }else{
-   await db.auth.signOut();
-  }
+ if(await verifyAdmin(user)){
+  await showDashboard(user);
+ }else{
+  await db.auth.signOut();
  }
 });
 </script>
