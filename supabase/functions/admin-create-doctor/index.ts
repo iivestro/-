@@ -3,7 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -24,7 +25,7 @@ Deno.serve(async (req: Request) => {
 
   const url = Deno.env.get("SUPABASE_URL");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const serviceKey = Deno.env.get("SERVICE_ROLE_KEY");
 
   if (!url || !anonKey || !serviceKey) {
     return reply({ error: "Server configuration is incomplete" }, 500);
@@ -35,15 +36,25 @@ Deno.serve(async (req: Request) => {
     ? authHeader.slice(7)
     : "";
 
-  if (!token) return reply({ error: "Authentication required" }, 401);
+  if (!token) {
+    return reply({ error: "Authentication required" }, 401);
+  }
 
   const authClient = createClient(url, anonKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-    auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
   });
 
   const adminClient = createClient(url, serviceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
   });
 
   const { data: authData, error: authError } =
@@ -77,22 +88,34 @@ Deno.serve(async (req: Request) => {
   }
 
   const fullName =
-    typeof input.full_name === "string" ? input.full_name.trim() : "";
+    typeof input.full_name === "string"
+      ? input.full_name.trim()
+      : "";
 
   const phone =
-    typeof input.phone === "string" ? input.phone.trim() : "";
+    typeof input.phone === "string"
+      ? input.phone.trim()
+      : "";
 
   const email =
-    typeof input.email === "string" ? input.email.trim().toLowerCase() : "";
+    typeof input.email === "string"
+      ? input.email.trim().toLowerCase()
+      : "";
 
   const password =
-    typeof input.password === "string" ? input.password : "";
+    typeof input.password === "string"
+      ? input.password
+      : "";
 
   const specialtyId =
-    typeof input.specialty_id === "string" ? input.specialty_id : "";
+    typeof input.specialty_id === "string"
+      ? input.specialty_id
+      : "";
 
   const clinicId =
-    typeof input.clinic_id === "string" ? input.clinic_id : "";
+    typeof input.clinic_id === "string"
+      ? input.clinic_id
+      : "";
 
   const qualification =
     typeof input.qualification === "string"
@@ -100,7 +123,9 @@ Deno.serve(async (req: Request) => {
       : "";
 
   const bio =
-    typeof input.bio === "string" ? input.bio.trim() : "";
+    typeof input.bio === "string"
+      ? input.bio.trim()
+      : "";
 
   const experience = Number(input.experience_years ?? 0);
   const fee = Number(input.consultation_fee ?? 0);
@@ -121,39 +146,54 @@ Deno.serve(async (req: Request) => {
   }
 
   if (password.length < 10) {
-    return reply({ error: "Initial password must be at least 10 characters" }, 400);
+    return reply({
+      error: "Initial password must be at least 10 characters",
+    }, 400);
   }
 
   if (!uuidPattern.test(specialtyId) || !uuidPattern.test(clinicId)) {
-    return reply({ error: "Choose a valid specialty and clinic" }, 400);
+    return reply({
+      error: "Choose a valid specialty and clinic",
+    }, 400);
   }
 
-  if (!Number.isInteger(experience) || experience < 0 || experience > 70) {
+  if (
+    !Number.isInteger(experience) ||
+    experience < 0 ||
+    experience > 70
+  ) {
     return reply({ error: "Invalid experience years" }, 400);
   }
 
-  if (!Number.isFinite(fee) || fee < 0 || fee > 10000000) {
+  if (
+    !Number.isFinite(fee) ||
+    fee < 0 ||
+    fee > 10000000
+  ) {
     return reply({ error: "Invalid consultation fee" }, 400);
   }
 
-  const [{ data: specialty }, { data: clinic }] = await Promise.all([
-    adminClient
-      .from("specialties")
-      .select("id")
-      .eq("id", specialtyId)
-      .eq("is_active", true)
-      .maybeSingle(),
+  const [{ data: specialty }, { data: clinic }] =
+    await Promise.all([
+      adminClient
+        .from("specialties")
+        .select("id")
+        .eq("id", specialtyId)
+        .eq("is_active", true)
+        .maybeSingle(),
 
-    adminClient
-      .from("clinics")
-      .select("id")
-      .eq("id", clinicId)
-      .eq("is_active", true)
-      .maybeSingle(),
-  ]);
+      adminClient
+        .from("clinics")
+        .select("id")
+        .eq("id", clinicId)
+        .eq("is_active", true)
+        .maybeSingle(),
+    ]);
 
   if (!specialty || !clinic) {
-    return reply({ error: "Selected specialty or clinic is unavailable" }, 400);
+    return reply({
+      error: "Selected specialty or clinic is unavailable",
+    }, 400);
   }
 
   const { data: created, error: createError } =
@@ -161,14 +201,15 @@ Deno.serve(async (req: Request) => {
       email,
       password,
       email_confirm: true,
-      user_metadata: { full_name: fullName },
+      user_metadata: {
+        full_name: fullName,
+      },
     });
 
   if (createError || !created.user) {
-    return reply(
-      { error: createError?.message || "Could not create auth user" },
-      400
-    );
+    return reply({
+      error: createError?.message || "Could not create auth user",
+    }, 400);
   }
 
   const userId = created.user.id;
@@ -184,10 +225,12 @@ Deno.serve(async (req: Request) => {
 
   if (insertProfileError) {
     await adminClient.auth.admin.deleteUser(userId);
-    return reply(
-      { error: "Could not create doctor profile: " + insertProfileError.message },
-      500
-    );
+
+    return reply({
+      error:
+        "Could not create doctor profile: " +
+        insertProfileError.message,
+    }, 500);
   }
 
   const { error: insertDoctorError } =
@@ -203,21 +246,23 @@ Deno.serve(async (req: Request) => {
     });
 
   if (insertDoctorError) {
-    await adminClient.from("profiles").delete().eq("id", userId);
+    await adminClient
+      .from("profiles")
+      .delete()
+      .eq("id", userId);
+
     await adminClient.auth.admin.deleteUser(userId);
 
-    return reply(
-      { error: "Could not create doctor record: " + insertDoctorError.message },
-      500
-    );
+    return reply({
+      error:
+        "Could not create doctor record: " +
+        insertDoctorError.message,
+    }, 500);
   }
 
-  return reply(
-    {
-      success: true,
-      doctor_id: userId,
-      message: "Doctor account created",
-    },
-    201
-  );
+  return reply({
+    success: true,
+    doctor_id: userId,
+    message: "Doctor account created",
+  }, 201);
 });
