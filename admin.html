@@ -16,7 +16,7 @@ main{max-width:1200px;margin:auto;padding:18px}
 .card{background:#102536;border:1px solid #254354;border-radius:15px;padding:20px;margin-bottom:18px}
 input,select,textarea{width:100%;padding:13px;margin:8px 0;border:1px solid #355568;border-radius:9px;background:#091a28;color:white}
 textarea{min-height:90px}
-button{padding:11px 15px;background:#22bda9;color:#071a25;border:0;border-radius:8px;font-weight:bold;cursor:pointer}
+button{padding:11px 15px;background:#22bda9;color:#071a25;border:0;border-radius:8px;font-weight:bold;cursor:pointer;margin:2px}
 button:disabled{opacity:.5}
 .hidden{display:none!important}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:13px}
@@ -32,6 +32,7 @@ th,td{padding:13px;text-align:right;border-bottom:1px solid #294353}
 th{color:#37d6bd}
 .status{padding:5px 9px;border-radius:20px;font-size:12px;background:#493d22;color:#f4d78a}
 .approved{background:#174c40;color:#8ce4c8}
+.rejected{background:#542b35;color:#ffb2bd}
 #error,#errorPatients,#doctorError,#dashboardError{color:#ff9b9b}
 #message,#doctorMessage{color:#8ce4c8}
 .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
@@ -41,6 +42,8 @@ th{color:#37d6bd}
 canvas{width:100%;height:100%;display:block}
 .section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .small{font-size:12px;color:#a8bdc9}
+.approve-btn{background:#22bda9}
+.reject-btn{background:#b94a5a;color:white}
 </style>
 </head>
 <body>
@@ -75,24 +78,11 @@ canvas{width:100%;height:100%;display:block}
    <button onclick="refreshDashboard()">تحديث البيانات</button>
   </div>
   <p class="small">إحصائيات المنصة الإجمالية منذ إطلاقها</p>
-
   <div class="grid">
-   <div class="stat">
-    <span>إجمالي المراجعين المسجلين</span>
-    <strong id="totalPatients">—</strong>
-   </div>
-   <div class="stat">
-    <span>المراجعون الذين حجزوا</span>
-    <strong id="bookedPatients">—</strong>
-   </div>
-   <div class="stat">
-    <span>إجمالي الأطباء المسجلين</span>
-    <strong id="totalDoctors">—</strong>
-   </div>
-   <div class="stat">
-    <span>إجمالي الحجوزات</span>
-    <strong id="totalAppointments">—</strong>
-   </div>
+   <div class="stat"><span>إجمالي المراجعين المسجلين</span><strong id="totalPatients">—</strong></div>
+   <div class="stat"><span>المراجعون الذين حجزوا</span><strong id="bookedPatients">—</strong></div>
+   <div class="stat"><span>إجمالي الأطباء المسجلين</span><strong id="totalDoctors">—</strong></div>
+   <div class="stat"><span>إجمالي الحجوزات</span><strong id="totalAppointments">—</strong></div>
   </div>
   <p id="dashboardError"></p>
  </div>
@@ -111,12 +101,10 @@ canvas{width:100%;height:100%;display:block}
    <h3>نمو تسجيل المراجعين – آخر 30 يوماً</h3>
    <div class="chart-wrap"><canvas id="patientsChart"></canvas></div>
   </div>
-
   <div class="chart-card">
    <h3>نمو الحجوزات – آخر 30 يوماً</h3>
    <div class="chart-wrap"><canvas id="appointmentsChart"></canvas></div>
   </div>
-
   <div class="chart-card">
    <h3>نمو تسجيل الأطباء – آخر 30 يوماً</h3>
    <div class="chart-wrap"><canvas id="doctorsChart"></canvas></div>
@@ -126,7 +114,7 @@ canvas{width:100%;height:100%;display:block}
 
  <section id="patientsSection" class="card hidden">
   <h2>إدارة المراجعين</h2>
-  <p class="muted">مراجعة الحسابات الجديدة والموافقة عليها.</p>
+  <p class="muted">يمكنك قبول حساب المراجع أو رفضه من هذه القائمة.</p>
   <input id="search" placeholder="ابحث بالاسم أو رقم الهاتف..." oninput="renderPatients()">
   <button onclick="loadPatients()">تحديث القائمة</button>
   <p id="message"></p>
@@ -151,46 +139,21 @@ canvas{width:100%;height:100%;display:block}
   <p class="muted">إنشاء حساب طبيب من خلال الوظيفة الآمنة.</p>
   <form id="doctorForm">
    <div class="form-grid">
-    <div>
-     <label>اسم الطبيب الكامل *</label>
-     <input id="doctorName" required maxlength="150">
-    </div>
-    <div>
-     <label>رقم الهاتف *</label>
-     <input id="doctorPhone" required maxlength="30" inputmode="tel">
-    </div>
-    <div>
-     <label>البريد الإلكتروني *</label>
-     <input id="doctorEmail" type="email" required>
-    </div>
-    <div>
-     <label>كلمة المرور الأولية *</label>
-     <input id="doctorPassword" type="password" required minlength="10">
-    </div>
+    <div><label>اسم الطبيب الكامل *</label><input id="doctorName" required maxlength="150"></div>
+    <div><label>رقم الهاتف *</label><input id="doctorPhone" required maxlength="30" inputmode="tel"></div>
+    <div><label>البريد الإلكتروني *</label><input id="doctorEmail" type="email" required></div>
+    <div><label>كلمة المرور الأولية *</label><input id="doctorPassword" type="password" required minlength="10"></div>
     <div>
      <label>التخصص *</label>
-     <select id="specialty" required>
-      <option value="">تحميل التخصصات...</option>
-     </select>
+     <select id="specialty" required><option value="">تحميل التخصصات...</option></select>
     </div>
     <div>
      <label>العيادة *</label>
-     <select id="clinic" required>
-      <option value="">تحميل العيادات...</option>
-     </select>
+     <select id="clinic" required><option value="">تحميل العيادات...</option></select>
     </div>
-    <div>
-     <label>المؤهل العلمي</label>
-     <input id="qualification">
-    </div>
-    <div>
-     <label>سنوات الخبرة</label>
-     <input id="experience" type="number" min="0" max="70" value="0">
-    </div>
-    <div>
-     <label>أجرة الكشف</label>
-     <input id="fee" type="number" min="0" value="0">
-    </div>
+    <div><label>المؤهل العلمي</label><input id="qualification"></div>
+    <div><label>سنوات الخبرة</label><input id="experience" type="number" min="0" max="70" value="0"></div>
+    <div><label>أجرة الكشف</label><input id="fee" type="number" min="0" value="0"></div>
    </div>
    <label>نبذة عن الطبيب</label>
    <textarea id="bio"></textarea>
@@ -263,6 +226,7 @@ function showSection(id,button){
  document.getElementById(id).classList.remove("hidden");
  document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
  button.classList.add("active");
+ if(id==="homeSection")renderCharts();
 }
 
 function dateKey(value){
@@ -306,7 +270,6 @@ function drawLineChart(canvasId,labels,values){
  canvas.height=rect.height*ratio;
  const ctx=canvas.getContext("2d");
  ctx.setTransform(ratio,0,0,ratio,0,0);
-
  const w=rect.width,h=rect.height;
  const pad={top:20,right:38,bottom:38,left:38};
  const cw=w-pad.left-pad.right;
@@ -314,7 +277,6 @@ function drawLineChart(canvasId,labels,values){
  const max=Math.max(4,...values);
  const step=Math.ceil(max/4);
  const top=step*4;
-
  ctx.clearRect(0,0,w,h);
  ctx.font="11px Arial";
  ctx.textAlign="right";
@@ -322,7 +284,6 @@ function drawLineChart(canvasId,labels,values){
  ctx.strokeStyle="#294353";
  ctx.fillStyle="#a8bdc9";
  ctx.lineWidth=1;
-
  for(let i=0;i<=4;i++){
   const y=pad.top+ch-(i/4)*ch;
   ctx.beginPath();
@@ -331,10 +292,8 @@ function drawLineChart(canvasId,labels,values){
   ctx.stroke();
   ctx.fillText(String(i*step),pad.left-8,y);
  }
-
  const xAt=i=>pad.left+(i/(Math.max(1,values.length-1)))*cw;
  const yAt=v=>pad.top+ch-(v/top)*ch;
-
  ctx.strokeStyle="#37d6bd";
  ctx.lineWidth=2.8;
  ctx.beginPath();
@@ -343,20 +302,17 @@ function drawLineChart(canvasId,labels,values){
   if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
  });
  ctx.stroke();
-
  values.forEach((v,i)=>{
   ctx.beginPath();
   ctx.arc(xAt(i),yAt(v),3.2,0,Math.PI*2);
   ctx.fillStyle="#37d6bd";
   ctx.fill();
  });
-
  ctx.fillStyle="#a8bdc9";
  ctx.textAlign="center";
  ctx.textBaseline="top";
  [0,7,14,21,29].forEach(i=>{
-  const label=labels[i].slice(5);
-  ctx.fillText(label,xAt(i),h-pad.bottom+12);
+  ctx.fillText(labels[i].slice(5),xAt(i),h-pad.bottom+12);
  });
 }
 
@@ -371,33 +327,24 @@ async function refreshDashboard(){
  setText("dashboardError","");
  const ids=["totalPatients","bookedPatients","totalDoctors","totalAppointments"];
  ids.forEach(id=>setText(id,"..."));
-
  try{
   const [patients,doctors,appointments]=await Promise.all([
    db.from("profiles").select("id,created_at").eq("role","patient"),
    db.from("profiles").select("id,created_at").eq("role","doctor"),
    db.from("appointments").select("id,patient_id,created_at")
   ]);
-
   if(patients.error)throw new Error("المراجعون: "+patients.error.message);
   if(doctors.error)throw new Error("الأطباء: "+doctors.error.message);
   if(appointments.error)throw new Error("الحجوزات: "+appointments.error.message);
-
   const patientRows=patients.data||[];
   const doctorRows=doctors.data||[];
   const appointmentRows=appointments.data||[];
   const booked=new Set(appointmentRows.map(a=>a.patient_id).filter(Boolean));
-
   setText("totalPatients",patientRows.length);
   setText("bookedPatients",booked.size);
   setText("totalDoctors",doctorRows.length);
   setText("totalAppointments",appointmentRows.length);
-
-  chartData={
-   patients:patientRows,
-   doctors:doctorRows,
-   appointments:appointmentRows
-  };
+  chartData={patients:patientRows,doctors:doctorRows,appointments:appointmentRows};
   renderCharts();
  }catch(e){
   setText("dashboardError","تعذر تحميل المؤشرات: "+e.message);
@@ -409,11 +356,9 @@ async function loadPatients(){
  const tbody=document.getElementById("patientsTable");
  setText("errorPatients","");
  tbody.innerHTML="<tr><td colspan='5'>جارٍ التحميل...</td></tr>";
-
  const {data,error}=await db.from("profiles")
  .select("id,full_name,phone,role,approval_status,created_at")
  .eq("role","patient").order("created_at",{ascending:false});
-
  if(error){
   tbody.innerHTML="";
   setText("errorPatients","تعذر تحميل المراجعين: "+error.message);
@@ -421,6 +366,16 @@ async function loadPatients(){
  }
  patientList=data||[];
  renderPatients();
+}
+
+function getStatusLabel(status){
+ const labels={
+  pending:"بانتظار الموافقة",
+  approved:"مقبول",
+  rejected:"مرفوض",
+  suspended:"موقوف"
+ };
+ return labels[status]||status||"غير محدد";
 }
 
 function renderPatients(){
@@ -435,35 +390,51 @@ function renderPatients(){
   return;
  }
  tbody.innerHTML=filtered.map(p=>{
-  const approved=p.approval_status==="approved";
+  const status=p.approval_status;
+  const approved=status==="approved";
+  const rejected=status==="rejected";
   const date=p.created_at?new Date(p.created_at).toLocaleDateString("ar-IQ"):"—";
-  const action=!approved&&p.approval_status==="pending"
-   ?`<button onclick="approvePatient('${p.id}',this)">موافقة</button>`:"—";
+  let action="—";
+  if(status==="pending"){
+   action=`
+    <button class="approve-btn" onclick="updatePatientStatus('${p.id}','approved',this)">قبول</button>
+    <button class="reject-btn" onclick="updatePatientStatus('${p.id}','rejected',this)">رفض</button>
+   `;
+  }
   return `<tr>
    <td>${escapeHTML(p.full_name||"غير محدد")}</td>
    <td>${escapeHTML(p.phone||"—")}</td>
-   <td><span class="status ${approved?"approved":""}">${approved?"مقبول":escapeHTML(p.approval_status||"غير محدد")}</span></td>
-   <td>${date}</td><td>${action}</td>
+   <td><span class="status ${approved?"approved":rejected?"rejected":""}">${escapeHTML(getStatusLabel(status))}</span></td>
+   <td>${date}</td>
+   <td>${action}</td>
   </tr>`;
  }).join("");
 }
 
-async function approvePatient(id,button){
- if(!confirm("هل تريد الموافقة على حساب هذا المراجع؟"))return;
+async function updatePatientStatus(id,newStatus,button){
+ const isApprove=newStatus==="approved";
+ const question=isApprove
+  ?"هل تريد قبول حساب هذا المراجع؟"
+  :"هل تريد رفض حساب هذا المراجع؟";
+ if(!confirm(question))return;
  button.disabled=true;
- setText("message","جارٍ تحديث الحساب...");
+ setText("message","جارٍ تحديث حالة الحساب...");
+ setText("errorPatients","");
  const {data,error}=await db.from("profiles").update({
-  approval_status:"approved",updated_at:new Date().toISOString()
+  approval_status:newStatus,
+  updated_at:new Date().toISOString()
  }).eq("id",id).eq("role","patient").eq("approval_status","pending").select("id");
-
  if(error||!data?.length){
   setText("message","");
-  setText("errorPatients",error?"فشلت الموافقة: "+error.message:"لم يتم تحديث الحساب. تحقق من صلاحيات RLS.");
+  setText("errorPatients",error
+   ?"فشل تحديث الحساب: "+error.message
+   :"لم يتم تحديث الحساب. تحقق من صلاحيات RLS أو حالة الحساب.");
   button.disabled=false;
   return;
  }
- setText("errorPatients","");
- setText("message","تمت الموافقة على حساب المراجع بنجاح.");
+ setText("message",isApprove
+  ?"تم قبول حساب المراجع بنجاح."
+  :"تم رفض حساب المراجع بنجاح.");
  await Promise.all([loadPatients(),refreshDashboard()]);
 }
 
@@ -476,19 +447,16 @@ async function loadDoctorOptions(){
  const clinicSelect=document.getElementById("clinic");
  specialtySelect.innerHTML='<option value="">اختر التخصص</option>';
  clinicSelect.innerHTML='<option value="">اختر العيادة</option>';
-
  const [specialties,clinics]=await Promise.all([
   db.from("specialties").select("*").eq("is_active",true).order("name_ar"),
   db.from("clinics").select("*").eq("is_active",true)
  ]);
-
  if(specialties.error)setText("doctorError","تعذر تحميل التخصصات: "+specialties.error.message);
  else (specialties.data||[]).forEach(row=>{
   const option=document.createElement("option");
   option.value=row.id;option.textContent=optionLabel(row);
   specialtySelect.appendChild(option);
  });
-
  if(clinics.error)setText("doctorError","تعذر تحميل العيادات: "+clinics.error.message);
  else (clinics.data||[]).forEach(row=>{
   const option=document.createElement("option");
@@ -503,13 +471,11 @@ document.getElementById("doctorForm").addEventListener("submit",async event=>{
  setText("doctorMessage","");
  const button=document.getElementById("createDoctorButton");
  button.disabled=true;
-
  try{
   const {data:sessionData,error:sessionError}=await db.auth.getSession();
   if(sessionError)throw sessionError;
   const session=sessionData.session;
   if(!session?.access_token)throw new Error("انتهت الجلسة. سجّل الدخول مجدداً.");
-
   const payload={
    full_name:document.getElementById("doctorName").value.trim(),
    phone:document.getElementById("doctorPhone").value.trim(),
@@ -522,7 +488,6 @@ document.getElementById("doctorForm").addEventListener("submit",async event=>{
    consultation_fee:Number(document.getElementById("fee").value||0),
    bio:document.getElementById("bio").value.trim()
   };
-
   const response=await fetch(CREATE_DOCTOR_URL,{
    method:"POST",
    headers:{
@@ -532,10 +497,8 @@ document.getElementById("doctorForm").addEventListener("submit",async event=>{
    },
    body:JSON.stringify(payload)
   });
-
   const result=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error(result.error||"فشل الطلب، رمز الحالة: "+response.status);
-
   setText("doctorMessage","تم إنشاء حساب الطبيب بنجاح.");
   document.getElementById("doctorForm").reset();
   await refreshDashboard();
