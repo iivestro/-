@@ -16,9 +16,12 @@ main{max-width:650px;margin:25px auto;padding:15px}
 h2,h3{margin-top:0}
 input,select,textarea{width:100%;padding:13px;margin:8px 0;border-radius:9px;border:1px solid #345468;background:#071827;color:white;font-size:15px}
 button{width:100%;padding:13px;border:0;border-radius:9px;background:#20b9a8;color:#061923;font-weight:bold;margin-top:10px;cursor:pointer}
+button:disabled{opacity:.5}
 .secondary{background:#244457;color:white}
 .msg{color:#9ee8df;line-height:1.8;overflow-wrap:anywhere}
 .hidden{display:none}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 18px}
+.tabs button{margin:0}
 .doctor{padding:16px;border:1px solid #345468;border-radius:12px;margin:12px 0;background:#0b2030}
 .doctor h3{color:#50d4c3;margin-bottom:10px}
 .info{padding:9px;background:#071827;border-radius:8px;margin:6px 0;font-size:14px}
@@ -28,19 +31,61 @@ button{width:100%;padding:13px;border:0;border-radius:9px;background:#20b9a8;col
 </head>
 <body>
 <main>
+
 <div class="logo">
 <h1>IRAQ MEDICAL</h1>
 <p>بوابتك الطبية الرقمية</p>
 </div>
 
 <section id="auth" class="card">
-<h2>حساب المراجع</h2>
+<h2>بوابة المراجع</h2>
+
+<div class="tabs">
+<button type="button" id="signupTab" onclick="showAuthTab('signup')">إنشاء حساب</button>
+<button type="button" id="loginTab" class="secondary" onclick="showAuthTab('login')">تسجيل الدخول</button>
+</div>
+
+<div id="signupPanel">
+<h3>إنشاء حساب مراجع جديد</h3>
 <input id="name" placeholder="الاسم الكامل">
-<input id="phone" placeholder="رقم الهاتف">
+<input id="phone" type="tel" placeholder="رقم الهاتف">
+<input id="age" type="number" min="1" max="120" placeholder="العمر">
+
+<select id="governorate">
+<option value="">اختر المحافظة</option>
+<option value="بغداد">بغداد</option>
+<option value="نينوى">نينوى</option>
+<option value="البصرة">البصرة</option>
+<option value="النجف">النجف</option>
+<option value="كربلاء">كربلاء</option>
+<option value="بابل">بابل</option>
+<option value="القادسية">القادسية</option>
+<option value="المثنى">المثنى</option>
+<option value="ذي قار">ذي قار</option>
+<option value="ميسان">ميسان</option>
+<option value="واسط">واسط</option>
+<option value="ديالى">ديالى</option>
+<option value="صلاح الدين">صلاح الدين</option>
+<option value="كركوك">كركوك</option>
+<option value="الأنبار">الأنبار</option>
+<option value="أربيل">أربيل</option>
+<option value="السليمانية">السليمانية</option>
+<option value="دهوك">دهوك</option>
+<option value="حلبجة">حلبجة</option>
+</select>
+
+<input id="signupEmail" type="email" placeholder="البريد الإلكتروني">
+<input id="signupPassword" type="password" placeholder="كلمة المرور (6 أحرف على الأقل)">
+<button onclick="signup()">إنشاء الحساب</button>
+</div>
+
+<div id="loginPanel" class="hidden">
+<h3>تسجيل الدخول</h3>
 <input id="email" type="email" placeholder="البريد الإلكتروني">
 <input id="password" type="password" placeholder="كلمة المرور">
-<button onclick="signup()">إنشاء حساب جديد</button>
-<button class="secondary" onclick="login()">تسجيل الدخول</button>
+<button onclick="login()">تسجيل الدخول</button>
+</div>
+
 <p id="message" class="msg"></p>
 </section>
 
@@ -62,6 +107,7 @@ button{width:100%;padding:13px;border:0;border-radius:9px;background:#20b9a8;col
 <div id="myAppointmentsList" class="msg">جاري تحميل الحجوزات...</div>
 <button class="secondary" onclick="loadMyAppointments()">تحديث الحجوزات</button>
 </section>
+
 </main>
 
 <script>
@@ -73,42 +119,75 @@ const el=id=>document.getElementById(id);
 let selectedDoctor=null;
 let selectedSchedules=[];
 
-function message(t){el("message").textContent=t}
+function message(t){
+el("message").textContent=t;
+}
+
+function showAuthTab(tab){
+const signup=tab==="signup";
+el("signupPanel").classList.toggle("hidden",!signup);
+el("loginPanel").classList.toggle("hidden",signup);
+el("signupTab").classList.toggle("secondary",!signup);
+el("loginTab").classList.toggle("secondary",signup);
+message("");
+}
 
 async function signup(){
 const full_name=el("name").value.trim();
 const phone=el("phone").value.trim();
-const email=el("email").value.trim();
-const password=el("password").value;
+const age=Number(el("age").value);
+const governorate=el("governorate").value;
+const email=el("signupEmail").value.trim();
+const password=el("signupPassword").value;
 
-if(!full_name||!phone||!email||password.length<6){
-message("أكمل جميع الحقول، وكلمة المرور 6 أحرف على الأقل.");
+if(!full_name||!phone||!age||age<1||age>120||!governorate||!email||password.length<6){
+message("أكمل جميع الحقول وتأكد من صحة العمر. كلمة المرور 6 أحرف على الأقل.");
 return;
 }
 
 message("جاري إنشاء الحساب...");
 
 const {error}=await db.auth.signUp({
-email,password,
-options:{data:{full_name,phone}}
+email,
+password,
+options:{
+data:{
+full_name,
+phone,
+age:String(age),
+governorate
+}
+}
 });
 
-if(error){message("تعذر إنشاء الحساب: "+error.message);return}
+if(error){
+message("تعذر إنشاء الحساب: "+error.message);
+return;
+}
 
-message("تم إرسال طلب التسجيل. تحقق من بريدك الإلكتروني إذا طُلب تأكيد الحساب.");
+message("تم إرسال طلب التسجيل. سيبقى الحساب قيد موافقة الإدارة. تحقق من بريدك الإلكتروني إذا طُلب تأكيده.");
 }
 
 async function login(){
 const email=el("email").value.trim();
 const password=el("password").value;
 
-if(!email||!password){message("أدخل البريد وكلمة المرور.");return}
+if(!email||!password){
+message("أدخل البريد الإلكتروني وكلمة المرور.");
+return;
+}
 
 message("جاري تسجيل الدخول...");
 
-const {error}=await db.auth.signInWithPassword({email,password});
+const {error}=await db.auth.signInWithPassword({
+email,
+password
+});
 
-if(error){message("تعذر تسجيل الدخول: "+error.message);return}
+if(error){
+message("تعذر تسجيل الدخول: "+error.message);
+return;
+}
 
 await loadAccount();
 }
