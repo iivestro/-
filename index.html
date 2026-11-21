@@ -1,0 +1,144 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IRAQ MEDICAL | بوابة المراجعين</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#071827;color:#eef7f8;font-family:Arial,sans-serif}
+main{max-width:480px;margin:45px auto;padding:22px}
+.logo{text-align:center;margin-bottom:30px}
+.logo h1{color:#25c5b2;letter-spacing:2px}
+.card{background:#10283a;border:1px solid #244457;border-radius:18px;padding:22px;margin-bottom:18px}
+h2{margin-top:0}
+input{width:100%;padding:14px;margin:8px 0;border-radius:9px;border:1px solid #345468;background:#071827;color:white}
+button{width:100%;padding:14px;border:0;border-radius:9px;background:#20b9a8;color:#061923;font-weight:bold;margin-top:10px}
+.secondary{background:#244457;color:white}
+.msg{color:#9ee8df;line-height:1.8}
+.hidden{display:none}
+.doctor{padding:14px;border-bottom:1px solid #345468}
+</style>
+</head>
+<body>
+<main>
+<div class="logo">
+<h1>IRAQ MEDICAL</h1>
+<p>بوابتك الطبية الرقمية</p>
+</div>
+
+<section id="auth" class="card">
+<h2>حساب المراجع</h2>
+<input id="name" placeholder="الاسم الكامل">
+<input id="phone" placeholder="رقم الهاتف">
+<input id="email" type="email" placeholder="البريد الإلكتروني">
+<input id="password" type="password" placeholder="كلمة المرور">
+<button onclick="signup()">إنشاء حساب جديد</button>
+<button class="secondary" onclick="login()">تسجيل الدخول</button>
+<p id="message" class="msg"></p>
+</section>
+
+<section id="status" class="card hidden">
+<h2>حالة الحساب</h2>
+<p id="statusText" class="msg"></p>
+<button class="secondary" onclick="logout()">تسجيل الخروج</button>
+</section>
+
+<section id="doctors" class="card hidden">
+<h2>الأطباء المعتمدون</h2>
+<div id="doctorList" class="msg">جاري تحميل الأطباء...</div>
+<button class="secondary" onclick="logout()">تسجيل الخروج</button>
+</section>
+</main>
+
+<script>
+const SUPABASE_URL = "https://oejkeqlqkwdfropylxsv.supabase.co";
+const SUPABASE_KEY = "sb_publishable_Ue8nsJFsLpDLFUgSTB24cw_rckeqWag";
+const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+const el=id=>document.getElementById(id);
+function message(t){el("message").textContent=t}
+
+async function signup(){
+ const full_name=el("name").value.trim();
+ const phone=el("phone").value.trim();
+ const email=el("email").value.trim();
+ const password=el("password").value;
+ if(!full_name||!phone||!email||password.length<6){
+  message("أكمل جميع الحقول، وكلمة المرور 6 أحرف على الأقل.");
+  return;
+ }
+ message("جاري إنشاء الحساب...");
+ const {data,error}=await db.auth.signUp({
+  email,password,
+  options:{data:{full_name,phone}}
+ });
+ if(error){message(error.message);return}
+ message("تم إرسال طلب التسجيل. تحقق من بريدك إذا طُلب منك تأكيد الحساب.");
+}
+
+async function login(){
+ const email=el("email").value.trim();
+ const password=el("password").value;
+ if(!email||!password){message("أدخل البريد وكلمة المرور.");return}
+ message("جاري تسجيل الدخول...");
+ const {error}=await db.auth.signInWithPassword({email,password});
+ if(error){message(error.message);return}
+ await loadAccount();
+}
+
+async function loadAccount(){
+ const {data:{user}}=await db.auth.getUser();
+ if(!user)return;
+ const {data:profile,error}=await db.from("profiles")
+  .select("full_name,role,approval_status")
+  .eq("id",user.id).maybeSingle();
+ if(error){message("تعذر قراءة حالة الحساب: "+error.message);return}
+ if(!profile){message("لم يتم العثور على ملف الحساب. يرجى مراجعة الإدارة.");return}
+ el("auth").classList.add("hidden");
+ el("status").classList.remove("hidden");
+ el("doctors").classList.add("hidden");
+ if(profile.role!=="patient"){
+  el("statusText").textContent="هذا الحساب ليس حساب مراجع.";
+  return;
+ }
+ if(profile.approval_status!=="approved"){
+  el("statusText").textContent="مرحباً "+(profile.full_name||"بك")+". حسابك قيد مراجعة الإدارة. ستظهر قائمة الأطباء بعد الموافقة.";
+  return;
+ }
+ el("status").classList.add("hidden");
+ el("doctors").classList.remove("hidden");
+ await loadDoctors();
+}
+
+async function loadDoctors(){
+ const list=el("doctorList");
+ list.textContent="جاري تحميل الأطباء...";
+ const {data,error}=await db.from("doctors").select("*");
+ if(error){list.textContent="تعذر تحميل الأطباء: "+error.message;return}
+ if(!data||data.length===0){list.textContent="لا يوجد أطباء معتمدون حالياً.";return}
+ list.innerHTML="";
+ data.forEach(d=>{
+  const item=document.createElement("div");
+  item.className="doctor";
+  item.textContent=d.full_name||d.name||"طبيب";
+  list.appendChild(item);
+ });
+}
+
+async function logout(){
+ await db.auth.signOut();
+ el("auth").classList.remove("hidden");
+ el("status").classList.add("hidden");
+ el("doctors").classList.add("hidden");
+ message("تم تسجيل الخروج.");
+}
+
+db.auth.onAuthStateChange((event,session)=>{
+ if(session && event==="SIGNED_IN") setTimeout(loadAccount,0);
+});
+</script>
+</body>
+</html>
