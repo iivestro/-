@@ -214,14 +214,19 @@ Deno.serve(async (req: Request) => {
 
   const userId = created.user.id;
 
+  // Create or update the profile.
+  // This handles profiles automatically created by a database trigger.
   const { error: insertProfileError } =
-    await adminClient.from("profiles").insert({
-      id: userId,
-      full_name: fullName,
-      phone,
-      role: "doctor",
-      approval_status: "approved",
-    });
+    await adminClient.from("profiles").upsert(
+      {
+        id: userId,
+        full_name: fullName,
+        phone,
+        role: "doctor",
+        approval_status: "approved",
+      },
+      { onConflict: "id" }
+    );
 
   if (insertProfileError) {
     await adminClient.auth.admin.deleteUser(userId);
