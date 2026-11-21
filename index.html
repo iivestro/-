@@ -13,7 +13,6 @@ main{max-width:650px;margin:25px auto;padding:15px}
 .logo{text-align:center;margin-bottom:25px}
 .logo h1{color:#25c5b2;letter-spacing:2px}
 .card{background:#10283a;border:1px solid #244457;border-radius:18px;padding:20px;margin-bottom:18px}
-h2,h3{margin-top:0}
 input,select,textarea{width:100%;padding:13px;margin:8px 0;border-radius:9px;border:1px solid #345468;background:#071827;color:white;font-size:15px}
 button{width:100%;padding:13px;border:0;border-radius:9px;background:#20b9a8;color:#061923;font-weight:bold;margin-top:10px;cursor:pointer}
 button:disabled{opacity:.5}
@@ -50,11 +49,16 @@ button:disabled{opacity:.5}
 
 <div id="signupPanel">
 <h3>إنشاء حساب مراجع جديد</h3>
-<input id="name" placeholder="الاسم الكامل">
-<input id="phone" type="tel" placeholder="رقم الهاتف">
-<input id="age" type="number" min="1" max="120" placeholder="العمر">
+<input id="name" placeholder="الاسم الكامل" maxlength="150" required>
 
-<select id="governorate">
+<label for="phone">رقم الهاتف (11 رقماً بالضبط)</label>
+<input id="phone" type="tel" inputmode="numeric" maxlength="11" minlength="11"
+placeholder="مثال: 07XXXXXXXXX" autocomplete="tel" required>
+<p class="small">يجب إدخال 11 رقماً، لا أكثر ولا أقل.</p>
+
+<input id="age" type="number" min="1" max="120" placeholder="العمر" required>
+
+<select id="governorate" required>
 <option value="">اختر المحافظة</option>
 <option value="بغداد">بغداد</option>
 <option value="نينوى">نينوى</option>
@@ -77,9 +81,9 @@ button:disabled{opacity:.5}
 <option value="حلبجة">حلبجة</option>
 </select>
 
-<input id="signupEmail" type="email" placeholder="البريد الإلكتروني">
-<input id="signupPassword" type="password" placeholder="كلمة المرور (6 أحرف على الأقل)">
-<button onclick="signup()">إنشاء الحساب</button>
+<input id="signupEmail" type="email" placeholder="البريد الإلكتروني" required>
+<input id="signupPassword" type="password" placeholder="كلمة المرور (6 أحرف على الأقل)" required>
+<button id="signupButton" onclick="signup()">إنشاء الحساب</button>
 </div>
 
 <div id="loginPanel" class="hidden">
@@ -126,6 +130,18 @@ function message(t){
  el("message").textContent=t;
 }
 
+function normalizeDigits(value){
+ return String(value)
+ .replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+ .replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+ .replace(/\D/g,"");
+}
+
+el("phone").addEventListener("input",function(){
+ const cleaned=normalizeDigits(this.value).slice(0,11);
+ this.value=cleaned;
+});
+
 function showAuthTab(tab){
  const signup=tab==="signup";
  el("signupPanel").classList.toggle("hidden",!signup);
@@ -137,38 +153,49 @@ function showAuthTab(tab){
 
 async function signup(){
  const full_name=el("name").value.trim();
- const phone=el("phone").value.trim();
+ const phone=normalizeDigits(el("phone").value);
  const age=Number(el("age").value);
  const governorate=el("governorate").value;
  const email=el("signupEmail").value.trim();
  const password=el("signupPassword").value;
 
- if(!full_name||!phone||!age||age<1||age>120||!governorate||!email||password.length<6){
+ if(!full_name||!age||age<1||age>120||!governorate||!email||password.length<6){
   message("أكمل جميع الحقول وتأكد من صحة العمر. كلمة المرور 6 أحرف على الأقل.");
   return;
  }
 
- message("جاري إنشاء الحساب...");
-
- const {error}=await db.auth.signUp({
-  email,
-  password,
-  options:{
-   data:{
-    full_name,
-    phone,
-    age:String(age),
-    governorate
-   }
-  }
- });
-
- if(error){
-  message("تعذر إنشاء الحساب: "+error.message);
+ if(!/^[0-9]{11}$/.test(phone)){
+  message("رقم الهاتف يجب أن يتكون من 11 رقماً بالضبط.");
+  el("phone").focus();
   return;
  }
 
- message("تم إرسال طلب التسجيل. سيبقى الحساب قيد موافقة الإدارة. تحقق من بريدك الإلكتروني إذا طُلب تأكيده.");
+ const button=el("signupButton");
+ button.disabled=true;
+ message("جاري إنشاء الحساب...");
+
+ try{
+  const {error}=await db.auth.signUp({
+   email,
+   password,
+   options:{
+    data:{
+     full_name,
+     phone,
+     age:String(age),
+     governorate
+    }
+   }
+  });
+
+  if(error)throw error;
+
+  message("تم إرسال طلب التسجيل. سيبقى الحساب قيد موافقة الإدارة. تحقق من بريدك الإلكتروني إذا طُلب تأكيده.");
+ }catch(error){
+  message("تعذر إنشاء الحساب: "+error.message);
+ }finally{
+  button.disabled=false;
+ }
 }
 
 async function login(){
@@ -182,10 +209,7 @@ async function login(){
 
  message("جاري تسجيل الدخول...");
 
- const {error}=await db.auth.signInWithPassword({
-  email,
-  password
- });
+ const {error}=await db.auth.signInWithPassword({email,password});
 
  if(error){
   message("تعذر تسجيل الدخول: "+error.message);
@@ -195,7 +219,6 @@ async function login(){
  await loadAccount();
 }
 
-/* معالجة حالات الحساب: مقبول، مرفوض، قيد الانتظار */
 async function loadAccount(){
  const {data:{user},error:userError}=await db.auth.getUser();
 
@@ -235,22 +258,19 @@ async function loadAccount(){
 
  if(profile.approval_status==="rejected"){
   el("statusText").className="msg status-rejected";
-  el("statusText").textContent=
-   "مرحباً "+name+". تم رفض طلب إنشاء حسابك من قبل الإدارة. يرجى التواصل مع الإدارة لمعرفة التفاصيل.";
+  el("statusText").textContent="مرحباً "+name+". تم رفض طلب إنشاء حسابك من قبل الإدارة. يرجى التواصل مع الإدارة لمعرفة التفاصيل.";
   return;
  }
 
  if(profile.approval_status==="pending"){
   el("statusText").className="msg status-pending";
-  el("statusText").textContent=
-   "مرحباً "+name+". حسابك قيد مراجعة الإدارة. ستظهر قائمة الأطباء بعد الموافقة.";
+  el("statusText").textContent="مرحباً "+name+". حسابك قيد مراجعة الإدارة. ستظهر قائمة الأطباء بعد الموافقة.";
   return;
  }
 
  if(profile.approval_status!=="approved"){
   el("statusText").className="msg";
-  el("statusText").textContent=
-   "مرحباً "+name+". حالة حسابك غير محددة. يرجى مراجعة الإدارة.";
+  el("statusText").textContent="مرحباً "+name+". حالة حسابك غير محددة. يرجى مراجعة الإدارة.";
   return;
  }
 
@@ -422,9 +442,7 @@ function checkSelectedDay(){
   return;
  }
 
- el("scheduleMessage").textContent=
- "دوام الطبيب في هذا اليوم من "+schedule.start_time.slice(0,5)+" إلى "+schedule.end_time.slice(0,5);
-
+ el("scheduleMessage").textContent="دوام الطبيب في هذا اليوم من "+schedule.start_time.slice(0,5)+" إلى "+schedule.end_time.slice(0,5);
  el("bookButton").disabled=false;
 }
 
