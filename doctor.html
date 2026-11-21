@@ -319,11 +319,7 @@ const list=document.getElementById("appointmentsList");
 list.innerHTML="";
 showMessage("appointmentsStatus","جارٍ تحميل الحجوزات...");
 
-const {data,error}=await db
-.from("appointments")
-.select("id,patient_id,appointment_at,status,notes,created_at")
-.eq("doctor_id",currentDoctorId)
-.order("appointment_at",{ascending:true});
+const {data,error}=await db.rpc("doctor_appointment_patient_details");
 
 if(error){
 showMessage("appointmentsStatus","تعذر تحميل الحجوزات: "+error.message);
@@ -352,7 +348,10 @@ parsedDate.toLocaleString("ar-IQ",{dateStyle:"medium",timeStyle:"short"})
 );
 
 const patient=document.createElement("p");
-patient.textContent="رقم المريض التعريفي: "+(item.patient_id||"غير متوفر");
+patient.textContent=
+"اسم المراجع: "+(item.patient_name||"غير متوفر")+
+" | العمر: "+(item.patient_age??"غير محدد")+
+" | المحافظة: "+(item.patient_governorate||"غير محددة");
 
 const notes=document.createElement("p");
 notes.textContent="ملاحظات: "+(item.notes||"لا توجد ملاحظات");
