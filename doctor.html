@@ -1,0 +1,141 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IRAQ MEDICAL | لوحة الطبيب</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;background:#f3f6fa;color:#172b4d;font-family:Arial,sans-serif}
+    header{background:#102b46;color:white;padding:22px}
+    header h2{margin:0;color:#50d4c3}
+    main{max-width:850px;margin:25px auto;padding:15px}
+    .card{background:white;border-radius:16px;padding:22px;margin-bottom:18px;box-shadow:0 4px 18px #102b4610}
+    h3{margin-top:0}
+    .info{padding:13px;background:#f4f8fb;border-radius:10px;margin:9px 0}
+    button{border:0;border-radius:10px;padding:12px 18px;background:#087f8c;color:white;font-size:15px;cursor:pointer}
+    .logout{background:#a33}
+    .muted{color:#68798d}
+    #app{display:none}
+    #status{padding:12px;border-radius:10px;background:#eef5f8;margin-top:12px}
+  </style>
+</head>
+<body>
+<header>
+  <h2>IRAQ MEDICAL</h2>
+  <p>لوحة الطبيب</p>
+</header>
+
+<main>
+  <section class="card" id="login">
+    <h3>دخول الطبيب</h3>
+    <p class="muted">سجل الدخول باستخدام البريد الإلكتروني وكلمة المرور.</p>
+    <input id="email" type="email" placeholder="البريد الإلكتروني" style="width:100%;padding:13px;margin:8px 0;border:1px solid #ccd5df;border-radius:9px">
+    <input id="password" type="password" placeholder="كلمة المرور" style="width:100%;padding:13px;margin:8px 0;border:1px solid #ccd5df;border-radius:9px">
+    <button onclick="loginDoctor()">تسجيل الدخول</button>
+    <div id="loginStatus"></div>
+  </section>
+
+  <section id="app">
+    <div class="card">
+      <h3>مرحباً بك دكتور</h3>
+      <div class="info">الاسم: <strong id="name">—</strong></div>
+      <div class="info">رقم الهاتف: <strong id="phone">—</strong></div>
+      <div class="info">الاختصاص: <strong id="specialty">—</strong></div>
+      <div class="info">العيادة: <strong id="clinic">—</strong></div>
+      <div class="info">المؤهل: <strong id="qualification">—</strong></div>
+      <div class="info">سنوات الخبرة: <strong id="experience">—</strong></div>
+      <div class="info">أجور الاستشارة: <strong id="fee">—</strong></div>
+      <div class="info">نبذة الطبيب: <strong id="bio">—</strong></div>
+      <div id="status">جارٍ تحميل البيانات...</div>
+      <br>
+      <button class="logout" onclick="logoutDoctor()">تسجيل الخروج</button>
+    </div>
+  </section>
+</main>
+
+<script>
+const SUPABASE_URL = "https://oejkeqlqkwdfropylxsv.supabase.co";
+const SUPABASE_KEY = "sb_publishable_Ue8nsJFsLpDLFUgSTB24cw_rckeqWag";
+
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function loginDoctor(){
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const out = document.getElementById("loginStatus");
+  out.textContent = "جارٍ تسجيل الدخول...";
+
+  const {data,error} = await db.auth.signInWithPassword({email,password});
+  if(error){
+    out.textContent = "تعذر تسجيل الدخول: " + error.message;
+    return;
+  }
+  await loadDoctor();
+}
+
+async function loadDoctor(){
+  const {data:{user},error:authError} = await db.auth.getUser();
+  if(authError || !user){
+    document.getElementById("login").style.display = "block";
+    document.getElementById("app").style.display = "none";
+    return;
+  }
+
+  const {data:profile,error:profileError} = await db
+    .from("profiles")
+    .select("full_name,phone,role,approval_status")
+    .eq("id",user.id)
+    .maybeSingle();
+
+  if(profileError || !profile){
+    document.getElementById("loginStatus").textContent =
+      "تعذر تحميل الملف الشخصي: " + (profileError?.message || "لا توجد بيانات");
+    return;
+  }
+
+  if(profile.role !== "doctor" || profile.approval_status !== "approved"){
+    document.getElementById("loginStatus").textContent =
+      "هذا الحساب غير معتمد كحساب طبيب.";
+    return;
+  }
+
+  const {data:doctor,error:doctorError} = await db
+    .from("doctors")
+    .select("qualification,experience_years,consultation_fee,bio,specialties(name_ar),clinics(name)")
+    .eq("profile_id",user.id)
+    .maybeSingle();
+
+  if(doctorError || !doctor){
+    document.getElementById("loginStatus").textContent =
+      "تعذر تحميل بيانات الطبيب: " + (doctorError?.message || "لا توجد بيانات");
+    return;
+  }
+
+  document.getElementById("name").textContent = profile.full_name || "—";
+  document.getElementById("phone").textContent = profile.phone || "—";
+  document.getElementById("specialty").textContent = doctor.specialties?.name_ar || "—";
+  document.getElementById("clinic").textContent = doctor.clinics?.name || "—";
+  document.getElementById("qualification").textContent = doctor.qualification || "—";
+  document.getElementById("experience").textContent = doctor.experience_years ?? "—";
+  document.getElementById("fee").textContent = doctor.consultation_fee ?? "—";
+  document.getElementById("bio").textContent = doctor.bio || "—";
+
+  document.getElementById("status").textContent = "تم تحميل بيانات الطبيب بنجاح";
+  document.getElementById("login").style.display = "none";
+  document.getElementById("app").style.display = "block";
+}
+
+async function logoutDoctor(){
+  await db.auth.signOut();
+  location.reload();
+}
+
+db.auth.getSession().then(({data})=>{
+  if(data.session) loadDoctor();
+});
+</script>
+</body>
+</html>
