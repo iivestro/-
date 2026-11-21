@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -14,10 +13,10 @@ header{background:#102536;padding:22px;border-bottom:1px solid #254354}
 header p,.muted{color:#a8bdc9}
 main{max-width:1150px;margin:auto;padding:18px}
 .card{background:#102536;border:1px solid #254354;border-radius:15px;padding:20px;margin-bottom:18px}
-input{width:100%;padding:13px;margin:8px 0;border:1px solid #355568;border-radius:9px;background:#091a28;color:white}
+input,select,textarea{width:100%;padding:13px;margin:8px 0;border:1px solid #355568;border-radius:9px;background:#091a28;color:white}
+textarea{min-height:90px;resize:vertical}
 button{padding:11px 15px;background:#22bda9;color:#071a25;border:0;border-radius:8px;font-weight:bold;cursor:pointer}
 button:disabled{opacity:.5}
-.danger{background:#773b48;color:white}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
 .stat{background:#142f40;padding:18px;border-radius:12px}
 .stat strong{display:block;font-size:27px;color:#37d6bd;margin-top:10px}
@@ -28,281 +27,460 @@ th,td{padding:13px;text-align:right;border-bottom:1px solid #294353}
 th{color:#37d6bd}
 .status{padding:5px 9px;border-radius:20px;font-size:12px;background:#493d22;color:#f4d78a}
 .approved{background:#174c40;color:#8ce4c8}
-#error{color:#ff9b9b}
-#message{color:#8ce4c8}
-.actions{display:flex;gap:7px;align-items:center}
+#error,#errorPatients,#doctorError{color:#ff9b9b}
+#message,#doctorMessage{color:#8ce4c8}
 nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
 nav button{background:#19394a;color:white}
 nav button.active{background:#22bda9;color:#071a25}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
 </style>
 </head>
 <body>
-
 <header>
- <div class="brand">IRAQ MEDICAL</div>
- <p>لوحة الإدارة المركزية</p>
+<div class="brand">IRAQ MEDICAL</div>
+<p>لوحة الإدارة المركزية</p>
 </header>
 
 <main>
 <section class="card" id="login">
- <h2>تسجيل دخول المدير</h2>
- <input id="email" type="email" placeholder="البريد الإلكتروني">
- <input id="password" type="password" placeholder="كلمة المرور">
- <button onclick="login()">تسجيل الدخول</button>
- <p id="error"></p>
+<h2>تسجيل دخول المدير</h2>
+<input id="email" type="email" placeholder="البريد الإلكتروني" autocomplete="username">
+<input id="password" type="password" placeholder="كلمة المرور" autocomplete="current-password">
+<button id="loginButton" onclick="login()">تسجيل الدخول</button>
+<p id="error"></p>
 </section>
 
 <section id="dashboard" class="hidden">
+<div class="card">
+<h2>مرحباً بك في الإدارة</h2>
+<p class="muted" id="adminEmail"></p>
+<button onclick="logout()">تسجيل الخروج</button>
+</div>
 
- <div class="card">
-  <h2>مرحباً بك في الإدارة</h2>
-  <p class="muted" id="adminEmail"></p>
-  <button onclick="logout()">تسجيل الخروج</button>
- </div>
+<div class="grid">
+<div class="stat">الأطباء<strong id="doctors">—</strong></div>
+<div class="stat">المراجعون<strong id="patients">—</strong></div>
+<div class="stat">الحجوزات<strong id="appointments">—</strong></div>
+<div class="stat">طلبات الانتظار<strong id="pending">—</strong></div>
+</div>
 
- <div class="grid">
-  <div class="stat">الأطباء<strong id="doctors">—</strong></div>
-  <div class="stat">المراجعون<strong id="patients">—</strong></div>
-  <div class="stat">الحجوزات<strong id="appointments">—</strong></div>
-  <div class="stat">طلبات الانتظار<strong id="pending">—</strong></div>
- </div>
+<div class="card" style="margin-top:20px">
+<h2>إدارة المنصة</h2>
+<nav>
+<button class="active" onclick="showSection('patientsSection',this)">المراجعون</button>
+<button onclick="showSection('doctorsSection',this)">إضافة طبيب</button>
+<button onclick="showSection('homeSection',this)">الرئيسية</button>
+</nav>
+</div>
 
- <div class="card" style="margin-top:20px">
-  <h2>إدارة المنصة</h2>
-  <nav>
-   <button class="active" onclick="showSection('patientsSection',this)">المراجعون</button>
-   <button onclick="showSection('homeSection',this)">الرئيسية</button>
-  </nav>
- </div>
+<section id="homeSection" class="card hidden">
+<h2>الرئيسية</h2>
+<p class="muted">مرحباً بك في نظام IRAQ MEDICAL لإدارة الخدمات الطبية.</p>
+</section>
 
- <section id="homeSection" class="card hidden">
-  <h2>الرئيسية</h2>
-  <p class="muted">مرحباً بك في نظام IRAQ MEDICAL لإدارة الخدمات الطبية.</p>
- </section>
+<section id="patientsSection" class="card">
+<h2>إدارة المراجعين</h2>
+<p class="muted">مراجعة الحسابات الجديدة والموافقة عليها.</p>
+<input id="search" placeholder="ابحث بالاسم أو رقم الهاتف..." oninput="renderPatients()">
+<button onclick="loadPatients()">تحديث القائمة</button>
+<p id="message"></p>
+<p id="errorPatients"></p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>الاسم</th>
+<th>الهاتف</th>
+<th>الحالة</th>
+<th>تاريخ التسجيل</th>
+<th>الإجراء</th>
+</tr>
+</thead>
+<tbody id="patientsTable">
+<tr><td colspan="5">جارٍ تحميل البيانات...</td></tr>
+</tbody>
+</table>
+</div>
+</section>
 
- <section id="patientsSection" class="card">
-  <h2>إدارة المراجعين</h2>
-  <p class="muted">مراجعة الحسابات الجديدة والموافقة عليها.</p>
-  <input id="search" placeholder="ابحث بالاسم أو رقم الهاتف..." oninput="renderPatients()">
-  <button onclick="loadPatients()">تحديث القائمة</button>
-  <p id="message"></p>
-  <p id="errorPatients"></p>
-  <div class="table-wrap">
-   <table>
-    <thead>
-     <tr>
-      <th>الاسم</th>
-      <th>الهاتف</th>
-      <th>الحالة</th>
-      <th>تاريخ التسجيل</th>
-      <th>الإجراء</th>
-     </tr>
-    </thead>
-    <tbody id="patientsTable">
-     <tr><td colspan="5">جارٍ تحميل البيانات...</td></tr>
-    </tbody>
-   </table>
-  </div>
- </section>
+<section id="doctorsSection" class="card hidden">
+<h2>إضافة طبيب جديد</h2>
+<p class="muted">إنشاء حساب طبيب من خلال الوظيفة الآمنة.</p>
+
+<form id="doctorForm">
+<div class="form-grid">
+<div>
+<label for="doctorName">اسم الطبيب الكامل *</label>
+<input id="doctorName" required maxlength="150">
+</div>
+<div>
+<label for="doctorPhone">رقم الهاتف *</label>
+<input id="doctorPhone" required maxlength="30" inputmode="tel">
+</div>
+<div>
+<label for="doctorEmail">البريد الإلكتروني *</label>
+<input id="doctorEmail" type="email" required>
+</div>
+<div>
+<label for="doctorPassword">كلمة المرور الأولية *</label>
+<input id="doctorPassword" type="password" required minlength="10" autocomplete="new-password">
+</div>
+<div>
+<label for="specialty">التخصص *</label>
+<select id="specialty" required>
+<option value="">تحميل التخصصات...</option>
+</select>
+</div>
+<div>
+<label for="clinic">العيادة *</label>
+<select id="clinic" required>
+<option value="">تحميل العيادات...</option>
+</select>
+</div>
+<div>
+<label for="qualification">المؤهل العلمي</label>
+<input id="qualification">
+</div>
+<div>
+<label for="experience">سنوات الخبرة</label>
+<input id="experience" type="number" min="0" max="70" value="0">
+</div>
+<div>
+<label for="fee">أجرة الكشف</label>
+<input id="fee" type="number" min="0" max="10000000" value="0">
+</div>
+</div>
+
+<label for="bio">نبذة عن الطبيب (اختياري)</label>
+<textarea id="bio" placeholder="اتركه فارغاً إذا لم تتوفر النبذة حالياً"></textarea>
+
+<button id="createDoctorButton" type="submit">إنشاء حساب الطبيب</button>
+</form>
+
+<p id="doctorMessage"></p>
+<p id="doctorError"></p>
+</section>
 </section>
 </main>
 
 <script>
 const SUPABASE_URL="https://oejkeqlqkwdfropylxsv.supabase.co";
 const SUPABASE_KEY="sb_publishable_Ue8nsJFsLpDLFUgSTB24cw_rckeqWag";
+const CREATE_DOCTOR_URL=SUPABASE_URL+"/functions/v1/admin-create-doctor";
 
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-
 let patientList=[];
 
-function showError(id,message){
- document.getElementById(id).textContent=message;
-}
-
-async function verifyAdmin(user){
- const {data,error}=await db.from("profiles")
-  .select("role,approval_status")
-  .eq("id",user.id)
-  .single();
-
- return !error && data?.role==="admin" &&
-  data?.approval_status==="approved";
-}
-
-async function login(){
- const email=document.getElementById("email").value.trim();
- const password=document.getElementById("password").value;
- showError("error","");
-
- if(!email||!password){
-  showError("error","أدخل البريد الإلكتروني وكلمة المرور.");
-  return;
- }
-
- const {data,error}=await db.auth.signInWithPassword({email,password});
-
- if(error){
-  showError("error","تعذر تسجيل الدخول. تحقق من البيانات.");
-  return;
- }
-
- if(!await verifyAdmin(data.user)){
-  await db.auth.signOut();
-  showError("error","هذا الحساب لا يملك صلاحية المدير.");
-  return;
- }
-
- await showDashboard(data.user);
-}
-
-async function showDashboard(user){
- document.getElementById("login").classList.add("hidden");
- document.getElementById("dashboard").classList.remove("hidden");
- document.getElementById("adminEmail").textContent=user.email||"";
-
- await Promise.all([loadStats(),loadPatients()]);
-}
-
-async function loadStats(){
- const requests=[
-  db.from("doctors").select("*",{count:"exact",head:true}),
-  db.from("profiles").select("*",{count:"exact",head:true}).eq("role","patient"),
-  db.from("appointments").select("*",{count:"exact",head:true}),
-  db.from("profiles").select("*",{count:"exact",head:true})
-   .eq("role","patient").eq("approval_status","pending")
- ];
-
- const results=await Promise.all(requests);
- const ids=["doctors","patients","appointments","pending"];
-
- results.forEach((result,index)=>{
-  document.getElementById(ids[index]).textContent=
-   result.error?"—":result.count??0;
- });
-}
-
-async function loadPatients(){
- const tbody=document.getElementById("patientsTable");
- showError("errorPatients","");
- tbody.innerHTML="<tr><td colspan='5'>جارٍ التحميل...</td></tr>";
-
- const {data,error}=await db.from("profiles")
-  .select("id,full_name,phone,role,approval_status,created_at")
-  .eq("role","patient")
-  .order("created_at",{ascending:false});
-
- if(error){
-  tbody.innerHTML="";
-  showError("errorPatients","تعذر تحميل المراجعين: "+error.message);
-  return;
- }
-
- patientList=data||[];
- renderPatients();
-}
-
-function renderPatients(){
- const tbody=document.getElementById("patientsTable");
- const term=document.getElementById("search").value.trim().toLowerCase();
-
- const filtered=patientList.filter(p=>
-  (p.full_name||"").toLowerCase().includes(term)||
-  (p.phone||"").toLowerCase().includes(term)
- );
-
- if(!filtered.length){
-  tbody.innerHTML="<tr><td colspan='5'>لا توجد نتائج.</td></tr>";
-  return;
- }
-
- tbody.innerHTML=filtered.map(p=>{
-  const approved=p.approval_status==="approved";
-  const date=p.created_at
-   ?new Date(p.created_at).toLocaleDateString("ar-IQ")
-   :"—";
-
-  return `
-   <tr>
-    <td>${escapeHTML(p.full_name||"غير محدد")}</td>
-    <td>${escapeHTML(p.phone||"—")}</td>
-    <td><span class="status ${approved?"approved":""}">
-      ${approved?"مقبول":escapeHTML(p.approval_status||"غير محدد")}
-    </span></td>
-    <td>${date}</td>
-    <td>
-     ${!approved&&p.approval_status==="pending"
-      ?`<button onclick="approvePatient('${p.id}',this)">موافقة</button>`
-      :"—"}
-    </td>
-   </tr>`;
- }).join("");
+function setText(id,value){
+document.getElementById(id).textContent=value||"";
 }
 
 function escapeHTML(value){
- return String(value).replace(/[&<>"']/g,char=>({
-  "&":"&amp;","<":"&lt;",">":"&gt;",
-  '"':"&quot;","'":"&#39;"
- }[char]));
+return String(value??"").replace(/[&<>"']/g,char=>({
+"&":"&amp;",
+"<":"&lt;",
+">":"&gt;",
+'"':"&quot;",
+"'":"&#39;"
+}[char]));
+}
+
+async function verifyAdmin(user){
+const {data,error}=await db.from("profiles")
+.select("role,approval_status")
+.eq("id",user.id)
+.single();
+
+return !error &&
+data?.role==="admin" &&
+data?.approval_status==="approved";
+}
+
+async function login(){
+const email=document.getElementById("email").value.trim();
+const password=document.getElementById("password").value;
+
+setText("error","");
+
+if(!email||!password){
+setText("error","أدخل البريد الإلكتروني وكلمة المرور.");
+return;
+}
+
+const btn=document.getElementById("loginButton");
+btn.disabled=true;
+
+try{
+const {data,error}=await db.auth.signInWithPassword({email,password});
+
+if(error)throw error;
+
+if(!await verifyAdmin(data.user)){
+await db.auth.signOut();
+throw new Error("هذا الحساب لا يملك صلاحية المدير.");
+}
+
+await showDashboard(data.user);
+
+}catch(e){
+setText("error",e.message||"تعذر تسجيل الدخول.");
+}finally{
+btn.disabled=false;
+}
+}
+
+async function showDashboard(user){
+document.getElementById("login").classList.add("hidden");
+document.getElementById("dashboard").classList.remove("hidden");
+setText("adminEmail",user.email);
+
+await Promise.all([
+loadStats(),
+loadPatients(),
+loadDoctorOptions()
+]);
+}
+
+async function loadStats(){
+const requests=[
+db.from("doctors").select("*",{count:"exact",head:true}),
+db.from("profiles").select("*",{count:"exact",head:true}).eq("role","patient"),
+db.from("appointments").select("*",{count:"exact",head:true}),
+db.from("profiles").select("*",{count:"exact",head:true})
+.eq("role","patient").eq("approval_status","pending")
+];
+
+const results=await Promise.all(requests);
+
+["doctors","patients","appointments","pending"].forEach((id,i)=>{
+document.getElementById(id).textContent=
+results[i].error?"—":(results[i].count??0);
+});
+}
+
+async function loadPatients(){
+const tbody=document.getElementById("patientsTable");
+setText("errorPatients","");
+
+tbody.innerHTML="<tr><td colspan='5'>جارٍ التحميل...</td></tr>";
+
+const {data,error}=await db.from("profiles")
+.select("id,full_name,phone,role,approval_status,created_at")
+.eq("role","patient")
+.order("created_at",{ascending:false});
+
+if(error){
+tbody.innerHTML="";
+setText("errorPatients","تعذر تحميل المراجعين: "+error.message);
+return;
+}
+
+patientList=data||[];
+renderPatients();
+}
+
+function renderPatients(){
+const tbody=document.getElementById("patientsTable");
+const term=document.getElementById("search").value.trim().toLowerCase();
+
+const filtered=patientList.filter(p=>
+(p.full_name||"").toLowerCase().includes(term)||
+(p.phone||"").toLowerCase().includes(term)
+);
+
+if(!filtered.length){
+tbody.innerHTML="<tr><td colspan='5'>لا توجد نتائج.</td></tr>";
+return;
+}
+
+tbody.innerHTML=filtered.map(p=>{
+const approved=p.approval_status==="approved";
+const date=p.created_at?
+new Date(p.created_at).toLocaleDateString("ar-IQ"):"—";
+
+const action=!approved&&p.approval_status==="pending"
+?`<button onclick="approvePatient('${p.id}',this)">موافقة</button>`
+:"—";
+
+return `<tr>
+<td>${escapeHTML(p.full_name||"غير محدد")}</td>
+<td>${escapeHTML(p.phone||"—")}</td>
+<td><span class="status ${approved?"approved":""}">
+${approved?"مقبول":escapeHTML(p.approval_status||"غير محدد")}
+</span></td>
+<td>${date}</td>
+<td>${action}</td>
+</tr>`;
+}).join("");
 }
 
 async function approvePatient(id,button){
- if(!confirm("هل تريد الموافقة على حساب هذا المراجع؟"))return;
+if(!confirm("هل تريد الموافقة على حساب هذا المراجع؟"))return;
 
- button.disabled=true;
- showError("message","جارٍ تحديث الحساب...");
+button.disabled=true;
+setText("message","جارٍ تحديث الحساب...");
 
- const {data,error}=await db.from("profiles")
-  .update({
-   approval_status:"approved",
-   updated_at:new Date().toISOString()
-  })
-  .eq("id",id)
-  .eq("role","patient")
-  .eq("approval_status","pending")
-  .select("id");
+const {data,error}=await db.from("profiles").update({
+approval_status:"approved",
+updated_at:new Date().toISOString()
+})
+.eq("id",id)
+.eq("role","patient")
+.eq("approval_status","pending")
+.select("id");
 
- if(error){
-  showError("message","");
-  showError("errorPatients","فشلت الموافقة: "+error.message);
-  button.disabled=false;
-  return;
- }
+if(error||!data?.length){
+setText("message","");
+setText("errorPatients",error?
+"فشلت الموافقة: "+error.message:
+"لم يتم تحديث الحساب. تحقق من صلاحيات RLS وحالة الحساب.");
+button.disabled=false;
+return;
+}
 
- if(!data||data.length===0){
-  showError("message","");
-  showError("errorPatients","لم يتم تحديث الحساب. تحقق من صلاحيات RLS وحالة الحساب.");
-  button.disabled=false;
-  return;
- }
+setText("errorPatients","");
+setText("message","تمت الموافقة على حساب المراجع بنجاح.");
 
- showError("errorPatients","");
- showError("message","تمت الموافقة على حساب المراجع بنجاح.");
- await Promise.all([loadPatients(),loadStats()]);
+await Promise.all([loadPatients(),loadStats()]);
 }
 
 function showSection(id,button){
- document.getElementById("homeSection").classList.add("hidden");
- document.getElementById("patientsSection").classList.add("hidden");
- document.getElementById(id).classList.remove("hidden");
+["homeSection","patientsSection","doctorsSection"].forEach(sectionId=>{
+document.getElementById(sectionId).classList.add("hidden");
+});
 
- document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
- button.classList.add("active");
+document.getElementById(id).classList.remove("hidden");
+
+document.querySelectorAll("nav button").forEach(b=>{
+b.classList.remove("active");
+});
+
+button.classList.add("active");
 }
 
+function optionLabel(row){
+return row.name_ar||row.name||row.clinic_name||row.title||row.id;
+}
+
+async function loadDoctorOptions(){
+const specialtySelect=document.getElementById("specialty");
+const clinicSelect=document.getElementById("clinic");
+
+specialtySelect.innerHTML='<option value="">اختر التخصص</option>';
+clinicSelect.innerHTML='<option value="">اختر العيادة</option>';
+
+const [specialties,clinics]=await Promise.all([
+db.from("specialties").select("*").eq("is_active",true).order("name_ar"),
+db.from("clinics").select("*").eq("is_active",true)
+]);
+
+if(specialties.error){
+setText("doctorError","تعذر تحميل التخصصات: "+specialties.error.message);
+}else{
+(specialties.data||[]).forEach(row=>{
+const option=document.createElement("option");
+option.value=row.id;
+option.textContent=optionLabel(row);
+specialtySelect.appendChild(option);
+});
+}
+
+if(clinics.error){
+setText("doctorError","تعذر تحميل العيادات: "+clinics.error.message);
+}else{
+(clinics.data||[]).forEach(row=>{
+const option=document.createElement("option");
+option.value=row.id;
+option.textContent=optionLabel(row);
+clinicSelect.appendChild(option);
+});
+}
+
+if(!specialties.error&&!specialties.data?.length){
+setText("doctorError","لا توجد تخصصات نشطة.");
+}
+
+if(!clinics.error&&!clinics.data?.length){
+setText("doctorError","لا توجد عيادات نشطة.");
+}
+}
+
+document.getElementById("doctorForm").addEventListener("submit",async event=>{
+event.preventDefault();
+
+setText("doctorError","");
+setText("doctorMessage","");
+
+const button=document.getElementById("createDoctorButton");
+button.disabled=true;
+
+try{
+const {data:sessionData,error:sessionError}=await db.auth.getSession();
+
+if(sessionError)throw sessionError;
+
+const session=sessionData.session;
+
+if(!session?.access_token){
+throw new Error("انتهت الجلسة. سجّل الدخول مجدداً.");
+}
+
+const payload={
+full_name:document.getElementById("doctorName").value.trim(),
+phone:document.getElementById("doctorPhone").value.trim(),
+email:document.getElementById("doctorEmail").value.trim(),
+password:document.getElementById("doctorPassword").value,
+specialty_id:document.getElementById("specialty").value,
+clinic_id:document.getElementById("clinic").value,
+qualification:document.getElementById("qualification").value.trim(),
+experience_years:Number(document.getElementById("experience").value||0),
+consultation_fee:Number(document.getElementById("fee").value||0),
+bio:document.getElementById("bio").value.trim()
+};
+
+const response=await fetch(CREATE_DOCTOR_URL,{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+"Authorization":"Bearer "+session.access_token,
+"apikey":SUPABASE_KEY
+},
+body:JSON.stringify(payload)
+});
+
+const result=await response.json().catch(()=>({}));
+
+if(!response.ok){
+throw new Error(result.error||"فشل الطلب، رمز الحالة: "+response.status);
+}
+
+setText("doctorMessage","تم إنشاء حساب الطبيب بنجاح.");
+document.getElementById("doctorForm").reset();
+
+await loadStats();
+
+}catch(e){
+setText("doctorError",e.message||"حدث خطأ أثناء إنشاء الطبيب.");
+}finally{
+button.disabled=false;
+}
+});
+
 async function logout(){
- await db.auth.signOut();
- location.reload();
+await db.auth.signOut();
+location.reload();
 }
 
 db.auth.getSession().then(async({data})=>{
- const user=data.session?.user;
- if(!user)return;
+const user=data.session?.user;
 
- if(await verifyAdmin(user)){
-  await showDashboard(user);
- }else{
-  await db.auth.signOut();
- }
+if(!user)return;
+
+if(await verifyAdmin(user)){
+await showDashboard(user);
+}else{
+await db.auth.signOut();
+}
 });
 </script>
 </body>
