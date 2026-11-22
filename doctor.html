@@ -3,95 +3,158 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>IRAQ MEDICAL | لوحة الطبيب</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
 *{box-sizing:border-box}
-:root{--sky:#38bdf8;--sky-dark:#0284c7;--sky-deep:#0369a1;--sky-soft:#effaff;--ink:#17324a;--muted:#668397;--line:#d7effb;--shadow:0 12px 34px rgba(2,132,199,.09)}
-html{scroll-behavior:smooth}
-body{margin:0;background:linear-gradient(180deg,#f5fbff 0,#fff 360px);color:var(--ink);font-family:Arial,Tahoma,sans-serif;min-height:100vh}
-header{position:relative;overflow:hidden;background:linear-gradient(115deg,#fff 0%,#f0faff 65%,#e3f6ff 100%);padding:22px clamp(18px,4vw,64px);border-bottom:1px solid var(--line);box-shadow:0 5px 24px rgba(2,132,199,.06)}
-header:before{content:"✚";position:absolute;left:8%;top:-42px;font-size:190px;font-weight:bold;color:rgba(56,189,248,.07);transform:rotate(-12deg);pointer-events:none}
-header:after{content:"";position:absolute;width:220px;height:220px;border:28px solid rgba(56,189,248,.07);border-radius:50%;left:24%;bottom:-175px;pointer-events:none}
-.header-inner{position:relative;z-index:1;max-width:1500px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:18px}
-.brand{display:flex;align-items:center;gap:15px}
-.brand-mark{width:52px;height:52px;display:grid;place-items:center;border-radius:17px;background:linear-gradient(145deg,#38bdf8,#0284c7);color:white;font-size:27px;box-shadow:0 8px 18px #0284c733;flex-shrink:0}
-header h2{margin:0;color:var(--sky-deep);font-size:clamp(22px,3vw,30px);letter-spacing:.4px}
-header p{margin:6px 0 0;color:#52758d;font-size:14px}
-.header-actions{display:flex;align-items:center;gap:8px;direction:rtl;flex-shrink:0}
-.header-actions button{margin:0}
-main{width:min(1500px,100%);margin:28px auto;padding:0 clamp(14px,3vw,42px) 48px}
-.card{position:relative;background:#fff;border:1px solid var(--line);border-radius:20px;padding:clamp(18px,2.2vw,28px);margin-bottom:20px;box-shadow:var(--shadow);min-width:0}
-.card:before{content:"";position:absolute;top:0;right:24px;width:58px;height:4px;border-radius:0 0 8px 8px;background:linear-gradient(90deg,#7dd3fc,#0284c7)}
-h3{margin:0 0 17px;color:var(--sky-deep);font-size:20px}
-.info{padding:13px 15px;background:linear-gradient(110deg,#f1faff,#fff);border:1px solid #e0f3fc;border-radius:12px;margin:0;min-width:0;overflow-wrap:anywhere}
-.info strong{font-weight:700}
-button{border:0;border-radius:11px;padding:12px 18px;background:linear-gradient(135deg,var(--sky),var(--sky-dark));color:white;font-size:14px;font-weight:700;cursor:pointer;margin:4px;transition:transform .2s,box-shadow .2s,filter .2s;box-shadow:0 5px 13px rgba(2,132,199,.16)}
-button:hover{filter:brightness(.97);transform:translateY(-2px);box-shadow:0 8px 18px rgba(2,132,199,.22)}
-button:disabled{opacity:.55;cursor:not-allowed;transform:none}
-.logout,.reject{background:linear-gradient(135deg,#f87171,#dc5555);box-shadow:0 5px 13px #dc555522}
-.logout:hover,.reject:hover{background:linear-gradient(135deg,#ef6262,#b93838)}
-.complete{background:linear-gradient(135deg,#38bdf8,#0284c7)}
+:root{
+--sky:#38bdf8;--blue:#0284c7;--deep:#0369a1;
+--ink:#17324a;--muted:#668397;--line:#d7effb;
+--soft:#effaff;--shadow:0 10px 30px rgba(2,132,199,.08)
+}
+body{
+margin:0;background:linear-gradient(180deg,#f4fbff,#fff 350px);
+color:var(--ink);font-family:Arial,Tahoma,sans-serif;min-height:100vh
+}
+header{
+background:linear-gradient(115deg,#fff,#e9f8ff);
+padding:20px clamp(16px,4vw,55px);
+border-bottom:1px solid var(--line);
+box-shadow:0 5px 20px #0284c70c
+}
+.header-inner{
+max-width:1500px;margin:auto;display:flex;
+align-items:center;justify-content:space-between;gap:15px
+}
+.brand{display:flex;align-items:center;gap:13px}
+.brand-mark{
+width:49px;height:49px;border-radius:15px;
+display:grid;place-items:center;background:linear-gradient(145deg,var(--sky),var(--blue));
+color:white;font-size:27px;font-weight:bold
+}
+header h2{margin:0;color:var(--deep);font-size:26px}
+header p{margin:5px 0 0;color:var(--muted);font-size:13px}
+.header-actions{display:flex;gap:8px;align-items:center}
+main{
+width:min(1450px,100%);margin:28px auto;
+padding:0 clamp(13px,3vw,38px) 45px
+}
+.card{
+background:white;border:1px solid var(--line);
+border-radius:19px;padding:23px;margin-bottom:19px;
+box-shadow:var(--shadow);min-width:0
+}
+h3{margin:0 0 16px;color:var(--deep);font-size:20px}
 .muted{color:var(--muted);line-height:1.8}
-#app{display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px;align-items:start}
-#app>.card:first-child,#app>.card:nth-child(4){grid-column:1/-1}
-.status{padding:12px 14px;border-radius:12px;background:var(--sky-soft);border:1px solid #d8f1ff;margin-top:12px;overflow-wrap:anywhere;color:#28536c;line-height:1.7}
-input[type=email],input[type=password],input[type=time],input[type=text],input[type=url]{width:100%;padding:13px 14px;margin:8px 0 14px;border:1px solid #c6e8f8;border-radius:11px;background:#fbfeff;color:var(--ink);outline:none;font:inherit;transition:border .2s,box-shadow .2s}
-input:focus{border-color:var(--sky-dark);box-shadow:0 0 0 3px #38bdf826;background:white}
-label{display:block;font-weight:700;font-size:14px;color:#31566e}
-.day{display:grid;grid-template-columns:1.1fr .8fr 1fr 1fr;gap:12px;align-items:center;padding:14px 10px;border-bottom:1px solid #e6f4fb}
+button{
+border:0;border-radius:11px;padding:12px 18px;
+background:linear-gradient(135deg,var(--sky),var(--blue));
+color:white;font-size:14px;font-weight:bold;cursor:pointer;
+margin:3px;transition:.2s
+}
+button:hover{filter:brightness(.96);transform:translateY(-1px)}
+button:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.logout,.reject{background:linear-gradient(135deg,#f87171,#dc5555)}
+.complete{background:linear-gradient(135deg,#38bdf8,#0284c7)}
+#login{max-width:570px;margin:35px auto}
+input[type=email],input[type=password],input[type=time]{
+width:100%;padding:13px;margin:8px 0 14px;
+border:1px solid #c6e8f8;border-radius:10px;
+background:#fbfeff;font:inherit;color:var(--ink)
+}
+label{display:block;font-weight:bold;color:#31566e;font-size:14px}
+.status{
+padding:12px 14px;border-radius:11px;background:var(--soft);
+border:1px solid var(--line);margin-top:12px;
+color:#28536c;line-height:1.7;overflow-wrap:anywhere
+}
+#app{display:none}
+.welcome{
+background:linear-gradient(120deg,#fff,#effaff);
+border:1px solid var(--line);border-radius:20px;
+padding:25px;margin-bottom:20px;
+display:flex;align-items:center;justify-content:space-between;gap:15px
+}
+.welcome h2{margin:0;color:var(--deep);font-size:25px}
+.welcome p{margin:9px 0 0;color:var(--muted)}
+.stats{
+display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+gap:16px;margin-bottom:20px
+}
+.stat{
+background:white;border:1px solid var(--line);
+border-radius:17px;padding:22px;box-shadow:var(--shadow)
+}
+.stat-label{color:var(--muted);font-size:14px}
+.stat-value{font-size:29px;font-weight:bold;color:var(--deep);margin-top:12px}
+.stat-note{font-size:12px;color:var(--muted);margin-top:8px}
+#doctorInfo{display:none}
+.info-grid{
+display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px
+}
+.info{
+padding:14px;background:#f5fbff;border:1px solid #e0f3fc;
+border-radius:12px;min-width:0;overflow-wrap:anywhere
+}
+.info span{display:block;color:var(--muted);font-size:12px;margin-bottom:7px}
+.info strong{color:var(--ink);font-size:15px;line-height:1.7}
+.doctor-photo{
+width:105px;height:105px;object-fit:cover;border-radius:17px;
+border:3px solid #dff4ff;margin-bottom:15px
+}
+#scheduleList{border:1px solid #e4f3fb;border-radius:13px;overflow:hidden}
+.day{
+display:grid;grid-template-columns:1fr 1fr 1fr 1fr;
+gap:12px;align-items:center;padding:13px 10px;
+border-bottom:1px solid #e6f4fb
+}
 .day:last-child{border-bottom:0}
-.day strong{font-size:14px;color:#24516c}
-.day label{display:flex;align-items:center;gap:7px;font-weight:400}
-.day input[type=checkbox]{accent-color:var(--sky-dark);width:17px;height:17px}
+.day strong{color:#24516c}
+.day label{display:flex;align-items:center;gap:7px;font-weight:normal}
+.day input[type=checkbox]{accent-color:var(--blue);width:17px;height:17px}
 .day input[type=time]{margin:0}
-.appointment{border:1px solid var(--line);background:linear-gradient(145deg,#fff,#f8fcff);border-radius:15px;padding:18px;margin:13px 0;box-shadow:0 4px 14px #0284c70a}
-.appointment p{margin:9px 0;overflow-wrap:anywhere;line-height:1.7}
-.tag{display:inline-block;background:#e0f5ff;color:#0369a1;padding:6px 12px;border-radius:30px;font-size:12px;font-weight:700;margin-top:7px}
-.section-title{color:var(--sky-dark)}
-.actions{margin-top:12px;display:flex;flex-wrap:wrap;gap:5px}
-a{color:#0284c7;font-weight:700}
-#login{max-width:620px;margin:28px auto}
-#login .muted{margin-top:-7px}
-#loginButton{min-width:150px}
-#app>.card:first-child .info{display:flex;justify-content:space-between;gap:12px;align-items:center}
-#scheduleList{border:1px solid #e4f3fb;border-radius:14px;overflow:hidden}
-#appointmentsList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-#appointmentsList .appointment{margin:0}
-@media(min-width:1100px){
-#app>.card:first-child .info{display:inline-flex;width:calc(25% - 9px);min-height:54px;margin:5px 3px}
+#appointmentsList{
+display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px
 }
-@media(max-width:850px){
-#app{grid-template-columns:1fr}
-#app>.card{grid-column:1/-1!important}
-#appointmentsList{grid-template-columns:1fr}
+.appointment{
+border:1px solid var(--line);background:#fbfdff;
+border-radius:14px;padding:17px;min-width:0
 }
-@media(max-width:600px){
-header{padding:17px}
+.appointment p{line-height:1.7;overflow-wrap:anywhere}
+.tag{
+display:inline-block;background:#e0f5ff;color:var(--deep);
+padding:6px 12px;border-radius:25px;font-size:12px;font-weight:bold
+}
+.actions{display:flex;flex-wrap:wrap;gap:5px;margin-top:12px}
+@media(max-width:750px){
 .header-inner{align-items:flex-start;flex-direction:column}
-.brand-mark{width:45px;height:45px;border-radius:14px}
-.header-actions{width:100%;justify-content:flex-start}
-.header-actions button{flex:1;padding:11px 8px;font-size:13px}
-main{margin:18px auto;padding:0 12px 32px}
-.card{padding:17px;border-radius:16px;margin-bottom:14px}
-h3{font-size:18px}
-.day{grid-template-columns:1fr 1fr;gap:10px}
+.header-actions{width:100%}
+.header-actions button{flex:1}
+.stats{grid-template-columns:1fr}
+#appointmentsList{grid-template-columns:1fr}
+.info-grid{grid-template-columns:1fr}
+.welcome{align-items:flex-start;flex-direction:column}
+}
+@media(max-width:520px){
+main{margin:17px auto;padding:0 12px 30px}
+.card{padding:17px}
+.day{grid-template-columns:1fr 1fr}
 .day strong{grid-column:1/-1}
-#app>.card:first-child .info{display:flex;width:100%;margin:5px 0}
-button{padding:11px 14px}
+header h2{font-size:22px}
 }
 </style>
 </head>
-<body>
 
+<body>
 <header>
 <div class="header-inner">
 <div class="brand">
 <div class="brand-mark">✚</div>
 <div>
 <h2>IRAQ MEDICAL</h2>
-<p>لوحة الطبيب | إدارة العيادة والحجوزات والدوام</p>
+<p>لوحة الطبيب وإدارة المواعيد</p>
 </div>
 </div>
 
@@ -103,6 +166,7 @@ button{padding:11px 14px}
 </header>
 
 <main>
+
 <section class="card" id="login">
 <h3>دخول الطبيب</h3>
 <p class="muted">سجل الدخول باستخدام البريد الإلكتروني وكلمة المرور.</p>
@@ -114,54 +178,65 @@ button{padding:11px 14px}
 
 <section id="app">
 
-<div class="card">
-<h3>مرحباً بك دكتور</h3>
-<p class="muted">من هنا يمكنك متابعة بياناتك المهنية وإدارة عيادتك ومواعيد المراجعين.</p>
-<div class="info">الاسم: <strong id="name">—</strong></div>
-<div class="info">رقم الهاتف: <strong id="phone">—</strong></div>
-<div class="info">الاختصاص: <strong id="specialty">—</strong></div>
-<div class="info">العيادة: <strong id="clinic">—</strong></div>
-<div class="info">العنوان: <strong id="clinicAddressDisplay">—</strong></div>
-<div class="info">الموقع:
-<a id="clinicMapDisplay" href="#" target="_blank" rel="noopener" style="display:none">فتح الموقع على Google Maps</a>
-<strong id="clinicMapEmpty">—</strong>
+<div class="welcome">
+<div>
+<h2>مرحباً بك دكتور <span id="welcomeName">—</span></h2>
+<p>نتمنى لك يوماً موفقاً. يمكنك متابعة مواعيدك وإحصائيات عيادتك من هنا.</p>
 </div>
-<div class="info">المؤهل: <strong id="qualification">—</strong></div>
-<div class="info">سنوات الخبرة: <strong id="experience">—</strong></div>
-<div class="info">أجور الاستشارة: <strong id="fee">—</strong></div>
-<div class="info">نبذة الطبيب: <strong id="bio">—</strong></div>
-<div id="status" class="status">جارٍ تحميل البيانات...</div>
+<button onclick="toggleDoctorInfo()">معلوماتي</button>
 </div>
 
-<div class="card">
-<h3 class="section-title">معلومات العيادة وموقعها</h3>
-<p class="muted">اكتب بيانات عيادتك مباشرة في الخانات التالية.</p>
-<label for="clinicNameInput">اسم العيادة</label>
-<input id="clinicNameInput" type="text" maxlength="160" placeholder="اكتب اسم العيادة">
-<label for="clinicAddressInput">عنوان العيادة</label>
-<input id="clinicAddressInput" type="text" maxlength="300" placeholder="اكتب العنوان بالتفصيل">
-<label for="clinicMapInput">رابط موقع العيادة على Google Maps</label>
-<input id="clinicMapInput" type="url" maxlength="1000" placeholder="الصق رابط Google Maps هنا">
-<p class="muted">يمكنك نسخ رابط المشاركة من تطبيق Google Maps ولصقه هنا.</p>
-<button id="saveClinicButton" onclick="saveClinicDetails()">حفظ معلومات العيادة</button>
-<div id="clinicStatus" class="status"></div>
+<div class="stats">
+<div class="stat">
+<div class="stat-label">عدد الزيارات المكتملة</div>
+<div class="stat-value" id="completedVisits">0</div>
+<div class="stat-note">يُحتسب الموعد بعد تسجيله كمكتمل</div>
 </div>
 
-<div class="card">
-<h3 class="section-title">إدارة الدوام الأسبوعي</h3>
+<div class="stat">
+<div class="stat-label">إجمالي أجور الكشف</div>
+<div class="stat-value" id="totalRevenue">—</div>
+<div class="stat-note">عدد الزيارات المكتملة × أجرة الكشف المحددة من الإدارة</div>
+</div>
+</div>
+
+<section class="card" id="doctorInfo">
+<h3>ملفي المهني ومعلومات العيادة</h3>
+<p class="muted">هذه البيانات مسجلة من الإدارة، ويمكنك الاطلاع عليها فقط دون تعديلها.</p>
+
+<div id="doctorPhotoContainer"></div>
+
+<div class="info-grid">
+<div class="info"><span>اسم الطبيب</span><strong id="infoName">—</strong></div>
+<div class="info"><span>رقم الهاتف</span><strong id="infoPhone">—</strong></div>
+<div class="info"><span>الاختصاص</span><strong id="infoSpecialty">—</strong></div>
+<div class="info"><span>المؤهل العلمي</span><strong id="infoQualification">—</strong></div>
+<div class="info"><span>سنوات الخبرة</span><strong id="infoExperience">—</strong></div>
+<div class="info"><span>أجرة الكشف</span><strong id="infoFee">—</strong></div>
+<div class="info"><span>اسم العيادة</span><strong id="infoClinic">—</strong></div>
+<div class="info"><span>عنوان العيادة</span><strong id="infoAddress">—</strong></div>
+<div class="info"><span>موقع العيادة</span><strong id="infoMap">—</strong></div>
+<div class="info"><span>حالة الحساب</span><strong id="infoApproval">—</strong></div>
+<div class="info" style="grid-column:1/-1"><span>نبذة الطبيب</span><strong id="infoBio">—</strong></div>
+</div>
+<div class="status">هذه المعلومات للعرض فقط. لتعديل أي معلومة يرجى التواصل مع إدارة النظام.</div>
+</section>
+
+<section class="card">
+<h3>إدارة الدوام الأسبوعي</h3>
 <p class="muted">حدد أيام العمل وساعات استقبال المراجعين.</p>
 <div id="scheduleList">جارٍ تحميل الدوام...</div>
 <br>
 <button id="saveScheduleButton" onclick="saveSchedule()">حفظ الدوام الأسبوعي</button>
 <div id="scheduleStatus" class="status"></div>
-</div>
+</section>
 
-<div class="card">
-<h3 class="section-title">إدارة حجوزات المرضى</h3>
+<section class="card">
+<h3>حجوزات المراجعين</h3>
 <p class="muted">يتم تحديث قائمة الحجوزات تلقائياً كل 10 ثوانٍ.</p>
 <div id="appointmentsStatus" class="status">جارٍ تحميل الحجوزات...</div>
 <div id="appointmentsList"></div>
-</div>
+</section>
 
 </section>
 </main>
@@ -172,6 +247,7 @@ const SUPABASE_KEY="sb_publishable_Ue8nsJFsLpDLFUgSTB24cw_rckeqWag";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let currentDoctorId=null;
+let doctorFee=null;
 let appointmentsRefreshTimer=null;
 let appointmentsLoading=false;
 
@@ -187,6 +263,13 @@ const days=[
 
 function showMessage(id,message){
 document.getElementById(id).textContent=message;
+}
+
+function toggleDoctorInfo(){
+const box=document.getElementById("doctorInfo");
+const isOpen=box.style.display==="block";
+box.style.display=isOpen?"none":"block";
+if(!isOpen)box.scrollIntoView({behavior:"smooth",block:"start"});
 }
 
 function startAppointmentsAutoRefresh(){
@@ -242,7 +325,7 @@ return;
 
 const {data:doctor,error:doctorError}=await db
 .from("doctors")
-.select("id,qualification,experience_years,consultation_fee,bio,specialties(name_ar),clinics(name,address,maps_url)")
+.select("id,qualification,experience_years,consultation_fee,bio,photo_url,specialties(name_ar),clinics(name,address,maps_url)")
 .eq("profile_id",user.id)
 .maybeSingle();
 
@@ -252,102 +335,56 @@ return;
 }
 
 currentDoctorId=doctor.id;
+doctorFee=doctor.consultation_fee;
 
-document.getElementById("name").textContent=profile.full_name||"—";
-document.getElementById("phone").textContent=profile.phone||"—";
-document.getElementById("specialty").textContent=doctor.specialties?.name_ar||"—";
-document.getElementById("clinic").textContent=doctor.clinics?.name||"—";
-document.getElementById("clinicAddressDisplay").textContent=doctor.clinics?.address||"—";
+const fullName=profile.full_name||"دكتور";
+document.getElementById("welcomeName").textContent=fullName;
 
-const mapLink=document.getElementById("clinicMapDisplay");
-const mapEmpty=document.getElementById("clinicMapEmpty");
+document.getElementById("infoName").textContent=fullName;
+document.getElementById("infoPhone").textContent=profile.phone||"غير مسجل";
+document.getElementById("infoSpecialty").textContent=doctor.specialties?.name_ar||"غير محدد";
+document.getElementById("infoQualification").textContent=doctor.qualification||"غير محدد";
+document.getElementById("infoExperience").textContent=
+doctor.experience_years==null?"غير محدد":doctor.experience_years+" سنة";
+document.getElementById("infoFee").textContent=
+doctor.consultation_fee==null?"غير محدد":Number(doctor.consultation_fee).toLocaleString("en-US")+" د.ع";
+document.getElementById("infoClinic").textContent=doctor.clinics?.name||"غير محدد";
+document.getElementById("infoAddress").textContent=doctor.clinics?.address||"غير محدد";
+document.getElementById("infoApproval").textContent="حساب معتمد";
 
+const bio=doctor.bio||"لا توجد نبذة مسجلة.";
+document.getElementById("infoBio").textContent=bio;
+
+const mapBox=document.getElementById("infoMap");
+mapBox.textContent="";
 if(doctor.clinics?.maps_url){
-mapLink.href=doctor.clinics.maps_url;
-mapLink.style.display="inline";
-mapEmpty.style.display="none";
+const link=document.createElement("a");
+link.href=doctor.clinics.maps_url;
+link.target="_blank";
+link.rel="noopener";
+link.textContent="فتح موقع العيادة على Google Maps";
+mapBox.appendChild(link);
 }else{
-mapLink.style.display="none";
-mapEmpty.style.display="inline";
+mapBox.textContent="لم يتم تسجيل الموقع";
 }
 
-document.getElementById("clinicNameInput").value=doctor.clinics?.name||"";
-document.getElementById("clinicAddressInput").value=doctor.clinics?.address||"";
-document.getElementById("clinicMapInput").value=doctor.clinics?.maps_url||"";
-document.getElementById("qualification").textContent=doctor.qualification||"—";
-document.getElementById("experience").textContent=doctor.experience_years??"—";
-document.getElementById("fee").textContent=doctor.consultation_fee??"—";
-document.getElementById("bio").textContent=doctor.bio||"—";
+const photoBox=document.getElementById("doctorPhotoContainer");
+photoBox.innerHTML="";
+if(doctor.photo_url){
+const photo=document.createElement("img");
+photo.src=doctor.photo_url;
+photo.alt="صورة الطبيب";
+photo.className="doctor-photo";
+photoBox.appendChild(photo);
+}
 
+document.getElementById("doctorInfo").style.display="none";
 document.getElementById("login").style.display="none";
-document.getElementById("app").style.display="grid";
+document.getElementById("app").style.display="block";
 document.getElementById("headerActions").style.display="flex";
-
-showMessage("status","تم تحميل بيانات الطبيب بنجاح");
 
 await Promise.all([loadSchedule(),loadAppointments()]);
 startAppointmentsAutoRefresh();
-}
-
-async function saveClinicDetails(){
-if(!currentDoctorId)return;
-
-const name=document.getElementById("clinicNameInput").value.trim();
-const address=document.getElementById("clinicAddressInput").value.trim();
-const mapsUrl=document.getElementById("clinicMapInput").value.trim();
-const button=document.getElementById("saveClinicButton");
-
-if(!name||!address){
-showMessage("clinicStatus","يرجى كتابة اسم العيادة وعنوانها.");
-return;
-}
-
-if(mapsUrl){
-try{
-const parsed=new URL(mapsUrl);
-const host=parsed.hostname.toLowerCase();
-const validHost=host==="maps.app.goo.gl"||host==="maps.google.com"||host==="google.com"||host==="www.google.com"||(host.startsWith("google.")&&parsed.pathname.startsWith("/maps"));
-if(parsed.protocol!=="https:"||!validHost){
-showMessage("clinicStatus","يرجى لصق رابط مشاركة صحيح من Google Maps يبدأ بـ https://");
-return;
-}
-}catch(e){
-showMessage("clinicStatus","رابط Google Maps غير صحيح.");
-return;
-}
-}
-
-button.disabled=true;
-showMessage("clinicStatus","جارٍ حفظ معلومات العيادة...");
-
-try{
-const {error}=await db.rpc("update_my_clinic_details",{
-p_name:name,
-p_address:address,
-p_maps_url:mapsUrl||null
-});
-if(error)throw error;
-
-document.getElementById("clinic").textContent=name;
-document.getElementById("clinicAddressDisplay").textContent=address;
-
-const mapLink=document.getElementById("clinicMapDisplay");
-const mapEmpty=document.getElementById("clinicMapEmpty");
-
-if(mapsUrl){
-mapLink.href=mapsUrl;
-mapLink.style.display="inline";
-mapEmpty.style.display="none";
-}else{
-mapLink.style.display="none";
-mapEmpty.style.display="inline";
-}
-showMessage("clinicStatus","تم حفظ معلومات العيادة وموقعها بنجاح.");
-}catch(error){
-showMessage("clinicStatus","تعذر حفظ البيانات: "+error.message);
-}finally{
-button.disabled=false;
-}
 }
 
 function renderSchedule(records){
@@ -469,6 +506,20 @@ completed:"مكتمل"
 return labels[status]||status||"غير محدد";
 }
 
+function updateStatistics(data){
+const completed=(data||[]).filter(item=>item.status==="completed");
+document.getElementById("completedVisits").textContent=
+completed.length.toLocaleString("en-US");
+
+const revenue=document.getElementById("totalRevenue");
+if(doctorFee===null||doctorFee===undefined||doctorFee===""){
+revenue.textContent="غير محدد";
+}else{
+const total=completed.length*Number(doctorFee);
+revenue.textContent=total.toLocaleString("en-US")+" د.ع";
+}
+}
+
 async function loadAppointments(){
 if(!currentDoctorId||appointmentsLoading)return;
 
@@ -486,14 +537,19 @@ showMessage("appointmentsStatus","تعذر تحميل الحجوزات: "+error.
 return;
 }
 
-if(!data||data.length===0){
-showMessage("appointmentsStatus","لا توجد حجوزات حالياً.");
+const appointments=data||[];
+updateStatistics(appointments);
+
+if(appointments.length===0){
+showMessage("appointmentsStatus","لا توجد حجوزات حالياً. | آخر تحديث: "+new Date().toLocaleTimeString("ar-IQ"));
 return;
 }
 
-showMessage("appointmentsStatus","عدد الحجوزات: "+data.length+" | آخر تحديث: "+new Date().toLocaleTimeString("ar-IQ"));
+showMessage("appointmentsStatus",
+"عدد الحجوزات: "+appointments.length+
+" | آخر تحديث: "+new Date().toLocaleTimeString("ar-IQ"));
 
-data.forEach(item=>{
+appointments.forEach(item=>{
 const card=document.createElement("div");
 card.className="appointment";
 
@@ -574,7 +630,7 @@ return;
 }
 
 if(!data||data.length===0){
-showMessage("appointmentsStatus","لم يتم تحديث الحجز. تحقق من صلاحيات التعديل RLS.");
+showMessage("appointmentsStatus","لم يتم تحديث الحجز. تحقق من صلاحيات التعديل.");
 return;
 }
 
