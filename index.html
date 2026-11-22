@@ -10,117 +10,562 @@
 
 <style>
 *{box-sizing:border-box}
-:root{--primary:#35b8e6;--primary-dark:#087fae;--sky-light:#eaf8ff;--page:#f4faff;--white:#fff;--text:#183447;--muted:#647f91;--border:#cceaf6;--navy:#123b55;--shadow:0 12px 34px rgba(22,111,151,.09)}
+:root{
+--primary:#35b8e6;
+--primary-dark:#087fae;
+--sky-light:#eaf8ff;
+--page:#f4faff;
+--white:#fff;
+--text:#183447;
+--muted:#647f91;
+--border:#cceaf6;
+--navy:#123b55;
+--shadow:0 12px 34px rgba(22,111,151,.09)
+}
 html{scroll-behavior:smooth}
-body{margin:0;background:radial-gradient(circle at 8% 12%,rgba(53,184,230,.09),transparent 24%),radial-gradient(circle at 92% 36%,rgba(8,127,174,.06),transparent 25%),var(--page);color:var(--text);font-family:Tahoma,Arial,sans-serif;line-height:1.75;min-height:100vh}
-body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;opacity:.23;background-image:radial-gradient(#8ed7f0 1px,transparent 1px);background-size:28px 28px}
-.topbar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);box-shadow:0 5px 22px rgba(25,112,148,.06)}
-.topbar-inner{max-width:1380px;margin:auto;padding:10px 28px;display:flex;align-items:center;justify-content:space-between;gap:18px}
-.top-brand{display:flex;align-items:center;gap:11px;font-weight:900;color:var(--navy);letter-spacing:.7px}
-.brand-mark{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#45c5ed,#078bbd);display:grid;place-items:center;color:white;font-size:24px;box-shadow:0 7px 18px rgba(20,159,205,.22)}
-.brand-name{font-size:17px;line-height:1.2}.brand-sub{display:block;font-size:10px;color:var(--muted);font-weight:600;letter-spacing:0;margin-top:3px}
-.top-actions{display:flex;align-items:center;gap:9px}
-.top-actions button{width:auto;min-width:112px;margin:0;padding:9px 16px;border-radius:11px}
-#lastUpdated{font-size:11px;color:var(--muted);white-space:nowrap}
-main{max-width:1380px;margin:0 auto;padding:26px 28px 55px}
-.logo{position:relative;overflow:hidden;min-height:230px;padding:35px 42px;margin-bottom:25px;border-radius:26px;background:linear-gradient(112deg,#0d668c 0%,#159fc9 54%,#48c7e9 100%);color:white;display:flex;align-items:center;justify-content:space-between;gap:25px;box-shadow:0 18px 40px rgba(10,126,169,.18)}
-.logo:before,.logo:after{content:"";position:absolute;border:1px solid rgba(255,255,255,.17);border-radius:50%;pointer-events:none}
-.logo:before{width:360px;height:360px;left:-100px;top:-220px}.logo:after{width:240px;height:240px;left:80px;bottom:-190px}
-.hero-copy{position:relative;z-index:2;max-width:690px}
-.hero-kicker{display:inline-flex;align-items:center;gap:8px;padding:5px 12px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.12);border-radius:30px;font-size:12px}
-.logo h1{font-size:clamp(28px,4vw,43px);line-height:1.25;letter-spacing:1.5px;margin:14px 0 8px;color:white}
-.logo p{margin:0;color:rgba(255,255,255,.9);font-size:16px}
-.hero-note{margin-top:18px;font-size:12px;color:rgba(255,255,255,.82)}
-.medical-art{position:relative;z-index:1;width:280px;height:170px;flex:0 0 280px;display:grid;place-items:center}
-.medical-orbit{position:absolute;width:166px;height:166px;border:1px solid rgba(255,255,255,.34);border-radius:50%;box-shadow:0 0 0 18px rgba(255,255,255,.045),0 0 0 38px rgba(255,255,255,.035)}
-.medical-core{width:104px;height:104px;border-radius:32px;background:rgba(255,255,255,.17);border:1px solid rgba(255,255,255,.35);display:grid;place-items:center;font-size:56px;transform:rotate(-8deg);backdrop-filter:blur(4px)}
-.medical-chip{position:absolute;width:43px;height:43px;border-radius:15px;background:rgba(255,255,255,.19);border:1px solid rgba(255,255,255,.3);display:grid;place-items:center;font-size:23px}
-.chip-one{top:5px;right:38px}.chip-two{bottom:4px;right:28px}.chip-three{top:35px;left:15px}.chip-four{bottom:20px;left:26px}
-.card{background:rgba(255,255,255,.96);border:1px solid var(--border);border-radius:20px;padding:25px;margin-bottom:20px;box-shadow:var(--shadow)}
-h2{font-size:22px;color:var(--navy);margin:0 0 13px;display:flex;align-items:center;gap:10px}
-h2:before{content:"";width:5px;height:25px;border-radius:5px;background:var(--primary)}
+body{
+margin:0;
+background:
+radial-gradient(circle at 8% 12%,rgba(53,184,230,.09),transparent 24%),
+radial-gradient(circle at 92% 36%,rgba(8,127,174,.06),transparent 25%),
+var(--page);
+color:var(--text);
+font-family:Tahoma,Arial,sans-serif;
+line-height:1.75;
+min-height:100vh
+}
+body:before{
+content:"";
+position:fixed;
+inset:0;
+pointer-events:none;
+z-index:-1;
+opacity:.23;
+background-image:radial-gradient(#8ed7f0 1px,transparent 1px);
+background-size:28px 28px
+}
+.topbar{
+position:sticky;
+top:0;
+z-index:50;
+background:rgba(255,255,255,.94);
+backdrop-filter:blur(14px);
+border-bottom:1px solid var(--border);
+box-shadow:0 5px 22px rgba(25,112,148,.06)
+}
+.topbar-inner{
+max-width:1380px;
+margin:auto;
+padding:10px 28px;
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:18px
+}
+.top-brand{
+display:flex;
+align-items:center;
+gap:11px;
+font-weight:900;
+color:var(--navy);
+letter-spacing:.7px
+}
+.brand-mark{
+width:42px;
+height:42px;
+border-radius:14px;
+background:linear-gradient(145deg,#45c5ed,#078bbd);
+display:grid;
+place-items:center;
+color:white;
+font-size:24px;
+box-shadow:0 7px 18px rgba(20,159,205,.22)
+}
+.brand-name{font-size:17px;line-height:1.2}
+.brand-sub{
+display:block;
+font-size:10px;
+color:var(--muted);
+font-weight:600;
+letter-spacing:0;
+margin-top:3px
+}
+.top-actions{
+display:flex;
+align-items:center;
+gap:9px
+}
+.top-actions button{
+width:auto;
+min-width:125px;
+margin:0;
+padding:9px 16px;
+border-radius:11px
+}
+#lastUpdated{
+font-size:11px;
+color:var(--muted);
+white-space:nowrap
+}
+main{
+max-width:1380px;
+margin:0 auto;
+padding:26px 28px 55px
+}
+.logo{
+position:relative;
+overflow:hidden;
+min-height:230px;
+padding:35px 42px;
+margin-bottom:25px;
+border-radius:26px;
+background:linear-gradient(112deg,#0d668c 0%,#159fc9 54%,#48c7e9 100%);
+color:white;
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:25px;
+box-shadow:0 18px 40px rgba(10,126,169,.18)
+}
+.logo:before,.logo:after{
+content:"";
+position:absolute;
+border:1px solid rgba(255,255,255,.17);
+border-radius:50%;
+pointer-events:none
+}
+.logo:before{
+width:360px;
+height:360px;
+left:-100px;
+top:-220px
+}
+.logo:after{
+width:240px;
+height:240px;
+left:80px;
+bottom:-190px
+}
+.hero-copy{
+position:relative;
+z-index:2;
+max-width:690px
+}
+.hero-kicker{
+display:inline-flex;
+align-items:center;
+gap:8px;
+padding:5px 12px;
+border:1px solid rgba(255,255,255,.28);
+background:rgba(255,255,255,.12);
+border-radius:30px;
+font-size:12px
+}
+.logo h1{
+font-size:clamp(28px,4vw,43px);
+line-height:1.25;
+letter-spacing:1.5px;
+margin:14px 0 8px;
+color:white
+}
+.logo p{
+margin:0;
+color:rgba(255,255,255,.9);
+font-size:16px
+}
+.hero-note{
+margin-top:18px;
+font-size:12px;
+color:rgba(255,255,255,.82)
+}
+.medical-art{
+position:relative;
+z-index:1;
+width:280px;
+height:170px;
+flex:0 0 280px;
+display:grid;
+place-items:center
+}
+.medical-orbit{
+position:absolute;
+width:166px;
+height:166px;
+border:1px solid rgba(255,255,255,.34);
+border-radius:50%;
+box-shadow:0 0 0 18px rgba(255,255,255,.045),0 0 0 38px rgba(255,255,255,.035)
+}
+.medical-core{
+width:104px;
+height:104px;
+border-radius:32px;
+background:rgba(255,255,255,.17);
+border:1px solid rgba(255,255,255,.35);
+display:grid;
+place-items:center;
+font-size:56px;
+transform:rotate(-8deg);
+backdrop-filter:blur(4px)
+}
+.medical-chip{
+position:absolute;
+width:43px;
+height:43px;
+border-radius:15px;
+background:rgba(255,255,255,.19);
+border:1px solid rgba(255,255,255,.3);
+display:grid;
+place-items:center;
+font-size:23px
+}
+.chip-one{top:5px;right:38px}
+.chip-two{bottom:4px;right:28px}
+.chip-three{top:35px;left:15px}
+.chip-four{bottom:20px;left:26px}
+.card{
+background:rgba(255,255,255,.96);
+border:1px solid var(--border);
+border-radius:20px;
+padding:25px;
+margin-bottom:20px;
+box-shadow:var(--shadow)
+}
+h2{
+font-size:22px;
+color:var(--navy);
+margin:0 0 13px;
+display:flex;
+align-items:center;
+gap:10px
+}
+h2:before{
+content:"";
+width:5px;
+height:25px;
+border-radius:5px;
+background:var(--primary)
+}
 h3{margin-top:0;color:var(--navy)}
-input,select,textarea{width:100%;padding:13px 14px;margin:7px 0 14px;border-radius:11px;border:1px solid #c5e4f0;background:#fbfeff;color:var(--text);font-size:15px;outline:none;transition:border .2s,box-shadow .2s}
-input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(53,184,230,.13)}
+input,select,textarea{
+width:100%;
+padding:13px 14px;
+margin:7px 0 14px;
+border-radius:11px;
+border:1px solid #c5e4f0;
+background:#fbfeff;
+color:var(--text);
+font-size:15px;
+outline:none;
+transition:border .2s,box-shadow .2s
+}
+input:focus,select:focus,textarea:focus{
+border-color:var(--primary);
+box-shadow:0 0 0 3px rgba(53,184,230,.13)
+}
 input::placeholder,textarea::placeholder{color:#8aa6b5}
-label{font-size:13px;font-weight:700;color:#36576b}
-button{width:100%;padding:13px 16px;border:0;border-radius:11px;background:linear-gradient(120deg,#35b8e6,#159bc9);color:white;font-weight:bold;margin-top:10px;cursor:pointer;transition:transform .18s,box-shadow .18s,filter .18s}
-button:hover{filter:brightness(.97);box-shadow:0 7px 18px rgba(21,155,201,.18);transform:translateY(-1px)}
-button:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
-.secondary{background:#e9f8ff;color:var(--primary-dark);border:1px solid #c7eafa}
-.msg{color:var(--primary-dark);line-height:1.8;overflow-wrap:anywhere}
+label{
+font-size:13px;
+font-weight:700;
+color:#36576b
+}
+button{
+width:100%;
+padding:13px 16px;
+border:0;
+border-radius:11px;
+background:linear-gradient(120deg,#35b8e6,#159bc9);
+color:white;
+font-weight:bold;
+margin-top:10px;
+cursor:pointer;
+transition:transform .18s,box-shadow .18s,filter .18s
+}
+button:hover{
+filter:brightness(.97);
+box-shadow:0 7px 18px rgba(21,155,201,.18);
+transform:translateY(-1px)
+}
+button:disabled{
+opacity:.5;
+cursor:not-allowed;
+transform:none;
+box-shadow:none
+}
+.secondary{
+background:#e9f8ff;
+color:var(--primary-dark);
+border:1px solid #c7eafa
+}
+.msg{
+color:var(--primary-dark);
+line-height:1.8;
+overflow-wrap:anywhere
+}
 .hidden{display:none!important}
-.tabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0 22px}
+.tabs{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+margin:15px 0 22px
+}
 .tabs button{margin:0}
-#auth{max-width:850px;margin-inline:auto}
+#auth{
+max-width:850px;
+margin-inline:auto
+}
 #signupPanel,#loginPanel{max-width:650px}
-#doctorList{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:15px}
+#doctorList{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(290px,1fr));
+gap:15px
+}
 #doctorList>.msg{grid-column:1/-1}
-.doctor{padding:17px;border:1px solid var(--border);border-radius:17px;margin:0;background:white;box-shadow:0 7px 20px rgba(40,160,205,.06);transition:transform .2s,box-shadow .2s}
-.doctor:hover{transform:translateY(-2px);box-shadow:0 12px 25px rgba(40,160,205,.11)}
-.doctor-toggle{width:100%;display:flex;align-items:center;gap:14px;padding:0;margin:0;background:transparent;color:var(--text);text-align:right;cursor:pointer;box-shadow:none}
-.doctor-toggle:hover{background:transparent;box-shadow:none;transform:none}
-.doctor-photo{width:82px;height:82px;min-width:82px;border-radius:17px;object-fit:cover;border:2px solid var(--primary);background:var(--sky-light)}
-.doctor-name{margin:0;color:var(--primary-dark);font-size:17px}
-.doctor-specialty{color:var(--muted);font-size:13px;margin:5px 0 0}
-.doctor-arrow{margin-right:auto;color:var(--primary-dark);font-size:22px}
-.doctor-details{border-top:1px solid var(--border);margin-top:14px;padding-top:12px;grid-column:1/-1}
+.doctor{
+padding:17px;
+border:1px solid var(--border);
+border-radius:17px;
+margin:0;
+background:white;
+box-shadow:0 7px 20px rgba(40,160,205,.06);
+transition:transform .2s,box-shadow .2s
+}
+.doctor:hover{
+transform:translateY(-2px);
+box-shadow:0 12px 25px rgba(40,160,205,.11)
+}
+.doctor-toggle{
+width:100%;
+display:flex;
+align-items:center;
+gap:14px;
+padding:0;
+margin:0;
+background:transparent;
+color:var(--text);
+text-align:right;
+cursor:pointer;
+box-shadow:none
+}
+.doctor-toggle:hover{
+background:transparent;
+box-shadow:none;
+transform:none
+}
+.doctor-photo{
+width:82px;
+height:82px;
+min-width:82px;
+border-radius:17px;
+object-fit:cover;
+border:2px solid var(--primary);
+background:var(--sky-light)
+}
+.doctor-name{
+margin:0;
+color:var(--primary-dark);
+font-size:17px
+}
+.doctor-specialty{
+color:var(--muted);
+font-size:13px;
+margin:5px 0 0
+}
+.doctor-arrow{
+margin-right:auto;
+color:var(--primary-dark);
+font-size:22px
+}
+.doctor-details{
+border-top:1px solid var(--border);
+margin-top:14px;
+padding-top:12px
+}
 .doctor-details.hidden{display:none!important}
-.info{padding:9px 12px;background:var(--sky-light);border-radius:9px;margin:7px 0;font-size:14px;color:var(--text)}
-.small{font-size:13px;color:var(--muted)}
-.map-link{display:inline-block;margin:12px 0;color:var(--primary-dark);text-decoration:none;font-weight:bold}
+.info{
+padding:9px 12px;
+background:var(--sky-light);
+border-radius:9px;
+margin:7px 0;
+font-size:14px;
+color:var(--text)
+}
+.small{
+font-size:13px;
+color:var(--muted)
+}
+.map-link{
+display:inline-block;
+margin:12px 0;
+color:var(--primary-dark);
+text-decoration:none;
+font-weight:bold
+}
 .map-link:hover{text-decoration:underline}
-#booking{grid-column:1/-1;border-top:1px solid var(--border);margin-top:18px;padding-top:18px}
-.status-box{padding:15px 18px;border-radius:12px;margin-top:10px}
-.status-pending{background:#fff8e7;color:#85631a}.status-rejected{background:#fff0f1;color:#a83245}.status-approved{background:#e8f9f1;color:#18754b}
-#myAppointmentsList{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+#booking{
+grid-column:1/-1;
+border-top:1px solid var(--border);
+margin-top:18px;
+padding-top:18px
+}
+.status-box{
+padding:15px 18px;
+border-radius:12px;
+margin-top:10px
+}
+.status-pending{background:#fff8e7;color:#85631a}
+.status-rejected{background:#fff0f1;color:#a83245}
+.status-approved{background:#e8f9f1;color:#18754b}
+#myAppointmentsList{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+gap:12px
+}
 #myAppointmentsList .doctor{margin:0}
-.section-intro{color:var(--muted);font-size:13px;margin-top:-5px;margin-bottom:18px}
-@media(max-width:760px){main{padding:18px 15px 40px}.topbar-inner{padding:9px 14px}.top-actions button{min-width:0;padding:9px 11px;font-size:12px}.medical-art{width:160px;flex-basis:160px;transform:scale(.82)}.logo{padding:27px 24px;min-height:190px}.logo p{font-size:14px}.card{padding:19px}}
-@media(max-width:520px){.topbar-inner{gap:8px}.brand-mark{width:36px;height:36px;border-radius:12px}.brand-name{font-size:13px}.brand-sub{font-size:9px}.top-actions{gap:6px}.top-actions button{font-size:11px;padding:8px 9px}.top-actions #lastUpdated{display:none}.logo{min-height:0;padding:25px 20px}.medical-art{width:95px;flex-basis:95px;height:115px;transform:scale(.72);margin-left:-12px}.medical-orbit{width:130px;height:130px}.medical-core{width:80px;height:80px;font-size:43px}.medical-chip{width:34px;height:34px;font-size:18px}.logo h1{font-size:25px}.logo p{font-size:12px}.hero-note{font-size:10px}.card{padding:16px;border-radius:16px}.doctor-photo{width:70px;height:70px;min-width:70px}.doctor-name{font-size:15px}}
+.section-intro{
+color:var(--muted);
+font-size:13px;
+margin-top:-5px;
+margin-bottom:18px
+}
+@media(max-width:760px){
+main{padding:18px 15px 40px}
+.topbar-inner{padding:9px 14px}
+.top-actions button{
+min-width:0;
+padding:9px 11px;
+font-size:12px
+}
+.medical-art{
+width:160px;
+flex-basis:160px;
+transform:scale(.82)
+}
+.logo{
+padding:27px 24px;
+min-height:190px
+}
+.logo p{font-size:14px}
+.card{padding:19px}
+}
+@media(max-width:520px){
+.topbar-inner{gap:8px}
+.brand-mark{
+width:36px;
+height:36px;
+border-radius:12px
+}
+.brand-name{font-size:13px}
+.brand-sub{font-size:9px}
+.top-actions{gap:6px}
+.top-actions button{
+font-size:11px;
+padding:8px 9px
+}
+.top-actions #lastUpdated{display:none}
+.logo{
+min-height:0;
+padding:25px 20px
+}
+.medical-art{
+width:95px;
+flex-basis:95px;
+height:115px;
+transform:scale(.72);
+margin-left:-12px
+}
+.medical-orbit{
+width:130px;
+height:130px
+}
+.medical-core{
+width:80px;
+height:80px;
+font-size:43px
+}
+.medical-chip{
+width:34px;
+height:34px;
+font-size:18px
+}
+.logo h1{font-size:25px}
+.logo p{font-size:12px}
+.hero-note{font-size:10px}
+.card{
+padding:16px;
+border-radius:16px
+}
+.doctor-photo{
+width:70px;
+height:70px;
+min-width:70px
+}
+.doctor-name{font-size:15px}
+}
 </style>
 </head>
 
 <body>
+
 <header id="portalTopbar" class="topbar hidden">
  <div class="topbar-inner">
-  <div class="top-brand"><span class="brand-mark">✚</span><span class="brand-name">IRAQ MEDICAL<span class="brand-sub">بوابة المراجعين</span></span></div>
+  <div class="top-brand">
+   <span class="brand-mark">✚</span>
+   <span class="brand-name">
+    IRAQ MEDICAL
+    <span class="brand-sub">بوابة المراجعين</span>
+   </span>
+  </div>
+
   <div class="top-actions">
    <span id="lastUpdated">التحديث التلقائي كل 20 ثانية</span>
-   <button type="button" class="secondary" onclick="refreshPortal()">↻ تحديث</button>
+   <button type="button" class="secondary" onclick="refreshPortal()">↻ تحديث الحجوزات</button>
    <button type="button" onclick="logout()">تسجيل الخروج</button>
   </div>
  </div>
 </header>
+
 <main>
+
 <div class="logo">
  <div class="hero-copy">
   <span class="hero-kicker">✚ رعاية صحية أقرب إليك</span>
   <h1>IRAQ MEDICAL</h1>
   <p>رعايتك الطبية تبدأ من هنا</p>
-  <div class="hero-note">اكتشف الأطباء المعتمدين، احجز موعدك، وتابع طلباتك بسهولة وأمان.</div>
+  <div class="hero-note">
+   اكتشف الأطباء المعتمدين، احجز موعدك، وتابع طلباتك بسهولة وأمان.
+  </div>
  </div>
+
  <div class="medical-art" aria-hidden="true">
-  <span class="medical-orbit"></span><span class="medical-core">🩺</span>
-  <span class="medical-chip chip-one">✚</span><span class="medical-chip chip-two">⚕</span>
-  <span class="medical-chip chip-three">♡</span><span class="medical-chip chip-four">🧬</span>
+  <span class="medical-orbit"></span>
+  <span class="medical-core">🩺</span>
+  <span class="medical-chip chip-one">✚</span>
+  <span class="medical-chip chip-two">⚕</span>
+  <span class="medical-chip chip-three">♡</span>
+  <span class="medical-chip chip-four">🧬</span>
  </div>
 </div>
 
 <section id="auth" class="card">
 <h2>بوابة المراجع</h2>
+
 <div class="tabs">
  <button type="button" id="signupTab" onclick="showAuthTab('signup')">إنشاء حساب</button>
  <button type="button" id="loginTab" class="secondary" onclick="showAuthTab('login')">تسجيل الدخول</button>
 </div>
+
 <div id="signupPanel">
 <h3>إنشاء حساب مراجع جديد</h3>
+
 <label>الاسم الكامل</label>
 <input id="name" placeholder="الاسم الكامل" maxlength="150">
+
 <label>رقم الهاتف (11 رقماً)</label>
 <input id="phone" type="tel" inputmode="numeric" maxlength="11" placeholder="07XXXXXXXXX">
+
 <label>العمر</label>
 <input id="age" type="number" min="1" max="120" placeholder="العمر">
+
 <label>المحافظة</label>
 <select id="governorate">
 <option value="">اختر المحافظة</option>
@@ -144,20 +589,28 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
 <option value="دهوك">دهوك</option>
 <option value="حلبجة">حلبجة</option>
 </select>
+
 <label>البريد الإلكتروني</label>
 <input id="signupEmail" type="email" placeholder="البريد الإلكتروني">
+
 <label>كلمة المرور</label>
 <input id="signupPassword" type="password" placeholder="كلمة المرور (6 أحرف على الأقل)">
+
 <button onclick="signup()">إنشاء الحساب</button>
 </div>
+
 <div id="loginPanel" class="hidden">
 <h3>تسجيل الدخول</h3>
+
 <label>البريد الإلكتروني</label>
 <input id="email" type="email" placeholder="البريد الإلكتروني">
+
 <label>كلمة المرور</label>
 <input id="password" type="password" placeholder="كلمة المرور">
+
 <button onclick="login()">تسجيل الدخول</button>
 </div>
+
 <p id="message" class="msg"></p>
 </section>
 
@@ -168,15 +621,17 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
 
 <section id="doctors" class="card hidden">
 <h2>الأطباء المعتمدون</h2>
-<p class="section-intro">تعرّف على الأطباء المعتمدين. اضغط على بطاقة الطبيب لعرض التفاصيل وأوقات الدوام والحجز.</p>
+<p class="section-intro">
+تعرّف على الأطباء المعتمدين. اضغط على بطاقة الطبيب لعرض التفاصيل وأوقات الدوام والحجز.
+</p>
 <div id="doctorList" class="msg">جاري تحميل الأطباء...</div>
 </section>
 
 <section id="myAppointments" class="card hidden">
 <h2>حجوزاتي</h2>
 <div id="myAppointmentsList" class="msg">جاري تحميل الحجوزات...</div>
-<button class="secondary" onclick="loadMyAppointments()">تحديث الحجوزات</button>
 </section>
+
 </main>
 
 <script>
@@ -188,6 +643,7 @@ const el=id=>document.getElementById(id);
 
 let selectedDoctor=null;
 let selectedSchedules=[];
+let portalRefreshBusy=false;
 
 const DEFAULT_DOCTOR_PHOTO=
 "data:image/svg+xml;charset=UTF-8,"+
@@ -278,7 +734,12 @@ async function login(){
 
 async function loadAccount(){
  const {data:{user}}=await db.auth.getUser();
- if(!user){el("portalTopbar").classList.add("hidden");return;}
+
+ if(!user){
+  el("portalTopbar").classList.add("hidden");
+  return;
+ }
+
  el("portalTopbar").classList.remove("hidden");
 
  const {data:profile,error}=await db.from("profiles")
@@ -328,7 +789,6 @@ async function loadAccount(){
  await loadMyAppointments();
 }
 
-/* تحميل الأطباء وعرضهم كبطاقات قابلة للفتح */
 async function loadDoctors(){
  const list=el("doctorList");
  list.textContent="جاري تحميل الأطباء...";
@@ -728,14 +1188,12 @@ async function loadMyAppointments(){
    p.id===a.doctors?.profile_id
   );
 
-  const date=new Date(a.appointment_at);
-
   const title=document.createElement("strong");
   title.textContent="الطبيب: "+(doctorProfile?.full_name||"غير معروف");
 
   const dateLine=document.createElement("p");
   dateLine.textContent="الموعد: "+
-   date.toLocaleString("ar-IQ",{
+   new Date(a.appointment_at).toLocaleString("ar-IQ",{
     dateStyle:"medium",
     timeStyle:"short"
    });
@@ -762,21 +1220,28 @@ function appointmentStatus(status){
  return labels[status]||status||"غير محدد";
 }
 
-let portalRefreshBusy=false;
-
 function updateRefreshStamp(){
  const stamp=el("lastUpdated");
- if(stamp)stamp.textContent="آخر تحديث: "+new Date().toLocaleTimeString("ar-IQ",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+
+ if(stamp){
+  stamp.textContent="آخر تحديث: "+
+   new Date().toLocaleTimeString("ar-IQ",{
+    hour:"2-digit",
+    minute:"2-digit",
+    second:"2-digit"
+   });
+ }
 }
 
+/* تحديث الحجوزات فقط دون إعادة تحميل بطاقة الطبيب المفتوحة */
 async function refreshPortal(){
  if(portalRefreshBusy)return;
+
  portalRefreshBusy=true;
 
- const refreshButtons=document.querySelectorAll(".top-actions button");
- refreshButtons.forEach(b=>{
-  if(b.textContent.includes("تحديث"))b.disabled=true;
- });
+ const refreshButton=document.querySelector(".top-actions .secondary");
+
+ if(refreshButton)refreshButton.disabled=true;
 
  try{
   const {data:{session}}=await db.auth.getSession();
@@ -786,28 +1251,25 @@ async function refreshPortal(){
    return;
   }
 
-  if(!el("status").classList.contains("hidden")){
-   await loadAccount();
+  const {data:profile,error}=await db.from("profiles")
+  .select("role,approval_status")
+  .eq("id",session.user.id)
+  .maybeSingle();
+
+  if(error)throw error;
+
+  if(profile?.role==="patient"&&profile?.approval_status==="approved"){
+   await loadMyAppointments();
+   updateRefreshStamp();
   }else{
-   if(!el("doctors").classList.contains("hidden")&&!el("booking")){
-    await loadDoctors();
-   }
-
-   if(!el("myAppointments").classList.contains("hidden")){
-    await loadMyAppointments();
-   }
+   await loadAccount();
   }
-
-  updateRefreshStamp();
 
  }catch(e){
   console.warn("Portal refresh:",e);
- }
- finally{
+ }finally{
   portalRefreshBusy=false;
-  refreshButtons.forEach(b=>{
-   if(b.textContent.includes("تحديث"))b.disabled=false;
-  });
+  if(refreshButton)refreshButton.disabled=false;
  }
 }
 
@@ -821,7 +1283,9 @@ db.auth.getSession().then(({data})=>{
  if(data.session)loadAccount();
 });
 
+/* تحديث الحجوزات تلقائياً كل 20 ثانية */
 setInterval(refreshPortal,20000);
 </script>
+
 </body>
 </html>
