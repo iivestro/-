@@ -4,17 +4,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#071827">
+<meta name="theme-color" content="#f5fbff">
 <title>IRAQ MEDICAL | بوابة المراجعين</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 *{box-sizing:border-box}
 
+:root{
+ --primary:#38bce8;
+ --primary-dark:#159bc9;
+ --sky-light:#eaf8ff;
+ --page:#f5fbff;
+ --white:#ffffff;
+ --text:#183447;
+ --muted:#647f91;
+ --border:#cceaf6;
+}
+
 body{
  margin:0;
- background:#071827;
- color:#eef7f8;
+ background:var(--page);
+ color:var(--text);
  font-family:Tahoma,Arial,sans-serif;
  line-height:1.7;
 }
@@ -26,15 +37,15 @@ main{
 }
 
 .logo{text-align:center;margin-bottom:25px}
-.logo h1{color:#25c5b2;letter-spacing:2px;font-size:29px}
+.logo h1{color:var(--primary-dark);letter-spacing:2px;font-size:29px}
 
 .card{
- background:#10283a;
- border:1px solid #244457;
+ background:white;
+ border:1px solid var(--border);
  border-radius:18px;
  padding:20px;
  margin-bottom:18px;
- box-shadow:0 12px 35px rgba(0,0,0,.12);
+ box-shadow:0 5px 20px rgba(40,160,205,.08);
 }
 
 h2,h3{margin-top:0}
@@ -44,27 +55,36 @@ input,select,textarea{
  padding:13px;
  margin:8px 0;
  border-radius:9px;
- border:1px solid #345468;
- background:#071827;
- color:white;
+ border:1px solid #b9deed;
+ background:white;
+ color:var(--text);
  font-size:15px;
 }
+
+input::placeholder,textarea::placeholder{color:#8aa6b5}
 
 button{
  width:100%;
  padding:13px;
  border:0;
  border-radius:9px;
- background:#20b9a8;
- color:#061923;
+ background:var(--primary);
+ color:white;
  font-weight:bold;
  margin-top:10px;
  cursor:pointer;
 }
 
+button:hover{background:var(--primary-dark)}
 button:disabled{opacity:.5;cursor:not-allowed}
-.secondary{background:#244457;color:white}
-.msg{color:#9ee8df;line-height:1.8;overflow-wrap:anywhere}
+
+.secondary{
+ background:var(--sky-light);
+ color:var(--primary-dark);
+ border:1px solid var(--border);
+}
+
+.msg{color:var(--primary-dark);line-height:1.8;overflow-wrap:anywhere}
 .hidden{display:none!important}
 
 .tabs{
@@ -75,13 +95,13 @@ button:disabled{opacity:.5;cursor:not-allowed}
 }
 .tabs button{margin:0}
 
-/* بطاقات الأطباء العمودية */
 .doctor{
  padding:14px;
- border:1px solid #345468;
+ border:1px solid var(--border);
  border-radius:15px;
  margin:14px 0;
- background:#0b2030;
+ background:white;
+ box-shadow:0 5px 20px rgba(40,160,205,.06);
 }
 
 .doctor-toggle{
@@ -92,7 +112,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
  padding:0;
  margin:0;
  background:transparent;
- color:white;
+ color:var(--text);
  text-align:right;
  cursor:pointer;
 }
@@ -103,30 +123,30 @@ button:disabled{opacity:.5;cursor:not-allowed}
  min-width:85px;
  border-radius:13px;
  object-fit:cover;
- border:2px solid #20b9a8;
- background:#17394b;
+ border:2px solid var(--primary);
+ background:var(--sky-light);
 }
 
 .doctor-name{
  margin:0;
- color:#50d4c3;
+ color:var(--primary-dark);
  font-size:17px;
 }
 
 .doctor-specialty{
- color:#a8bdc9;
+ color:var(--muted);
  font-size:13px;
  margin:5px 0 0;
 }
 
 .doctor-arrow{
  margin-right:auto;
- color:#50d4c3;
+ color:var(--primary-dark);
  font-size:22px;
 }
 
 .doctor-details{
- border-top:1px solid #345468;
+ border-top:1px solid var(--border);
  margin-top:14px;
  padding-top:12px;
 }
@@ -135,25 +155,26 @@ button:disabled{opacity:.5;cursor:not-allowed}
 
 .info{
  padding:9px;
- background:#071827;
+ background:var(--sky-light);
  border-radius:8px;
  margin:6px 0;
  font-size:14px;
+ color:var(--text);
 }
 
-.small{font-size:13px;color:#a8bdc9}
+.small{font-size:13px;color:var(--muted)}
 
 .map-link{
  display:block;
  margin:12px 0;
- color:#50d4c3;
+ color:var(--primary-dark);
  text-decoration:none;
 }
 
 .map-link:hover{text-decoration:underline}
 
 #booking{
- border-top:1px solid #345468;
+ border-top:1px solid var(--border);
  margin-top:18px;
  padding-top:18px;
 }
@@ -164,9 +185,9 @@ button:disabled{opacity:.5;cursor:not-allowed}
  margin-top:10px;
 }
 
-.status-pending{background:#493d20;color:#ffe1a0}
-.status-rejected{background:#49252d;color:#ffb4bf}
-.status-approved{background:#123e39;color:#9ee8df}
+.status-pending{background:#fff8e7;color:#85631a}
+.status-rejected{background:#fff0f1;color:#a83245}
+.status-approved{background:#e8f9f1;color:#18754b}
 
 @media(max-width:480px){
  main{padding:10px}
@@ -190,7 +211,6 @@ button:disabled{opacity:.5;cursor:not-allowed}
 </div>
 
 <section id="auth" class="card">
-
 <h2>بوابة المراجع</h2>
 
 <div class="tabs">
@@ -199,7 +219,6 @@ button:disabled{opacity:.5;cursor:not-allowed}
 </div>
 
 <div id="signupPanel">
-
 <h3>إنشاء حساب مراجع جديد</h3>
 
 <label>الاسم الكامل</label>
@@ -242,11 +261,9 @@ button:disabled{opacity:.5;cursor:not-allowed}
 <input id="signupPassword" type="password" placeholder="كلمة المرور (6 أحرف على الأقل)">
 
 <button onclick="signup()">إنشاء الحساب</button>
-
 </div>
 
 <div id="loginPanel" class="hidden">
-
 <h3>تسجيل الدخول</h3>
 
 <label>البريد الإلكتروني</label>
@@ -256,11 +273,9 @@ button:disabled{opacity:.5;cursor:not-allowed}
 <input id="password" type="password" placeholder="كلمة المرور">
 
 <button onclick="login()">تسجيل الدخول</button>
-
 </div>
 
 <p id="message" class="msg"></p>
-
 </section>
 
 <section id="status" class="card hidden">
@@ -270,24 +285,16 @@ button:disabled{opacity:.5;cursor:not-allowed}
 </section>
 
 <section id="doctors" class="card hidden">
-
 <h2>الأطباء المعتمدون</h2>
 <p class="small">اضغط على بطاقة الطبيب للاطلاع على معلوماته وأوقات الدوام وحجز موعد.</p>
-
 <div id="doctorList" class="msg">جاري تحميل الأطباء...</div>
-
 <button class="secondary" onclick="logout()">تسجيل الخروج</button>
-
 </section>
 
 <section id="myAppointments" class="card hidden">
-
 <h2>حجوزاتي</h2>
-
 <div id="myAppointmentsList" class="msg">جاري تحميل الحجوزات...</div>
-
 <button class="secondary" onclick="loadMyAppointments()">تحديث الحجوزات</button>
-
 </section>
 
 </main>
@@ -297,7 +304,6 @@ const SUPABASE_URL="https://oejkeqlqkwdfropylxsv.supabase.co";
 const SUPABASE_KEY="sb_publishable_Ue8nsJFsLpDLFUgSTB24cw_rckeqWag";
 
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-
 const el=id=>document.getElementById(id);
 
 let selectedDoctor=null;
@@ -307,10 +313,10 @@ const DEFAULT_DOCTOR_PHOTO=
 "data:image/svg+xml;charset=UTF-8,"+
 encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
-<rect width="160" height="160" rx="22" fill="#17394b"/>
-<circle cx="80" cy="57" r="29" fill="#50d4c3"/>
-<path d="M25 150c5-39 25-58 55-58s50 19 55 58" fill="#50d4c3"/>
-<path d="M80 105v31m-15-15h30" stroke="#17394b" stroke-width="8" stroke-linecap="round"/>
+<rect width="160" height="160" rx="22" fill="#eaf8ff"/>
+<circle cx="80" cy="57" r="29" fill="#38bce8"/>
+<path d="M25 150c5-39 25-58 55-58s50 19 55 58" fill="#38bce8"/>
+<path d="M80 105v31m-15-15h30" stroke="#eaf8ff" stroke-width="8" stroke-linecap="round"/>
 </svg>
 `);
 
@@ -331,7 +337,6 @@ function showAuthTab(tab){
 }
 
 async function signup(){
-
  const full_name=el("name").value.trim();
  const phone=el("phone").value.trim();
  const age=Number(el("age").value);
@@ -341,7 +346,6 @@ async function signup(){
 
  if(!full_name||!phone||!age||age<1||age>120||
  !governorate||!email||password.length<6){
-
   message("أكمل جميع الحقول وتأكد من صحة العمر. كلمة المرور 6 أحرف على الأقل.");
   return;
  }
@@ -375,7 +379,6 @@ async function signup(){
 }
 
 async function login(){
-
  const email=el("email").value.trim();
  const password=el("password").value;
 
@@ -386,10 +389,7 @@ async function login(){
 
  message("جاري تسجيل الدخول...");
 
- const {error}=await db.auth.signInWithPassword({
-  email,
-  password
- });
+ const {error}=await db.auth.signInWithPassword({email,password});
 
  if(error){
   message("تعذر تسجيل الدخول: "+error.message);
@@ -400,9 +400,7 @@ async function login(){
 }
 
 async function loadAccount(){
-
  const {data:{user}}=await db.auth.getUser();
-
  if(!user)return;
 
  const {data:profile,error}=await db.from("profiles")
@@ -454,7 +452,6 @@ async function loadAccount(){
 
 /* تحميل الأطباء وعرضهم كبطاقات عمودية قابلة للفتح */
 async function loadDoctors(){
-
  const list=el("doctorList");
  list.textContent="جاري تحميل الأطباء...";
 
@@ -500,13 +497,11 @@ async function loadDoctors(){
  list.innerHTML="";
 
  visibleDoctors.forEach(d=>{
-
   const profile=approvedProfiles.find(p=>p.id===d.profile_id);
 
   const item=document.createElement("div");
   item.className="doctor";
 
-  /* رأس البطاقة */
   const toggle=document.createElement("button");
   toggle.type="button";
   toggle.className="doctor-toggle";
@@ -542,16 +537,14 @@ async function loadDoctors(){
 
   toggle.append(photo,nameArea,arrow);
 
-  /* التفاصيل التي تظهر عند الضغط */
   const details=document.createElement("div");
   details.className="doctor-details hidden";
 
   function addInfo(label,value){
    const box=document.createElement("div");
    box.className="info";
-   box.textContent=label+": "+(
-    value!==null&&value!==undefined&&value!==""?value:"غير محدد"
-   );
+   box.textContent=label+": "+
+    (value!==null&&value!==undefined&&value!==""?value:"غير محدد");
    details.appendChild(box);
   }
 
@@ -575,7 +568,6 @@ async function loadDoctors(){
    details.append(bioTitle,bio);
   }
 
-  /* رابط Google Maps */
   if(d.clinics?.maps_url){
    try{
     const mapUrl=new URL(d.clinics.maps_url);
@@ -600,7 +592,6 @@ async function loadDoctors(){
    }catch(e){}
   }
 
-  /* زر حجز الموعد */
   const bookingButton=document.createElement("button");
   bookingButton.type="button";
   bookingButton.textContent="اختيار الطبيب وحجز موعد";
@@ -610,7 +601,6 @@ async function loadDoctors(){
 
   details.appendChild(bookingButton);
 
-  /* فتح وإغلاق تفاصيل الطبيب */
   toggle.onclick=()=>{
    const isHidden=details.classList.toggle("hidden");
    toggle.setAttribute("aria-expanded",String(!isHidden));
@@ -623,7 +613,6 @@ async function loadDoctors(){
 }
 
 async function selectDoctor(doctor,name){
-
  selectedDoctor=doctor;
  selectedSchedules=[];
 
@@ -672,22 +661,14 @@ async function selectDoctor(doctor,name){
  bookingMessage.className="msg";
 
  panel.append(
-  heading,
-  scheduleMessage,
-  dateLabel,
-  dateInput,
-  timeLabel,
-  timeInput,
-  notesLabel,
-  notesInput,
-  bookButton,
-  bookingMessage
+  heading,scheduleMessage,dateLabel,dateInput,
+  timeLabel,timeInput,notesLabel,notesInput,
+  bookButton,bookingMessage
  );
 
  el("doctorList").prepend(panel);
 
  const today=new Date();
-
  const localToday=[
   today.getFullYear(),
   String(today.getMonth()+1).padStart(2,"0"),
@@ -732,9 +713,7 @@ function escapeHTML(value){
 }
 
 function checkSelectedDay(){
-
  const dateValue=el("appointmentDate").value;
-
  if(!dateValue)return;
 
  const dayNumber=new Date(dateValue+"T12:00:00").getDay();
@@ -759,7 +738,6 @@ function checkSelectedDay(){
 }
 
 async function bookAppointment(){
-
  if(!selectedDoctor)return;
 
  const dateValue=el("appointmentDate").value;
@@ -806,7 +784,6 @@ async function bookAppointment(){
 
  const button=el("bookButton");
  button.disabled=true;
-
  el("bookingMessage").textContent="جارٍ إرسال طلب الحجز...";
 
  const {error}=await db.from("appointments").insert({
@@ -831,9 +808,7 @@ async function bookAppointment(){
 }
 
 async function loadMyAppointments(){
-
  const {data:{user}}=await db.auth.getUser();
-
  if(!user)return;
 
  const list=el("myAppointmentsList");
@@ -855,11 +830,9 @@ async function loadMyAppointments(){
  }
 
  const profileIds=data.map(a=>a.doctors?.profile_id).filter(Boolean);
-
  let profiles=[];
 
  if(profileIds.length){
-
   const result=await db.from("profiles")
   .select("id,full_name")
   .in("id",profileIds);
@@ -870,7 +843,6 @@ async function loadMyAppointments(){
  list.innerHTML="";
 
  data.forEach(a=>{
-
   const card=document.createElement("div");
   card.className="doctor";
 
@@ -900,7 +872,6 @@ async function loadMyAppointments(){
 }
 
 function appointmentStatus(status){
-
  const labels={
   pending:"قيد الانتظار",
   approved:"مقبول",
