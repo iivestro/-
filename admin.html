@@ -1,5 +1,6 @@
+from pathlib import Path
 
-<!DOCTYPE html>
+html = r'''<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -165,6 +166,18 @@ canvas{width:100%;height:100%;display:block}
       maxlength="160"
       placeholder="اكتب اسم العيادة هنا"
      >
+    </div>
+
+    <div>
+     <label>عنوان العيادة بالتفصيل *</label>
+     <input id="clinicAddress" type="text" required maxlength="300"
+      placeholder="المحافظة، المنطقة، الشارع، أقرب نقطة دالة">
+    </div>
+
+    <div>
+     <label>موقع العيادة على Google Maps *</label>
+     <input id="clinicMapsUrl" type="url" required maxlength="1000"
+      placeholder="https://maps.app.goo.gl/...">
     </div>
 
     <div><label>المؤهل العلمي</label><input id="qualification"></div>
@@ -536,7 +549,7 @@ async function updatePatientStatus(id,newStatus,button){
  await Promise.all([loadPatients(),refreshDashboard()]);
 }
 
-/* تحميل التخصصات فقط؛ العيادة أصبحت خانة كتابة */
+/* تحميل التخصصات فقط؛ العيادة أصبحت خانات إدخال */
 async function loadDoctorOptions(){
  const specialtySelect=document.getElementById("specialty");
 
@@ -558,15 +571,20 @@ async function loadDoctorOptions(){
   option.textContent=row.name_ar||"تخصص";
   specialtySelect.appendChild(option);
  });
-
 }
 
-/* البحث عن العيادة بالاسم أو إنشاؤها تلقائياً */
-async function findOrCreateClinic(clinicName){
+/* البحث عن العيادة بالاسم أو تحديثها أو إنشاؤها */
+async function findOrCreateClinic(clinicName,clinicAddress,clinicMapsUrl){
  const cleanName=clinicName.trim();
+ const cleanAddress=clinicAddress.trim();
+ const cleanMapsUrl=clinicMapsUrl.trim();
 
- if(!cleanName){
-  throw new Error("يرجى كتابة اسم العيادة.");
+ if(!cleanName)throw new Error("يرجى كتابة اسم العيادة.");
+ if(!cleanAddress)throw new Error("يرجى كتابة عنوان العيادة بالتفصيل.");
+
+ const mapsPattern=/^https:\/\/(www\.)?(google\.[^/]+\/maps|maps\.google\.[^/]+|maps\.app\.goo\.gl)(\/|$|\?)/i;
+ if(!mapsPattern.test(cleanMapsUrl)){
+  throw new Error("يرجى إدخال رابط Google Maps صحيح يبدأ بـ https://.");
  }
 
  const {data:existing,error:searchError}=await db
@@ -581,18 +599,32 @@ async function findOrCreateClinic(clinicName){
  }
 
  if(existing){
+  const {error:updateError}=await db
+   .from("clinics")
+   .update({
+    address:cleanAddress,
+    maps_url:cleanMapsUrl
+   })
+   .eq("id",existing.id);
+
+  if(updateError){
+   throw new Error("تعذر تحديث عنوان وموقع العيادة: "+updateError.message);
+  }
+
   return existing.id;
  }
 
  const {data:created,error:createError}=await db
- .from("clinics")
- .insert({
-  name:cleanName,
-  city:"Najaf",
-  is_active:true
- })
- .select("id")
- .single();
+  .from("clinics")
+  .insert({
+   name:cleanName,
+   address:cleanAddress,
+   maps_url:cleanMapsUrl,
+   city:"Najaf",
+   is_active:true
+  })
+  .select("id")
+  .single();
 
  if(createError){
   throw new Error("تعذر إنشاء العيادة: "+createError.message);
@@ -626,15 +658,21 @@ document.getElementById("doctorForm").addEventListener("submit",async event=>{
   }
 
   const clinicName=document.getElementById("clinicName").value.trim();
+  const clinicAddress=document.getElementById("clinicAddress").value.trim();
+  const clinicMapsUrl=document.getElementById("clinicMapsUrl").value.trim();
 
-  if(!clinicName){
-   throw new Error("يرجى كتابة اسم العيادة.");
+  if(!clinicName)throw new Error("يرجى كتابة اسم العيادة.");
+  if(!clinicAddress)throw new Error("يرجى كتابة عنوان العيادة بالتفصيل.");
+
+  const mapsPattern=/^https:\/\/(www\.)?(google\.[^/]+\/maps|maps\.google\.[^/]+|maps\.app\.goo\.gl)(\/|$|\?)/i;
+  if(!mapsPattern.test(clinicMapsUrl)){
+   throw new Error("يرجى إدخال رابط Google Maps صحيح يبدأ بـ https://.");
   }
 
-  /* إنشاء العيادة أو استخدام الموجودة */
-  setText("doctorMessage","جارٍ تجهيز بيانات العيادة...");
+  /* حفظ بيانات العيادة أولاً ثم ربط الطبيب بها */
+  setText("doctorMessage","جارٍ حفظ بيانات العيادة...");
 
-  const clinicId=await findOrCreateClinic(clinicName);
+  const clinicId=await findOrCreateClinic(clinicName,clinicAddress,clinicMapsUrl);
 
   const payload={
    full_name:document.getElementById("doctorName").value.trim(),
@@ -669,7 +707,7 @@ document.getElementById("doctorForm").addEventListener("submit",async event=>{
    throw new Error(result.error||"فشل الطلب، رمز الحالة: "+response.status);
   }
 
-  setText("doctorMessage","تم إنشاء حساب الطبيب وربطه بالعيادة بنجاح.");
+  setText("doctorMessage","تم إنشاء حساب الطبيب وحفظ عنوان وموقع العيادة بنجاح.");
 
   document.getElementById("doctorForm").reset();
 
@@ -708,3 +746,18 @@ db.auth.getSession().then(async({data})=>{
 </script>
 </body>
 </html>
+'''
+
+# Basic integrity checks before writing the replacement file.
+assert 'id="clinicAddress"' in html
+assert 'id="clinicMapsUrl"' in html
+assert 'findOrCreateClinic(clinicName,clinicAddress,clinicMapsUrl)' in html
+assert 'async function updatePatientStatus' in html
+assert 'async function refreshDashboard' in html
+assert 'CREATE_DOCTOR_URL' in html
+
+out = Path("/mnt/data/admin.html")
+out.write_text(html, encoding="utf-8")
+print(f"تم إنشاء الملف: {out.name}")
+print(f"الحجم: {out.stat().st_size:,} بايت")
+print("تم التحقق من وجود خانات العنوان والخريطة ووظائف الإدارة الأساسية.")
