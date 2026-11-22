@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -49,8 +48,8 @@ th{color:var(--blue);white-space:nowrap}
 .rejected,.booking-status.cancelled{background:#ffe8eb;color:#b42335}
 .booking-status.confirmed{background:#e0f2fe;color:#0369a1}
 .booking-status.pending{background:#fff4d6;color:#8a6415}
-#error,#errorPatients,#doctorError,#dashboardError,#appointmentsError{color:#c62828}
-#message,#doctorMessage{color:#087a53}
+#error,#errorPatients,#doctorError,#dashboardError,#appointmentsError,#manageDoctorsError{color:#c62828}
+#message,#doctorMessage,#manageDoctorsMessage{color:#087a53}
 .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
 .chart-card{padding:18px;margin-top:16px}
 .chart-card h3{margin-top:0;color:var(--blue)}
@@ -112,6 +111,7 @@ main{padding:10px}
     <button class="side-link" onclick="showSection('patientsSection',this)">إدارة المراجعين</button>
     <button class="side-link" onclick="showSection('bookingsSection',this)">إدارة الحجوزات</button>
     <button class="side-link" onclick="showSection('doctorsSection',this)">إضافة طبيب</button>
+    <button class="side-link" onclick="showSection('manageDoctorsSection',this)">إدارة الأطباء</button>
    </nav>
   </aside>
 
@@ -156,15 +156,39 @@ main{padding:10px}
 
    <section id="patientsSection" class="card hidden">
     <h2>إدارة المراجعين</h2>
-    <p class="muted">يمكنك قبول حساب المراجع أو رفضه من خانة الحالة.</p>
+    <p class="muted">يمكنك قبول حساب المراجع أو رفضه وتعديل بياناته.</p>
     <input id="search" placeholder="ابحث بالاسم أو الهاتف أو المحافظة..." oninput="renderPatients()">
     <button onclick="loadPatients()">تحديث القائمة</button>
     <p id="message"></p>
     <p id="errorPatients"></p>
     <div class="table-wrap">
      <table>
-      <thead><tr><th>الاسم</th><th>رقم الهاتف</th><th>المحافظة</th><th>الحالة</th><th>تاريخ التسجيل</th></tr></thead>
-      <tbody id="patientsTable"><tr><td colspan="5">جارٍ تحميل البيانات...</td></tr></tbody>
+      <thead>
+       <tr>
+        <th>الاسم</th><th>رقم الهاتف</th><th>المحافظة</th><th>الحالة</th><th>تاريخ التسجيل</th><th>الإجراءات</th>
+       </tr>
+      </thead>
+      <tbody id="patientsTable"><tr><td colspan="6">جارٍ تحميل البيانات...</td></tr></tbody>
+     </table>
+    </div>
+   </section>
+
+   <section id="manageDoctorsSection" class="card hidden">
+    <div class="section-title">
+     <div>
+      <h2>إدارة الأطباء</h2>
+      <p class="muted">تعديل بيانات الطبيب وإيقافه أو استئناف نشاطه دون حذف سجلاته.</p>
+     </div>
+     <button class="btn-light" onclick="loadDoctors()">تحديث قائمة الأطباء</button>
+    </div>
+    <p id="manageDoctorsMessage"></p>
+    <p id="manageDoctorsError"></p>
+    <div class="table-wrap">
+     <table>
+      <thead>
+       <tr><th>الطبيب</th><th>التخصص</th><th>العيادة</th><th>الحالة</th><th>الإجراءات</th></tr>
+      </thead>
+      <tbody id="doctorsTable"><tr><td colspan="5">جارٍ تحميل الأطباء...</td></tr></tbody>
      </table>
     </div>
    </section>
@@ -234,11 +258,13 @@ const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let patientList=[];
 let appointmentList=[];
+let managedDoctors=[];
 let bookingsRefreshTimer=null;
 let chartData={patients:[],appointments:[],doctors:[]};
 
 function setText(id,value){
- document.getElementById(id).textContent=value||"";
+ const el=document.getElementById(id);
+ if(el)el.textContent=value||"";
 }
 
 function escapeHTML(value){
@@ -285,7 +311,7 @@ async function showDashboard(user){
 }
 
 function showSection(id,button){
- ["homeSection","patientsSection","bookingsSection","doctorsSection"].forEach(x=>{
+ ["homeSection","patientsSection","bookingsSection","doctorsSection","manageDoctorsSection"].forEach(x=>{
   document.getElementById(x).classList.add("hidden");
  });
  document.getElementById(id).classList.remove("hidden");
@@ -293,6 +319,7 @@ function showSection(id,button){
  button.classList.add("active");
  if(id==="homeSection")renderCharts();
  if(id==="bookingsSection")loadAppointments();
+ if(id==="manageDoctorsSection")loadDoctors();
 }
 
 function dateKey(value){
@@ -362,6 +389,7 @@ function renderCharts(){
 
 async function refreshAll(){
  await Promise.all([refreshDashboard(),loadPatients(),loadAppointments()]);
+ if(!document.getElementById("manageDoctorsSection").classList.contains("hidden"))await loadDoctors();
 }
 
 async function refreshDashboard(){
@@ -394,9 +422,9 @@ async function refreshDashboard(){
 async function loadPatients(){
  const tbody=document.getElementById("patientsTable");
  setText("errorPatients","");
- tbody.innerHTML="<tr><td colspan='5'>جارٍ التحميل...</td></tr>";
+ tbody.innerHTML="<tr><td colspan='6'>جارٍ التحميل...</td></tr>";
  const {data,error}=await db.from("profiles")
- .select("id,full_name,phone,governorate,role,approval_status,created_at")
+ .select("id,full_name,phone,age,governorate,role,approval_status,created_at")
  .eq("role","patient").order("created_at",{ascending:false});
  if(error){tbody.innerHTML="";setText("errorPatients","تعذر تحميل المراجعين: "+error.message);return;}
  patientList=data||[];renderPatients();
@@ -481,7 +509,7 @@ function renderPatients(){
   (p.phone||"").toLowerCase().includes(term)||
   (p.governorate||"").toLowerCase().includes(term)
  );
- if(!filtered.length){tbody.innerHTML="<tr><td colspan='5'>لا توجد نتائج.</td></tr>";return;}
+ if(!filtered.length){tbody.innerHTML="<tr><td colspan='6'>لا توجد نتائج.</td></tr>";return;}
  tbody.innerHTML=filtered.map(p=>{
   const status=p.approval_status,approved=status==="approved",rejected=status==="rejected";
   const date=p.created_at?new Date(p.created_at).toLocaleDateString("ar-IQ"):"—";
@@ -498,8 +526,29 @@ function renderPatients(){
    <td>${escapeHTML(p.governorate||"غير محددة")}</td>
    <td><span class="status ${approved?"approved":rejected?"rejected":""}">${escapeHTML(getStatusLabel(status))}</span>${actions}</td>
    <td>${date}</td>
+   <td><button class="btn-light" onclick="editPatient('${p.id}')">تعديل البيانات</button></td>
   </tr>`;
  }).join("");
+}
+
+async function editPatient(id){
+ const p=patientList.find(x=>x.id===id);if(!p)return;
+ const full_name=prompt("اسم المراجع:",p.full_name||"");if(full_name===null)return;
+ const phone=prompt("رقم الهاتف:",p.phone||"");if(phone===null)return;
+ const ageText=prompt("العمر:",p.age==null?"":p.age);if(ageText===null)return;
+ const governorate=prompt("المحافظة:",p.governorate||"");if(governorate===null)return;
+ const approval_status=prompt("حالة الحساب: pending أو approved أو rejected",p.approval_status||"pending");if(approval_status===null)return;
+ if(!["pending","approved","rejected"].includes(approval_status.trim())){alert("الحالة غير صحيحة.");return;}
+ const age=ageText.trim()===""?null:Number(ageText);
+ if(age!==null&&(!Number.isInteger(age)||age<1||age>120)){alert("العمر يجب أن يكون بين 1 و120.");return;}
+ const {error}=await db.from("profiles").update({
+  full_name:full_name.trim(),phone:phone.trim(),age,
+  governorate:governorate.trim(),approval_status:approval_status.trim(),
+  updated_at:new Date().toISOString()
+ }).eq("id",id).eq("role","patient");
+ if(error){setText("errorPatients","تعذر تعديل المراجع: "+error.message);return;}
+ setText("message","تم تحديث بيانات المراجع.");
+ await Promise.all([loadPatients(),refreshDashboard()]);
 }
 
 async function updatePatientStatus(id,newStatus,button){
@@ -518,6 +567,80 @@ async function updatePatientStatus(id,newStatus,button){
  }
  setText("message",isApprove?"تم قبول حساب المراجع بنجاح.":"تم رفض حساب المراجع بنجاح.");
  await Promise.all([loadPatients(),refreshDashboard()]);
+}
+
+async function loadDoctors(){
+ const tbody=document.getElementById("doctorsTable");if(!tbody)return;
+ setText("manageDoctorsError","");
+ tbody.innerHTML="<tr><td colspan='5'>جارٍ تحميل الأطباء...</td></tr>";
+ const {data,error}=await db.from("doctors")
+ .select("id,profile_id,specialty_id,clinic_id,qualification,experience_years,consultation_fee,bio,is_active,photo_url,specialties(name_ar),clinics(name,address,phone,maps_url)")
+ .order("created_at",{ascending:false});
+ if(error){setText("manageDoctorsError","تعذر تحميل الأطباء: "+error.message);return;}
+ managedDoctors=data||[];
+ const ids=managedDoctors.map(d=>d.profile_id).filter(Boolean);
+ let profiles=[];
+ if(ids.length){
+  const result=await db.from("profiles").select("id,full_name,phone").in("id",ids);
+  if(result.error){setText("manageDoctorsError",result.error.message);return;}
+  profiles=result.data||[];
+ }
+ managedDoctors=managedDoctors.map(d=>({...d,profile:profiles.find(p=>p.id===d.profile_id)||{}}));
+ if(!managedDoctors.length){tbody.innerHTML="<tr><td colspan='5'>لا توجد سجلات أطباء.</td></tr>";return;}
+ tbody.innerHTML=managedDoctors.map(d=>{
+  const active=d.is_active!==false;
+  return `<tr>
+   <td>${escapeHTML(d.profile.full_name||"طبيب")}</td>
+   <td>${escapeHTML(d.specialties?.name_ar||"غير محدد")}</td>
+   <td>${escapeHTML(d.clinics?.name||"غير محددة")}</td>
+   <td><span class="status ${active?"approved":"rejected"}">${active?"نشط":"موقوف"}</span></td>
+   <td>
+    <button class="btn-light" onclick="editDoctor('${d.id}')">تعديل البيانات</button>
+    <button class="${active?"reject-btn":"approve-btn"}" onclick="toggleDoctorActive('${d.id}',${active})">${active?"إيقاف الطبيب":"استئناف الطبيب"}</button>
+   </td>
+  </tr>`;
+ }).join("");
+}
+
+async function editDoctor(id){
+ const d=managedDoctors.find(x=>x.id===id);if(!d)return;
+ const name=prompt("اسم الطبيب:",d.profile.full_name||"");if(name===null)return;
+ const phone=prompt("رقم الهاتف:",d.profile.phone||"");if(phone===null)return;
+ const qualification=prompt("المؤهل العلمي:",d.qualification||"");if(qualification===null)return;
+ const expText=prompt("سنوات الخبرة:",d.experience_years==null?0:d.experience_years);if(expText===null)return;
+ const feeText=prompt("أجرة الكشف بالدينار:",d.consultation_fee==null?0:d.consultation_fee);if(feeText===null)return;
+ const bio=prompt("نبذة الطبيب:",d.bio||"");if(bio===null)return;
+ const photo=prompt("رابط صورة الطبيب:",d.photo_url||"");if(photo===null)return;
+ const address=prompt("عنوان العيادة:",d.clinics?.address||"");if(address===null)return;
+ const clinicPhone=prompt("هاتف العيادة:",d.clinics?.phone||"");if(clinicPhone===null)return;
+ const maps=prompt("رابط Google Maps:",d.clinics?.maps_url||"");if(maps===null)return;
+ const exp=Number(expText),fee=Number(feeText);
+ if(!Number.isInteger(exp)||exp<0||exp>70||!Number.isFinite(fee)||fee<0){alert("تحقق من سنوات الخبرة وأجرة الكشف.");return;}
+ const {error:pe}=await db.from("profiles").update({
+  full_name:name.trim(),phone:phone.trim(),updated_at:new Date().toISOString()
+ }).eq("id",d.profile_id).eq("role","doctor");
+ if(pe){setText("manageDoctorsError","تعذر تحديث حساب الطبيب: "+pe.message);return;}
+ const {error:de}=await db.from("doctors").update({
+  qualification:qualification.trim(),experience_years:exp,
+  consultation_fee:fee,bio:bio.trim(),photo_url:photo.trim()
+ }).eq("id",id);
+ if(de){setText("manageDoctorsError","تعذر تحديث بيانات الطبيب: "+de.message);return;}
+ const {error:ce}=await db.from("clinics").update({
+  address:address.trim(),phone:clinicPhone.trim(),maps_url:maps.trim()
+ }).eq("id",d.clinic_id);
+ if(ce){setText("manageDoctorsError","تم تعديل الطبيب لكن تعذر تعديل العيادة: "+ce.message);return;}
+ setText("manageDoctorsMessage","تم تحديث بيانات الطبيب والعيادة بنجاح.");
+ await loadDoctors();
+}
+
+async function toggleDoctorActive(id,currentActive){
+ const d=managedDoctors.find(x=>x.id===id);if(!d)return;
+ const action=currentActive?"إيقاف":"استئناف";
+ if(!confirm("هل تريد "+action+" الطبيب "+(d.profile.full_name||"")+"؟ "+(currentActive?"سيختفي عن المراجعين ويُمنع من الدخول والحجوزات الجديدة.":"سيعود للظهور واستقبال الحجوزات.")))return;
+ const {error}=await db.from("doctors").update({is_active:!currentActive}).eq("id",id);
+ if(error){setText("manageDoctorsError","تعذر تغيير حالة الطبيب: "+error.message);return;}
+ setText("manageDoctorsMessage",currentActive?"تم إيقاف الطبيب دون حذف سجلاته.":"تم استئناف الطبيب بنجاح.");
+ await Promise.all([loadDoctors(),refreshDashboard()]);
 }
 
 async function loadDoctorOptions(){
