@@ -8,128 +8,90 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}
-:root{
-color-scheme:light;
---sky:#38bdf8;
---sky-dark:#0284c7;
---sky-soft:#eaf8ff;
---ink:#17324a;
---line:#cceeff;
-}
-body{margin:0;background:#fff;color:var(--ink);font-family:Arial,sans-serif}
-header{background:#fff;padding:22px;border-bottom:3px solid var(--sky);box-shadow:0 3px 16px #0284c710}
-.brand{color:var(--sky-dark);font-size:25px;font-weight:bold}
+:root{color-scheme:light;--sky:#38bdf8;--blue:#0284c7;--soft:#eaf8ff;--ink:#17324a;--line:#cceeff}
+body{margin:0;background:#f7fcff;color:var(--ink);font-family:Arial,sans-serif}
+header{background:#fff;padding:14px 24px;border-bottom:1px solid var(--line);box-shadow:0 3px 18px #0284c710;display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:20}
+.brand{color:var(--blue);font-size:25px;font-weight:bold}
 header p,.muted,.small{color:#668397}
-main{max-width:1200px;margin:auto;padding:18px}
-.card,.chart-card{
-background:#fff;
-border:1px solid var(--line);
-border-radius:15px;
-padding:20px;
-margin-bottom:18px;
-box-shadow:0 5px 22px #0284c710;
-}
-input,select,textarea{
-width:100%;
-padding:13px;
-margin:8px 0;
-border:1px solid #b9e6fb;
-border-radius:9px;
-background:#fff;
-color:var(--ink);
-}
-input:focus,select:focus,textarea:focus{
-outline:none;
-border-color:var(--sky-dark);
-box-shadow:0 0 0 3px #38bdf826;
-}
-textarea{min-height:90px}
-button{
-padding:11px 15px;
-background:var(--sky-dark);
-color:#fff;
-border:0;
-border-radius:8px;
-font-weight:bold;
-cursor:pointer;
-margin:2px;
-}
+.header-actions{display:flex;gap:8px;align-items:center}
+.header-actions button{margin:0}
+main{max-width:none;margin:0;padding:22px}
+button{padding:11px 15px;background:var(--blue);color:#fff;border:0;border-radius:9px;font-weight:bold;cursor:pointer;margin:2px}
 button:hover{background:#0369a1}
-button:disabled{opacity:.5}
+button:disabled{opacity:.5;cursor:not-allowed}
+.btn-light{background:var(--soft);color:#0369a1;border:1px solid var(--line)}
+.btn-light:hover{background:#d9f2ff}
 .hidden{display:none!important}
-.grid{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-gap:13px;
-}
-.stat{
-background:var(--sky-soft);
-padding:20px;
-border-radius:12px;
-border:1px solid var(--line);
-}
+.card,.chart-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:18px;box-shadow:0 5px 22px #0284c710}
+.dashboard-layout{display:grid;grid-template-columns:245px minmax(0,1fr);gap:22px;align-items:start}
+.sidebar{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 5px 22px #0284c710;position:sticky;top:94px}
+.sidebar-brand{font-size:17px;font-weight:bold;color:var(--blue);padding:8px 10px 18px;border-bottom:1px solid #e2f4fc;margin-bottom:14px}
+.sidebar-nav{display:flex;flex-direction:column;gap:7px}
+.sidebar-nav button{width:100%;text-align:right;background:transparent;color:#52758d;padding:13px 14px;border-radius:11px;margin:0}
+.sidebar-nav button:hover{background:#f0faff;color:#0369a1}
+.sidebar-nav button.active{background:var(--soft);color:#0369a1;border:1px solid var(--line)}
+.workspace{min-width:0}
+.welcome-card{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.welcome-card h2{margin:0 0 8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:13px}
+.stat{background:var(--soft);padding:20px;border-radius:12px;border:1px solid var(--line)}
 .stat span{color:#52758d;font-size:14px}
-.stat strong{
-display:block;
-font-size:32px;
-color:var(--sky-dark);
-margin-top:12px;
-}
-nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
-nav button{background:#eaf8ff;color:#0369a1}
-nav button.active{background:var(--sky-dark);color:#fff}
+.stat strong{display:block;font-size:32px;color:var(--blue);margin-top:12px}
+input,select,textarea{width:100%;padding:13px;margin:8px 0;border:1px solid #b9e6fb;border-radius:9px;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px #38bdf826}
+textarea{min-height:90px}
 .table-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;min-width:700px}
-th,td{
-padding:13px;
-text-align:right;
-border-bottom:1px solid #e2f4fc;
-}
-th{color:var(--sky-dark)}
-.status{
-display:inline-block;
-padding:5px 9px;
-border-radius:20px;
-font-size:12px;
-background:#fff4d6;
-color:#8a6415;
-}
-.approved{background:#e0f7ee;color:#087a53}
-.rejected{background:#ffe8eb;color:#b42335}
-#error,#errorPatients,#doctorError,#dashboardError{color:#c62828}
+th,td{padding:13px;text-align:right;border-bottom:1px solid #e2f4fc}
+th{color:var(--blue);white-space:nowrap}
+.status,.booking-status{display:inline-block;padding:6px 10px;border-radius:20px;font-size:12px;white-space:nowrap;background:#fff4d6;color:#8a6415}
+.approved,.booking-status.completed{background:#e0f7ee;color:#087a53}
+.rejected,.booking-status.cancelled{background:#ffe8eb;color:#b42335}
+.booking-status.confirmed{background:#e0f2fe;color:#0369a1}
+.booking-status.pending{background:#fff4d6;color:#8a6415}
+#error,#errorPatients,#doctorError,#dashboardError,#appointmentsError{color:#c62828}
 #message,#doctorMessage{color:#087a53}
-.form-grid{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-gap:8px;
-}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
 .chart-card{padding:18px;margin-top:16px}
-.chart-card h3{margin-top:0;color:var(--sky-dark)}
+.chart-card h3{margin-top:0;color:var(--blue)}
 .chart-wrap{position:relative;width:100%;height:260px}
 canvas{width:100%;height:100%;display:block}
-.section-title{
-display:flex;
-justify-content:space-between;
-align-items:center;
-gap:10px;
-flex-wrap:wrap;
-}
+.section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .small{font-size:12px}
-.approve-btn{background:#0284c7;color:#fff}
-.reject-btn{background:#dc5555;color:#fff}
+.approve-btn{background:#0284c7}
+.reject-btn{background:#dc5555}
 .patient-actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.booking-toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:12px 0}
+.booking-toolbar input{flex:1;min-width:220px;margin:0}
+.booking-count{color:#668397;font-size:13px}
+.empty-state{text-align:center;padding:28px;color:#668397}
+@media(max-width:900px){
+.dashboard-layout{grid-template-columns:1fr}
+.sidebar{position:static}
+.sidebar-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 @media(max-width:600px){
+header{padding:12px;align-items:flex-start;flex-direction:column}
+.header-actions{width:100%}
+.header-actions button{flex:1}
 main{padding:10px}
 .card{padding:15px}
 .chart-wrap{height:220px}
+.sidebar-nav{grid-template-columns:1fr 1fr}
 }
 </style>
 </head>
 <body>
 
 <header>
- <div class="brand">IRAQ MEDICAL</div>
- <p>لوحة الإدارة المركزية</p>
+ <div>
+  <div class="brand">IRAQ MEDICAL</div>
+  <p>لوحة الإدارة المركزية</p>
+ </div>
+ <div class="header-actions hidden" id="topActions">
+  <button class="btn-light" onclick="refreshAll()">تحديث البيانات</button>
+  <button onclick="logout()">تسجيل الخروج</button>
+ </div>
 </header>
 
 <main>
@@ -142,130 +104,125 @@ main{padding:10px}
 </section>
 
 <section id="dashboard" class="hidden">
+ <div class="dashboard-layout">
+  <aside class="sidebar">
+   <div class="sidebar-brand">مركز التحكم الإداري</div>
+   <nav class="sidebar-nav">
+    <button class="side-link active" onclick="showSection('homeSection',this)">الرئيسية</button>
+    <button class="side-link" onclick="showSection('patientsSection',this)">إدارة المراجعين</button>
+    <button class="side-link" onclick="showSection('bookingsSection',this)">إدارة الحجوزات</button>
+    <button class="side-link" onclick="showSection('doctorsSection',this)">إضافة طبيب</button>
+   </nav>
+  </aside>
 
- <div class="card">
-  <div class="section-title">
-   <div>
-    <h2>مرحباً بك في الإدارة</h2>
-    <p class="muted" id="adminEmail"></p>
-   </div>
-   <button onclick="logout()">تسجيل الخروج</button>
-  </div>
- </div>
-
- <div class="card">
-  <div class="section-title">
-   <h2>لوحة المؤشرات الرئيسية</h2>
-   <button onclick="refreshDashboard()">تحديث البيانات</button>
-  </div>
-  <p class="small">إحصائيات المنصة الإجمالية منذ إطلاقها</p>
-  <div class="grid">
-   <div class="stat"><span>إجمالي المراجعين المسجلين</span><strong id="totalPatients">—</strong></div>
-   <div class="stat"><span>المراجعون الذين حجزوا</span><strong id="bookedPatients">—</strong></div>
-   <div class="stat"><span>إجمالي الأطباء المسجلين</span><strong id="totalDoctors">—</strong></div>
-   <div class="stat"><span>إجمالي الحجوزات</span><strong id="totalAppointments">—</strong></div>
-  </div>
-  <p id="dashboardError"></p>
- </div>
-
- <div class="card">
-  <h2>أقسام الإدارة</h2>
-  <nav>
-   <button class="active" onclick="showSection('homeSection',this)">الرئيسية</button>
-   <button onclick="showSection('patientsSection',this)">إدارة المراجعين</button>
-   <button onclick="showSection('doctorsSection',this)">إضافة طبيب</button>
-  </nav>
- </div>
-
- <section id="homeSection">
-  <div class="chart-card">
-   <h3>نمو تسجيل المراجعين – آخر 30 يوماً</h3>
-   <div class="chart-wrap"><canvas id="patientsChart"></canvas></div>
-  </div>
-  <div class="chart-card">
-   <h3>نمو الحجوزات – آخر 30 يوماً</h3>
-   <div class="chart-wrap"><canvas id="appointmentsChart"></canvas></div>
-  </div>
-  <div class="chart-card">
-   <h3>نمو تسجيل الأطباء – آخر 30 يوماً</h3>
-   <div class="chart-wrap"><canvas id="doctorsChart"></canvas></div>
-  </div>
-  <p class="small">المخططات تعرض عدد التسجيلات والحجوزات الجديدة لكل يوم.</p>
- </section>
-
- <section id="patientsSection" class="card hidden">
-  <h2>إدارة المراجعين</h2>
-  <p class="muted">يمكنك قبول حساب المراجع أو رفضه من خانة الحالة.</p>
-  <input id="search" placeholder="ابحث بالاسم أو الهاتف أو المحافظة..." oninput="renderPatients()">
-  <button onclick="loadPatients()">تحديث القائمة</button>
-  <p id="message"></p>
-  <p id="errorPatients"></p>
-  <div class="table-wrap">
-   <table>
-    <thead>
-     <tr>
-      <th>الاسم</th>
-      <th>رقم الهاتف</th>
-      <th>المحافظة</th>
-      <th>الحالة</th>
-      <th>تاريخ التسجيل</th>
-     </tr>
-    </thead>
-    <tbody id="patientsTable">
-     <tr><td colspan="5">جارٍ تحميل البيانات...</td></tr>
-    </tbody>
-   </table>
-  </div>
- </section>
-
- <section id="doctorsSection" class="card hidden">
-  <h2>إضافة طبيب جديد</h2>
-  <p class="muted">إنشاء حساب طبيب من خلال الوظيفة الآمنة.</p>
-
-  <form id="doctorForm">
-   <div class="form-grid">
-    <div><label>اسم الطبيب الكامل *</label><input id="doctorName" required maxlength="150"></div>
-    <div><label>رقم الهاتف *</label><input id="doctorPhone" required maxlength="30" inputmode="tel"></div>
-    <div><label>البريد الإلكتروني *</label><input id="doctorEmail" type="email" required></div>
-    <div><label>كلمة المرور الأولية *</label><input id="doctorPassword" type="password" required minlength="10"></div>
-
+  <div class="workspace">
+   <div class="card welcome-card">
     <div>
-     <label>التخصص *</label>
-     <select id="specialty" required>
-      <option value="">تحميل التخصصات...</option>
-     </select>
+     <h2>مرحباً بك في الإدارة</h2>
+     <p class="muted" id="adminEmail"></p>
     </div>
-
-    <div>
-     <label>اسم العيادة *</label>
-     <input id="clinicName" type="text" required maxlength="160" placeholder="اكتب اسم العيادة هنا">
-    </div>
-
-    <div>
-     <label>عنوان العيادة بالتفصيل *</label>
-     <input id="clinicAddress" type="text" required maxlength="300" placeholder="المحافظة، المنطقة، الشارع، أقرب نقطة دالة">
-    </div>
-
-    <div>
-     <label>موقع العيادة على Google Maps *</label>
-     <input id="clinicMapsUrl" type="url" required maxlength="1000" placeholder="https://maps.app.goo.gl/...">
-    </div>
-
-    <div><label>المؤهل العلمي</label><input id="qualification"></div>
-    <div><label>سنوات الخبرة</label><input id="experience" type="number" min="0" max="70" value="0"></div>
-    <div><label>أجرة الكشف</label><input id="fee" type="number" min="0" value="0"></div>
+    <span class="small">نظام إدارة IRAQ MEDICAL</span>
    </div>
 
-   <label>نبذة عن الطبيب</label>
-   <textarea id="bio"></textarea>
+   <div class="card">
+    <div class="section-title">
+     <h2>لوحة المؤشرات الرئيسية</h2>
+     <span class="small">إحصائيات المنصة الإجمالية</span>
+    </div>
+    <div class="grid">
+     <div class="stat"><span>إجمالي المراجعين المسجلين</span><strong id="totalPatients">—</strong></div>
+     <div class="stat"><span>المراجعون الذين حجزوا</span><strong id="bookedPatients">—</strong></div>
+     <div class="stat"><span>إجمالي الأطباء المسجلين</span><strong id="totalDoctors">—</strong></div>
+     <div class="stat"><span>إجمالي الحجوزات</span><strong id="totalAppointments">—</strong></div>
+    </div>
+    <p id="dashboardError"></p>
+   </div>
 
-   <button id="createDoctorButton" type="submit">إنشاء حساب الطبيب</button>
-  </form>
+   <section id="homeSection">
+    <div class="chart-card">
+     <h3>نمو تسجيل المراجعين – آخر 30 يوماً</h3>
+     <div class="chart-wrap"><canvas id="patientsChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+     <h3>نمو الحجوزات – آخر 30 يوماً</h3>
+     <div class="chart-wrap"><canvas id="appointmentsChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+     <h3>نمو تسجيل الأطباء – آخر 30 يوماً</h3>
+     <div class="chart-wrap"><canvas id="doctorsChart"></canvas></div>
+    </div>
+    <p class="small">المخططات تعرض عدد التسجيلات والحجوزات الجديدة لكل يوم.</p>
+   </section>
 
-  <p id="doctorMessage"></p>
-  <p id="doctorError"></p>
- </section>
+   <section id="patientsSection" class="card hidden">
+    <h2>إدارة المراجعين</h2>
+    <p class="muted">يمكنك قبول حساب المراجع أو رفضه من خانة الحالة.</p>
+    <input id="search" placeholder="ابحث بالاسم أو الهاتف أو المحافظة..." oninput="renderPatients()">
+    <button onclick="loadPatients()">تحديث القائمة</button>
+    <p id="message"></p>
+    <p id="errorPatients"></p>
+    <div class="table-wrap">
+     <table>
+      <thead><tr><th>الاسم</th><th>رقم الهاتف</th><th>المحافظة</th><th>الحالة</th><th>تاريخ التسجيل</th></tr></thead>
+      <tbody id="patientsTable"><tr><td colspan="5">جارٍ تحميل البيانات...</td></tr></tbody>
+     </table>
+    </div>
+   </section>
 
+   <section id="bookingsSection" class="card hidden">
+    <div class="section-title">
+     <div>
+      <h2>إدارة الحجوزات</h2>
+      <p class="muted">عرض حجوزات المراجعين والأطباء وحالة كل موعد.</p>
+     </div>
+     <span class="booking-count" id="bookingCount">0 حجز</span>
+    </div>
+    <div class="booking-toolbar">
+     <input id="bookingSearch" placeholder="ابحث باسم المراجع أو الطبيب أو الهاتف أو الحالة..." oninput="renderAppointments()">
+     <button class="btn-light" onclick="loadAppointments()">تحديث الحجوزات</button>
+    </div>
+    <p id="appointmentsError"></p>
+    <div class="table-wrap">
+     <table>
+      <thead>
+       <tr>
+        <th>المراجع</th><th>رقم الهاتف</th><th>الطبيب</th><th>الاختصاص</th><th>موعد الحجز</th><th>الحالة</th>
+       </tr>
+      </thead>
+      <tbody id="appointmentsTable"><tr><td colspan="6" class="empty-state">جارٍ تحميل الحجوزات...</td></tr></tbody>
+     </table>
+    </div>
+   </section>
+
+   <section id="doctorsSection" class="card hidden">
+    <h2>إضافة طبيب جديد</h2>
+    <p class="muted">إنشاء حساب طبيب من خلال الوظيفة الآمنة.</p>
+    <form id="doctorForm">
+     <div class="form-grid">
+      <div><label>اسم الطبيب الكامل *</label><input id="doctorName" required maxlength="150"></div>
+      <div><label>رقم الهاتف *</label><input id="doctorPhone" required maxlength="30" inputmode="tel"></div>
+      <div><label>البريد الإلكتروني *</label><input id="doctorEmail" type="email" required></div>
+      <div><label>كلمة المرور الأولية *</label><input id="doctorPassword" type="password" required minlength="10"></div>
+      <div>
+       <label>التخصص *</label>
+       <select id="specialty" required><option value="">تحميل التخصصات...</option></select>
+      </div>
+      <div><label>اسم العيادة *</label><input id="clinicName" required maxlength="160" placeholder="اكتب اسم العيادة هنا"></div>
+      <div><label>عنوان العيادة بالتفصيل *</label><input id="clinicAddress" required maxlength="300" placeholder="المحافظة، المنطقة، الشارع، أقرب نقطة دالة"></div>
+      <div><label>موقع العيادة على Google Maps *</label><input id="clinicMapsUrl" type="url" required maxlength="1000" placeholder="https://maps.app.goo.gl/..."></div>
+      <div><label>المؤهل العلمي</label><input id="qualification"></div>
+      <div><label>سنوات الخبرة</label><input id="experience" type="number" min="0" max="70" value="0"></div>
+      <div><label>أجرة الكشف</label><input id="fee" type="number" min="0" value="0"></div>
+     </div>
+     <label>نبذة عن الطبيب</label>
+     <textarea id="bio"></textarea>
+     <button id="createDoctorButton" type="submit">إنشاء حساب الطبيب</button>
+    </form>
+    <p id="doctorMessage"></p>
+    <p id="doctorError"></p>
+   </section>
+  </div>
+ </div>
 </section>
 </main>
 
@@ -276,6 +233,8 @@ const CREATE_DOCTOR_URL=SUPABASE_URL+"/functions/v1/admin-create-doctor";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let patientList=[];
+let appointmentList=[];
+let bookingsRefreshTimer=null;
 let chartData={patients:[],appointments:[],doctors:[]};
 
 function setText(id,value){
@@ -298,204 +257,134 @@ async function login(){
  const email=document.getElementById("email").value.trim();
  const password=document.getElementById("password").value;
  setText("error","");
-
- if(!email||!password){
-  setText("error","أدخل البريد الإلكتروني وكلمة المرور.");
-  return;
- }
-
+ if(!email||!password){setText("error","أدخل البريد الإلكتروني وكلمة المرور.");return;}
  const btn=document.getElementById("loginButton");
  btn.disabled=true;
-
  try{
   const {data,error}=await db.auth.signInWithPassword({email,password});
   if(error)throw error;
-
   if(!await verifyAdmin(data.user)){
    await db.auth.signOut();
    throw new Error("هذا الحساب لا يملك صلاحية المدير.");
   }
-
   await showDashboard(data.user);
- }catch(e){
-  setText("error",e.message||"تعذر تسجيل الدخول.");
- }finally{
-  btn.disabled=false;
- }
+ }catch(e){setText("error",e.message||"تعذر تسجيل الدخول.");}
+ finally{btn.disabled=false;}
 }
 
 async function showDashboard(user){
  document.getElementById("login").classList.add("hidden");
  document.getElementById("dashboard").classList.remove("hidden");
+ document.getElementById("topActions").classList.remove("hidden");
  setText("adminEmail",user.email);
-
- await refreshDashboard();
- await loadPatients();
- await loadDoctorOptions();
+ await Promise.all([refreshDashboard(),loadPatients(),loadDoctorOptions(),loadAppointments()]);
+ if(bookingsRefreshTimer)clearInterval(bookingsRefreshTimer);
+ bookingsRefreshTimer=setInterval(async()=>{
+  await Promise.all([loadAppointments(),refreshDashboard()]);
+ },10000);
 }
 
 function showSection(id,button){
- ["homeSection","patientsSection","doctorsSection"].forEach(x=>{
+ ["homeSection","patientsSection","bookingsSection","doctorsSection"].forEach(x=>{
   document.getElementById(x).classList.add("hidden");
  });
-
  document.getElementById(id).classList.remove("hidden");
-
- document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
+ document.querySelectorAll(".side-link").forEach(b=>b.classList.remove("active"));
  button.classList.add("active");
-
  if(id==="homeSection")renderCharts();
+ if(id==="bookingsSection")loadAppointments();
 }
 
 function dateKey(value){
  const d=new Date(value);
- const y=d.getFullYear();
- const m=String(d.getMonth()+1).padStart(2,"0");
- const day=String(d.getDate()).padStart(2,"0");
- return `${y}-${m}-${day}`;
+ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
 
 function last30Days(){
- const days=[];
- const today=new Date();
+ const days=[],today=new Date();
  today.setHours(0,0,0,0);
-
  for(let i=29;i>=0;i--){
-  const d=new Date(today);
-  d.setDate(d.getDate()-i);
-  days.push(dateKey(d));
+  const d=new Date(today);d.setDate(d.getDate()-i);days.push(dateKey(d));
  }
-
  return days;
 }
 
 function buildSeries(rows,days){
- const counts={};
- days.forEach(d=>counts[d]=0);
-
+ const counts={};days.forEach(d=>counts[d]=0);
  (rows||[]).forEach(row=>{
   if(!row.created_at)return;
   const key=dateKey(row.created_at);
   if(Object.prototype.hasOwnProperty.call(counts,key))counts[key]++;
  });
-
  return days.map(d=>counts[d]);
 }
 
 function drawLineChart(canvasId,labels,values){
  const canvas=document.getElementById(canvasId);
  if(!canvas)return;
-
  const rect=canvas.getBoundingClientRect();
  if(!rect.width)return;
-
  const ratio=window.devicePixelRatio||1;
- canvas.width=rect.width*ratio;
- canvas.height=rect.height*ratio;
-
+ canvas.width=rect.width*ratio;canvas.height=rect.height*ratio;
  const ctx=canvas.getContext("2d");
  ctx.setTransform(ratio,0,0,ratio,0,0);
-
  const w=rect.width,h=rect.height;
  const pad={top:20,right:38,bottom:38,left:38};
- const cw=w-pad.left-pad.right;
- const ch=h-pad.top-pad.bottom;
- const max=Math.max(4,...values);
- const step=Math.ceil(max/4);
- const top=step*4;
-
+ const cw=w-pad.left-pad.right,ch=h-pad.top-pad.bottom;
+ const max=Math.max(4,...values),step=Math.ceil(max/4),top=step*4;
  ctx.clearRect(0,0,w,h);
- ctx.font="11px Arial";
- ctx.textAlign="right";
- ctx.textBaseline="middle";
- ctx.strokeStyle="#cceeff";
- ctx.fillStyle="#668397";
- ctx.lineWidth=1;
-
+ ctx.font="11px Arial";ctx.textAlign="right";ctx.textBaseline="middle";
+ ctx.strokeStyle="#cceeff";ctx.fillStyle="#668397";ctx.lineWidth=1;
  for(let i=0;i<=4;i++){
   const y=pad.top+ch-(i/4)*ch;
-  ctx.beginPath();
-  ctx.moveTo(pad.left,y);
-  ctx.lineTo(w-pad.right,y);
-  ctx.stroke();
+  ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(w-pad.right,y);ctx.stroke();
   ctx.fillText(String(i*step),pad.left-8,y);
  }
-
  const xAt=i=>pad.left+(i/(Math.max(1,values.length-1)))*cw;
  const yAt=v=>pad.top+ch-(v/top)*ch;
-
- ctx.strokeStyle="#0284c7";
- ctx.lineWidth=2.8;
- ctx.beginPath();
-
- values.forEach((v,i)=>{
-  const x=xAt(i),y=yAt(v);
-  if(i===0)ctx.moveTo(x,y);
-  else ctx.lineTo(x,y);
- });
-
+ ctx.strokeStyle="#0284c7";ctx.lineWidth=2.8;ctx.beginPath();
+ values.forEach((v,i)=>{const x=xAt(i),y=yAt(v);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);});
  ctx.stroke();
-
  values.forEach((v,i)=>{
-  ctx.beginPath();
-  ctx.arc(xAt(i),yAt(v),3.2,0,Math.PI*2);
-  ctx.fillStyle="#38bdf8";
-  ctx.fill();
+  ctx.beginPath();ctx.arc(xAt(i),yAt(v),3.2,0,Math.PI*2);
+  ctx.fillStyle="#38bdf8";ctx.fill();
  });
-
- ctx.fillStyle="#668397";
- ctx.textAlign="center";
- ctx.textBaseline="top";
-
- [0,7,14,21,29].forEach(i=>{
-  ctx.fillText(labels[i].slice(5),xAt(i),h-pad.bottom+12);
- });
+ ctx.fillStyle="#668397";ctx.textAlign="center";ctx.textBaseline="top";
+ [0,7,14,21,29].forEach(i=>ctx.fillText(labels[i].slice(5),xAt(i),h-pad.bottom+12));
 }
 
 function renderCharts(){
  const days=last30Days();
-
  drawLineChart("patientsChart",days,buildSeries(chartData.patients,days));
  drawLineChart("appointmentsChart",days,buildSeries(chartData.appointments,days));
  drawLineChart("doctorsChart",days,buildSeries(chartData.doctors,days));
 }
 
+async function refreshAll(){
+ await Promise.all([refreshDashboard(),loadPatients(),loadAppointments()]);
+}
+
 async function refreshDashboard(){
  setText("dashboardError","");
-
  const ids=["totalPatients","bookedPatients","totalDoctors","totalAppointments"];
  ids.forEach(id=>setText(id,"..."));
-
  try{
   const [patients,doctors,appointments]=await Promise.all([
    db.from("profiles").select("id,created_at").eq("role","patient"),
    db.from("profiles").select("id,created_at").eq("role","doctor"),
    db.from("appointments").select("id,patient_id,created_at")
   ]);
-
   if(patients.error)throw new Error("المراجعون: "+patients.error.message);
   if(doctors.error)throw new Error("الأطباء: "+doctors.error.message);
   if(appointments.error)throw new Error("الحجوزات: "+appointments.error.message);
-
-  const patientRows=patients.data||[];
-  const doctorRows=doctors.data||[];
-  const appointmentRows=appointments.data||[];
-
+  const patientRows=patients.data||[],doctorRows=doctors.data||[],appointmentRows=appointments.data||[];
   const booked=new Set(appointmentRows.map(a=>a.patient_id).filter(Boolean));
-
   setText("totalPatients",patientRows.length);
   setText("bookedPatients",booked.size);
   setText("totalDoctors",doctorRows.length);
   setText("totalAppointments",appointmentRows.length);
-
-  chartData={
-   patients:patientRows,
-   doctors:doctorRows,
-   appointments:appointmentRows
-  };
-
+  chartData={patients:patientRows,doctors:doctorRows,appointments:appointmentRows};
   renderCharts();
-
  }catch(e){
   setText("dashboardError","تعذر تحميل المؤشرات: "+e.message);
   ids.forEach(id=>setText(id,"—"));
@@ -506,77 +395,108 @@ async function loadPatients(){
  const tbody=document.getElementById("patientsTable");
  setText("errorPatients","");
  tbody.innerHTML="<tr><td colspan='5'>جارٍ التحميل...</td></tr>";
-
  const {data,error}=await db.from("profiles")
  .select("id,full_name,phone,governorate,role,approval_status,created_at")
- .eq("role","patient")
- .order("created_at",{ascending:false});
+ .eq("role","patient").order("created_at",{ascending:false});
+ if(error){tbody.innerHTML="";setText("errorPatients","تعذر تحميل المراجعين: "+error.message);return;}
+ patientList=data||[];renderPatients();
+}
 
+function appointmentStatusLabel(status){
+ const labels={pending:"بانتظار التأكيد",confirmed:"مؤكد",completed:"مكتمل",cancelled:"ملغي",rejected:"مرفوض",no_show:"لم يحضر"};
+ return labels[status]||status||"غير محدد";
+}
+
+function appointmentDateLabel(value){
+ if(!value)return "غير محدد";
+ const date=new Date(value);
+ if(Number.isNaN(date.getTime()))return "غير محدد";
+ return date.toLocaleString("ar-IQ",{dateStyle:"medium",timeStyle:"short"});
+}
+
+async function loadAppointments(){
+ const tbody=document.getElementById("appointmentsTable");
+ if(!tbody)return;
+ setText("appointmentsError","");
+ if(!appointmentList.length)tbody.innerHTML="<tr><td colspan='6' class='empty-state'>جارٍ تحميل الحجوزات...</td></tr>";
+ const {data,error}=await db.from("appointments")
+ .select(`
+  id,patient_id,doctor_id,appointment_at,status,created_at,
+  patient:profiles!appointments_patient_id_fkey(full_name,phone),
+  doctor:doctors!appointments_doctor_id_fkey(
+   profile:profiles!doctors_profile_id_fkey(full_name),
+   specialty:specialties!doctors_specialty_id_fkey(name_ar)
+  )
+ `)
+ .order("appointment_at",{ascending:false});
  if(error){
-  tbody.innerHTML="";
-  setText("errorPatients","تعذر تحميل المراجعين: "+error.message);
+  setText("appointmentsError","تعذر تحميل الحجوزات: "+error.message);
+  if(!appointmentList.length)tbody.innerHTML="<tr><td colspan='6' class='empty-state'>تعذر تحميل الحجوزات.</td></tr>";
   return;
  }
+ appointmentList=data||[];renderAppointments();
+}
 
- patientList=data||[];
- renderPatients();
+function renderAppointments(){
+ const tbody=document.getElementById("appointmentsTable");
+ if(!tbody)return;
+ const term=(document.getElementById("bookingSearch")?.value||"").trim().toLowerCase();
+ const filtered=appointmentList.filter(a=>{
+  const patient=a.patient||{},doctor=a.doctor?.profile||{};
+  const specialty=a.doctor?.specialty?.name_ar||"";
+  const status=appointmentStatusLabel(a.status);
+  return [patient.full_name,patient.phone,doctor.full_name,specialty,status,a.status]
+   .filter(Boolean).join(" ").toLowerCase().includes(term);
+ });
+ setText("bookingCount",filtered.length+" حجز");
+ if(!filtered.length){
+  tbody.innerHTML="<tr><td colspan='6' class='empty-state'>لا توجد حجوزات مطابقة للبحث.</td></tr>";return;
+ }
+ tbody.innerHTML=filtered.map(a=>{
+  const patient=a.patient||{},doctor=a.doctor?.profile||{};
+  const specialty=a.doctor?.specialty?.name_ar||"غير محدد";
+  const status=a.status||"";
+  const statusClass=["pending","confirmed","completed","cancelled","rejected"].includes(status)?status:"";
+  return `<tr>
+   <td>${escapeHTML(patient.full_name||"غير محدد")}</td>
+   <td>${escapeHTML(patient.phone||"غير مسجل")}</td>
+   <td>${escapeHTML(doctor.full_name||"غير محدد")}</td>
+   <td>${escapeHTML(specialty)}</td>
+   <td>${escapeHTML(appointmentDateLabel(a.appointment_at))}</td>
+   <td><span class="booking-status ${statusClass}">${escapeHTML(appointmentStatusLabel(status))}</span></td>
+  </tr>`;
+ }).join("");
 }
 
 function getStatusLabel(status){
- const labels={
-  pending:"بانتظار الموافقة",
-  approved:"مقبول",
-  rejected:"مرفوض",
-  suspended:"موقوف"
- };
+ const labels={pending:"بانتظار الموافقة",approved:"مقبول",rejected:"مرفوض",suspended:"موقوف"};
  return labels[status]||status||"غير محدد";
 }
 
 function renderPatients(){
  const tbody=document.getElementById("patientsTable");
  const term=document.getElementById("search").value.trim().toLowerCase();
-
  const filtered=patientList.filter(p=>
   (p.full_name||"").toLowerCase().includes(term)||
   (p.phone||"").toLowerCase().includes(term)||
   (p.governorate||"").toLowerCase().includes(term)
  );
-
- if(!filtered.length){
-  tbody.innerHTML="<tr><td colspan='5'>لا توجد نتائج.</td></tr>";
-  return;
- }
-
+ if(!filtered.length){tbody.innerHTML="<tr><td colspan='5'>لا توجد نتائج.</td></tr>";return;}
  tbody.innerHTML=filtered.map(p=>{
-  const status=p.approval_status;
-  const approved=status==="approved";
-  const rejected=status==="rejected";
-
-  const date=p.created_at
-   ?new Date(p.created_at).toLocaleDateString("ar-IQ")
-   :"—";
-
+  const status=p.approval_status,approved=status==="approved",rejected=status==="rejected";
+  const date=p.created_at?new Date(p.created_at).toLocaleDateString("ar-IQ"):"—";
   let actions="";
-
   if(status==="pending"){
-   actions=`
-    <div class="patient-actions">
-     <button class="approve-btn" onclick="updatePatientStatus('${p.id}','approved',this)">قبول</button>
-     <button class="reject-btn" onclick="updatePatientStatus('${p.id}','rejected',this)">رفض</button>
-    </div>
-   `;
+   actions=`<div class="patient-actions">
+    <button class="approve-btn" onclick="updatePatientStatus('${p.id}','approved',this)">قبول</button>
+    <button class="reject-btn" onclick="updatePatientStatus('${p.id}','rejected',this)">رفض</button>
+   </div>`;
   }
-
   return `<tr>
    <td>${escapeHTML(p.full_name||"غير محدد")}</td>
    <td>${escapeHTML(p.phone||"غير مسجل")}</td>
    <td>${escapeHTML(p.governorate||"غير محددة")}</td>
-   <td>
-    <span class="status ${approved?"approved":rejected?"rejected":""}">
-     ${escapeHTML(getStatusLabel(status))}
-    </span>
-    ${actions}
-   </td>
+   <td><span class="status ${approved?"approved":rejected?"rejected":""}">${escapeHTML(getStatusLabel(status))}</span>${actions}</td>
    <td>${date}</td>
   </tr>`;
  }).join("");
@@ -584,164 +504,74 @@ function renderPatients(){
 
 async function updatePatientStatus(id,newStatus,button){
  const isApprove=newStatus==="approved";
-
- const question=isApprove
-  ?"هل تريد قبول حساب هذا المراجع؟"
-  :"هل تريد رفض حساب هذا المراجع؟";
-
- if(!confirm(question))return;
-
+ if(!confirm(isApprove?"هل تريد قبول حساب هذا المراجع؟":"هل تريد رفض حساب هذا المراجع؟"))return;
  button.disabled=true;
  setText("message","جارٍ تحديث حالة الحساب...");
  setText("errorPatients","");
-
  const {data,error}=await db.from("profiles").update({
-  approval_status:newStatus,
-  updated_at:new Date().toISOString()
- }).eq("id",id)
- .eq("role","patient")
- .eq("approval_status","pending")
- .select("id");
-
+  approval_status:newStatus,updated_at:new Date().toISOString()
+ }).eq("id",id).eq("role","patient").eq("approval_status","pending").select("id");
  if(error||!data?.length){
   setText("message","");
-  setText("errorPatients",error
-   ?"فشل تحديث الحساب: "+error.message
-   :"لم يتم تحديث الحساب. تحقق من صلاحيات RLS أو حالة الحساب.");
-
-  button.disabled=false;
-  return;
+  setText("errorPatients",error?"فشل تحديث الحساب: "+error.message:"لم يتم تحديث الحساب. تحقق من صلاحيات RLS أو حالة الحساب.");
+  button.disabled=false;return;
  }
-
- setText("message",isApprove
-  ?"تم قبول حساب المراجع بنجاح."
-  :"تم رفض حساب المراجع بنجاح.");
-
+ setText("message",isApprove?"تم قبول حساب المراجع بنجاح.":"تم رفض حساب المراجع بنجاح.");
  await Promise.all([loadPatients(),refreshDashboard()]);
 }
 
 async function loadDoctorOptions(){
  const specialtySelect=document.getElementById("specialty");
  specialtySelect.innerHTML='<option value="">اختر التخصص</option>';
-
- const {data,error}=await db.from("specialties")
- .select("id,name_ar")
- .eq("is_active",true)
- .order("name_ar");
-
- if(error){
-  setText("doctorError","تعذر تحميل التخصصات: "+error.message);
-  return;
- }
-
+ const {data,error}=await db.from("specialties").select("id,name_ar").eq("is_active",true).order("name_ar");
+ if(error){setText("doctorError","تعذر تحميل التخصصات: "+error.message);return;}
  (data||[]).forEach(row=>{
   const option=document.createElement("option");
-  option.value=row.id;
-  option.textContent=row.name_ar||"تخصص";
+  option.value=row.id;option.textContent=row.name_ar||"تخصص";
   specialtySelect.appendChild(option);
  });
 }
 
 async function findOrCreateClinic(clinicName,clinicAddress,clinicMapsUrl){
- const cleanName=clinicName.trim();
- const cleanAddress=clinicAddress.trim();
- const cleanMapsUrl=clinicMapsUrl.trim();
-
+ const cleanName=clinicName.trim(),cleanAddress=clinicAddress.trim(),cleanMapsUrl=clinicMapsUrl.trim();
  if(!cleanName)throw new Error("يرجى كتابة اسم العيادة.");
  if(!cleanAddress)throw new Error("يرجى كتابة عنوان العيادة بالتفصيل.");
-
  const mapsPattern=/^https:\/\/(www\.)?(google\.[^/]+\/maps|maps\.google\.[^/]+|maps\.app\.goo\.gl)(\/|$|\?)/i;
-
- if(!mapsPattern.test(cleanMapsUrl)){
-  throw new Error("يرجى إدخال رابط Google Maps صحيح يبدأ بـ https://.");
- }
-
- const {data:existing,error:searchError}=await db
- .from("clinics")
- .select("id")
- .eq("name",cleanName)
- .limit(1)
- .maybeSingle();
-
- if(searchError){
-  throw new Error("تعذر البحث عن العيادة: "+searchError.message);
- }
-
+ if(!mapsPattern.test(cleanMapsUrl))throw new Error("يرجى إدخال رابط Google Maps صحيح يبدأ بـ https://.");
+ const {data:existing,error:searchError}=await db.from("clinics").select("id").eq("name",cleanName).limit(1).maybeSingle();
+ if(searchError)throw new Error("تعذر البحث عن العيادة: "+searchError.message);
  if(existing){
-  const {error:updateError}=await db
-   .from("clinics")
-   .update({
-    address:cleanAddress,
-    maps_url:cleanMapsUrl
-   })
-   .eq("id",existing.id);
-
-  if(updateError){
-   throw new Error("تعذر تحديث عنوان وموقع العيادة: "+updateError.message);
-  }
-
+  const {error:updateError}=await db.from("clinics").update({address:cleanAddress,maps_url:cleanMapsUrl}).eq("id",existing.id);
+  if(updateError)throw new Error("تعذر تحديث عنوان وموقع العيادة: "+updateError.message);
   return existing.id;
  }
-
- const {data:created,error:createError}=await db
- .from("clinics")
- .insert({
-   name:cleanName,
-   address:cleanAddress,
-   maps_url:cleanMapsUrl,
-   city:"Najaf",
-   is_active:true
- })
- .select("id")
- .single();
-
- if(createError){
-  throw new Error("تعذر إنشاء العيادة: "+createError.message);
- }
-
- if(!created?.id){
-  throw new Error("لم يتم الحصول على رقم العيادة.");
- }
-
+ const {data:created,error:createError}=await db.from("clinics").insert({
+  name:cleanName,address:cleanAddress,maps_url:cleanMapsUrl,city:"Najaf",is_active:true
+ }).select("id").single();
+ if(createError)throw new Error("تعذر إنشاء العيادة: "+createError.message);
+ if(!created?.id)throw new Error("لم يتم الحصول على رقم العيادة.");
  return created.id;
 }
 
 document.getElementById("doctorForm").addEventListener("submit",async event=>{
  event.preventDefault();
-
- setText("doctorError","");
- setText("doctorMessage","");
-
+ setText("doctorError","");setText("doctorMessage","");
  const button=document.getElementById("createDoctorButton");
  button.disabled=true;
-
  try{
   const {data:sessionData,error:sessionError}=await db.auth.getSession();
   if(sessionError)throw sessionError;
-
   const session=sessionData.session;
-
-  if(!session?.access_token){
-   throw new Error("انتهت الجلسة. سجّل الدخول مجدداً.");
-  }
-
+  if(!session?.access_token)throw new Error("انتهت الجلسة. سجّل الدخول مجدداً.");
   const clinicName=document.getElementById("clinicName").value.trim();
   const clinicAddress=document.getElementById("clinicAddress").value.trim();
   const clinicMapsUrl=document.getElementById("clinicMapsUrl").value.trim();
-
   if(!clinicName)throw new Error("يرجى كتابة اسم العيادة.");
   if(!clinicAddress)throw new Error("يرجى كتابة عنوان العيادة بالتفصيل.");
-
   const mapsPattern=/^https:\/\/(www\.)?(google\.[^/]+\/maps|maps\.google\.[^/]+|maps\.app\.goo\.gl)(\/|$|\?)/i;
-
-  if(!mapsPattern.test(clinicMapsUrl)){
-   throw new Error("يرجى إدخال رابط Google Maps صحيح يبدأ بـ https://.");
-  }
-
+  if(!mapsPattern.test(clinicMapsUrl))throw new Error("يرجى إدخال رابط Google Maps صحيح يبدأ بـ https://.");
   setText("doctorMessage","جارٍ حفظ بيانات العيادة...");
-
   const clinicId=await findOrCreateClinic(clinicName,clinicAddress,clinicMapsUrl);
-
   const payload={
    full_name:document.getElementById("doctorName").value.trim(),
    phone:document.getElementById("doctorPhone").value.trim(),
@@ -754,60 +584,38 @@ document.getElementById("doctorForm").addEventListener("submit",async event=>{
    consultation_fee:Number(document.getElementById("fee").value||0),
    bio:document.getElementById("bio").value.trim()
   };
-
-  if(!payload.specialty_id){
-   throw new Error("يرجى اختيار التخصص.");
-  }
-
+  if(!payload.specialty_id)throw new Error("يرجى اختيار التخصص.");
   const response=await fetch(CREATE_DOCTOR_URL,{
    method:"POST",
-   headers:{
-    "Content-Type":"application/json",
-    "Authorization":"Bearer "+session.access_token,
-    "apikey":SUPABASE_KEY
-   },
+   headers:{"Content-Type":"application/json","Authorization":"Bearer "+session.access_token,"apikey":SUPABASE_KEY},
    body:JSON.stringify(payload)
   });
-
   const result=await response.json().catch(()=>({}));
-
-  if(!response.ok){
-   throw new Error(result.error||"فشل الطلب، رمز الحالة: "+response.status);
-  }
-
+  if(!response.ok)throw new Error(result.error||"فشل الطلب، رمز الحالة: "+response.status);
   setText("doctorMessage","تم إنشاء حساب الطبيب وحفظ عنوان وموقع العيادة بنجاح.");
   document.getElementById("doctorForm").reset();
-
   await refreshDashboard();
-
  }catch(e){
   setText("doctorMessage","");
   setText("doctorError",e.message||"حدث خطأ أثناء إنشاء الطبيب.");
- }finally{
-  button.disabled=false;
- }
+ }finally{button.disabled=false;}
 });
 
 async function logout(){
+ if(bookingsRefreshTimer)clearInterval(bookingsRefreshTimer);
  await db.auth.signOut();
  location.reload();
 }
 
 window.addEventListener("resize",()=>{
- if(!document.getElementById("homeSection").classList.contains("hidden")){
-  renderCharts();
- }
+ if(!document.getElementById("homeSection").classList.contains("hidden"))renderCharts();
 });
 
 db.auth.getSession().then(async({data})=>{
  const user=data.session?.user;
  if(!user)return;
-
- if(await verifyAdmin(user)){
-  await showDashboard(user);
- }else{
-  await db.auth.signOut();
- }
+ if(await verifyAdmin(user))await showDashboard(user);
+ else await db.auth.signOut();
 });
 </script>
 </body>
