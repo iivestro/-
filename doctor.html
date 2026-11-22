@@ -254,7 +254,7 @@ return;
 
 const {data:profile,error:profileError}=await db
 .from("profiles")
-.select("full_name,phone,role,approval_status")
+.select("full_name,role,approval_status")
 .eq("id",user.id)
 .maybeSingle();
 
@@ -286,13 +286,21 @@ await blockInactiveDoctor();
 return;
 }
 
+/* جلب رقم هاتف الطبيب من التخزين الخاص، وليس من profiles */
+const {data:privatePhone,error:phoneError}=await db.rpc("get_my_private_phone");
+
+if(phoneError){
+showMessage("loginStatus","تعذر تحميل رقم الهاتف الخاص: "+phoneError.message);
+return;
+}
+
 currentDoctorId=doctor.id;
 doctorFee=doctor.consultation_fee;
 
 const fullName=profile.full_name||"دكتور";
 document.getElementById("welcomeName").textContent=fullName;
 document.getElementById("infoName").textContent=fullName;
-document.getElementById("infoPhone").textContent=profile.phone||"غير مسجل";
+document.getElementById("infoPhone").textContent=privatePhone||"غير مسجل";
 document.getElementById("infoSpecialty").textContent=doctor.specialties?.name_ar||"غير محدد";
 document.getElementById("infoQualification").textContent=doctor.qualification||"غير محدد";
 document.getElementById("infoExperience").textContent=doctor.experience_years==null?"غير محدد":doctor.experience_years+" سنة";
