@@ -1,6 +1,5 @@
-from pathlib import Path
 
-html = r'''<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -9,46 +8,125 @@ html = r'''<!DOCTYPE html>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#081522;color:#f4f8fb;font-family:Arial,sans-serif}
-header{background:#102536;padding:22px;border-bottom:1px solid #254354}
-.brand{color:#37d6bd;font-size:25px;font-weight:bold}
-header p,.muted{color:#a8bdc9}
+:root{
+color-scheme:light;
+--sky:#38bdf8;
+--sky-dark:#0284c7;
+--sky-soft:#eaf8ff;
+--ink:#17324a;
+--line:#cceeff;
+}
+body{margin:0;background:#fff;color:var(--ink);font-family:Arial,sans-serif}
+header{background:#fff;padding:22px;border-bottom:3px solid var(--sky);box-shadow:0 3px 16px #0284c710}
+.brand{color:var(--sky-dark);font-size:25px;font-weight:bold}
+header p,.muted,.small{color:#668397}
 main{max-width:1200px;margin:auto;padding:18px}
-.card{background:#102536;border:1px solid #254354;border-radius:15px;padding:20px;margin-bottom:18px}
-input,select,textarea{width:100%;padding:13px;margin:8px 0;border:1px solid #355568;border-radius:9px;background:#091a28;color:white}
+.card,.chart-card{
+background:#fff;
+border:1px solid var(--line);
+border-radius:15px;
+padding:20px;
+margin-bottom:18px;
+box-shadow:0 5px 22px #0284c710;
+}
+input,select,textarea{
+width:100%;
+padding:13px;
+margin:8px 0;
+border:1px solid #b9e6fb;
+border-radius:9px;
+background:#fff;
+color:var(--ink);
+}
+input:focus,select:focus,textarea:focus{
+outline:none;
+border-color:var(--sky-dark);
+box-shadow:0 0 0 3px #38bdf826;
+}
 textarea{min-height:90px}
-button{padding:11px 15px;background:#22bda9;color:#071a25;border:0;border-radius:8px;font-weight:bold;cursor:pointer;margin:2px}
+button{
+padding:11px 15px;
+background:var(--sky-dark);
+color:#fff;
+border:0;
+border-radius:8px;
+font-weight:bold;
+cursor:pointer;
+margin:2px;
+}
+button:hover{background:#0369a1}
 button:disabled{opacity:.5}
 .hidden{display:none!important}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:13px}
-.stat{background:#142f40;padding:20px;border-radius:12px;border:1px solid #254354}
-.stat span{color:#a8bdc9;font-size:14px}
-.stat strong{display:block;font-size:32px;color:#37d6bd;margin-top:12px}
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+gap:13px;
+}
+.stat{
+background:var(--sky-soft);
+padding:20px;
+border-radius:12px;
+border:1px solid var(--line);
+}
+.stat span{color:#52758d;font-size:14px}
+.stat strong{
+display:block;
+font-size:32px;
+color:var(--sky-dark);
+margin-top:12px;
+}
 nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
-nav button{background:#19394a;color:white}
-nav button.active{background:#22bda9;color:#071a25}
+nav button{background:#eaf8ff;color:#0369a1}
+nav button.active{background:var(--sky-dark);color:#fff}
 .table-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;min-width:700px}
-th,td{padding:13px;text-align:right;border-bottom:1px solid #294353}
-th{color:#37d6bd}
-.status{display:inline-block;padding:5px 9px;border-radius:20px;font-size:12px;background:#493d22;color:#f4d78a}
-.approved{background:#174c40;color:#8ce4c8}
-.rejected{background:#542b35;color:#ffb2bd}
-#error,#errorPatients,#doctorError,#dashboardError{color:#ff9b9b}
-#message,#doctorMessage{color:#8ce4c8}
-.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
-.chart-card{background:#102536;border:1px solid #254354;border-radius:15px;padding:18px;margin-top:16px}
-.chart-card h3{margin-top:0;color:#37d6bd}
+th,td{
+padding:13px;
+text-align:right;
+border-bottom:1px solid #e2f4fc;
+}
+th{color:var(--sky-dark)}
+.status{
+display:inline-block;
+padding:5px 9px;
+border-radius:20px;
+font-size:12px;
+background:#fff4d6;
+color:#8a6415;
+}
+.approved{background:#e0f7ee;color:#087a53}
+.rejected{background:#ffe8eb;color:#b42335}
+#error,#errorPatients,#doctorError,#dashboardError{color:#c62828}
+#message,#doctorMessage{color:#087a53}
+.form-grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:8px;
+}
+.chart-card{padding:18px;margin-top:16px}
+.chart-card h3{margin-top:0;color:var(--sky-dark)}
 .chart-wrap{position:relative;width:100%;height:260px}
 canvas{width:100%;height:100%;display:block}
-.section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.small{font-size:12px;color:#a8bdc9}
-.approve-btn{background:#22bda9}
-.reject-btn{background:#b94a5a;color:white}
+.section-title{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:10px;
+flex-wrap:wrap;
+}
+.small{font-size:12px}
+.approve-btn{background:#0284c7;color:#fff}
+.reject-btn{background:#dc5555;color:#fff}
 .patient-actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+@media(max-width:600px){
+main{padding:10px}
+.card{padding:15px}
+.chart-wrap{height:220px}
+}
 </style>
 </head>
 <body>
+
 <header>
  <div class="brand">IRAQ MEDICAL</div>
  <p>لوحة الإدارة المركزية</p>
@@ -64,6 +142,7 @@ canvas{width:100%;height:100%;display:block}
 </section>
 
 <section id="dashboard" class="hidden">
+
  <div class="card">
   <div class="section-title">
    <div>
@@ -159,25 +238,17 @@ canvas{width:100%;height:100%;display:block}
 
     <div>
      <label>اسم العيادة *</label>
-     <input
-      id="clinicName"
-      type="text"
-      required
-      maxlength="160"
-      placeholder="اكتب اسم العيادة هنا"
-     >
+     <input id="clinicName" type="text" required maxlength="160" placeholder="اكتب اسم العيادة هنا">
     </div>
 
     <div>
      <label>عنوان العيادة بالتفصيل *</label>
-     <input id="clinicAddress" type="text" required maxlength="300"
-      placeholder="المحافظة، المنطقة، الشارع، أقرب نقطة دالة">
+     <input id="clinicAddress" type="text" required maxlength="300" placeholder="المحافظة، المنطقة، الشارع، أقرب نقطة دالة">
     </div>
 
     <div>
      <label>موقع العيادة على Google Maps *</label>
-     <input id="clinicMapsUrl" type="url" required maxlength="1000"
-      placeholder="https://maps.app.goo.gl/...">
+     <input id="clinicMapsUrl" type="url" required maxlength="1000" placeholder="https://maps.app.goo.gl/...">
     </div>
 
     <div><label>المؤهل العلمي</label><input id="qualification"></div>
@@ -194,6 +265,7 @@ canvas{width:100%;height:100%;display:block}
   <p id="doctorMessage"></p>
   <p id="doctorError"></p>
  </section>
+
 </section>
 </main>
 
@@ -336,8 +408,8 @@ function drawLineChart(canvasId,labels,values){
  ctx.font="11px Arial";
  ctx.textAlign="right";
  ctx.textBaseline="middle";
- ctx.strokeStyle="#294353";
- ctx.fillStyle="#a8bdc9";
+ ctx.strokeStyle="#cceeff";
+ ctx.fillStyle="#668397";
  ctx.lineWidth=1;
 
  for(let i=0;i<=4;i++){
@@ -352,7 +424,7 @@ function drawLineChart(canvasId,labels,values){
  const xAt=i=>pad.left+(i/(Math.max(1,values.length-1)))*cw;
  const yAt=v=>pad.top+ch-(v/top)*ch;
 
- ctx.strokeStyle="#37d6bd";
+ ctx.strokeStyle="#0284c7";
  ctx.lineWidth=2.8;
  ctx.beginPath();
 
@@ -367,11 +439,11 @@ function drawLineChart(canvasId,labels,values){
  values.forEach((v,i)=>{
   ctx.beginPath();
   ctx.arc(xAt(i),yAt(v),3.2,0,Math.PI*2);
-  ctx.fillStyle="#37d6bd";
+  ctx.fillStyle="#38bdf8";
   ctx.fill();
  });
 
- ctx.fillStyle="#a8bdc9";
+ ctx.fillStyle="#668397";
  ctx.textAlign="center";
  ctx.textBaseline="top";
 
@@ -457,7 +529,6 @@ function getStatusLabel(status){
   rejected:"مرفوض",
   suspended:"موقوف"
  };
-
  return labels[status]||status||"غير محدد";
 }
 
@@ -549,10 +620,8 @@ async function updatePatientStatus(id,newStatus,button){
  await Promise.all([loadPatients(),refreshDashboard()]);
 }
 
-/* تحميل التخصصات فقط؛ العيادة أصبحت خانات إدخال */
 async function loadDoctorOptions(){
  const specialtySelect=document.getElementById("specialty");
-
  specialtySelect.innerHTML='<option value="">اختر التخصص</option>';
 
  const {data,error}=await db.from("specialties")
@@ -573,7 +642,6 @@ async function loadDoctorOptions(){
  });
 }
 
-/* البحث عن العيادة بالاسم أو تحديثها أو إنشاؤها */
 async function findOrCreateClinic(clinicName,clinicAddress,clinicMapsUrl){
  const cleanName=clinicName.trim();
  const cleanAddress=clinicAddress.trim();
@@ -583,6 +651,7 @@ async function findOrCreateClinic(clinicName,clinicAddress,clinicMapsUrl){
  if(!cleanAddress)throw new Error("يرجى كتابة عنوان العيادة بالتفصيل.");
 
  const mapsPattern=/^https:\/\/(www\.)?(google\.[^/]+\/maps|maps\.google\.[^/]+|maps\.app\.goo\.gl)(\/|$|\?)/i;
+
  if(!mapsPattern.test(cleanMapsUrl)){
   throw new Error("يرجى إدخال رابط Google Maps صحيح يبدأ بـ https://.");
  }
@@ -615,16 +684,16 @@ async function findOrCreateClinic(clinicName,clinicAddress,clinicMapsUrl){
  }
 
  const {data:created,error:createError}=await db
-  .from("clinics")
-  .insert({
+ .from("clinics")
+ .insert({
    name:cleanName,
    address:cleanAddress,
    maps_url:cleanMapsUrl,
    city:"Najaf",
    is_active:true
-  })
-  .select("id")
-  .single();
+ })
+ .select("id")
+ .single();
 
  if(createError){
   throw new Error("تعذر إنشاء العيادة: "+createError.message);
@@ -648,7 +717,6 @@ document.getElementById("doctorForm").addEventListener("submit",async event=>{
 
  try{
   const {data:sessionData,error:sessionError}=await db.auth.getSession();
-
   if(sessionError)throw sessionError;
 
   const session=sessionData.session;
@@ -665,11 +733,11 @@ document.getElementById("doctorForm").addEventListener("submit",async event=>{
   if(!clinicAddress)throw new Error("يرجى كتابة عنوان العيادة بالتفصيل.");
 
   const mapsPattern=/^https:\/\/(www\.)?(google\.[^/]+\/maps|maps\.google\.[^/]+|maps\.app\.goo\.gl)(\/|$|\?)/i;
+
   if(!mapsPattern.test(clinicMapsUrl)){
    throw new Error("يرجى إدخال رابط Google Maps صحيح يبدأ بـ https://.");
   }
 
-  /* حفظ بيانات العيادة أولاً ثم ربط الطبيب بها */
   setText("doctorMessage","جارٍ حفظ بيانات العيادة...");
 
   const clinicId=await findOrCreateClinic(clinicName,clinicAddress,clinicMapsUrl);
@@ -708,7 +776,6 @@ document.getElementById("doctorForm").addEventListener("submit",async event=>{
   }
 
   setText("doctorMessage","تم إنشاء حساب الطبيب وحفظ عنوان وموقع العيادة بنجاح.");
-
   document.getElementById("doctorForm").reset();
 
   await refreshDashboard();
@@ -734,7 +801,6 @@ window.addEventListener("resize",()=>{
 
 db.auth.getSession().then(async({data})=>{
  const user=data.session?.user;
-
  if(!user)return;
 
  if(await verifyAdmin(user)){
@@ -746,18 +812,3 @@ db.auth.getSession().then(async({data})=>{
 </script>
 </body>
 </html>
-'''
-
-# Basic integrity checks before writing the replacement file.
-assert 'id="clinicAddress"' in html
-assert 'id="clinicMapsUrl"' in html
-assert 'findOrCreateClinic(clinicName,clinicAddress,clinicMapsUrl)' in html
-assert 'async function updatePatientStatus' in html
-assert 'async function refreshDashboard' in html
-assert 'CREATE_DOCTOR_URL' in html
-
-out = Path("/mnt/data/admin.html")
-out.write_text(html, encoding="utf-8")
-print(f"تم إنشاء الملف: {out.name}")
-print(f"الحجم: {out.stat().st_size:,} بايت")
-print("تم التحقق من وجود خانات العنوان والخريطة ووظائف الإدارة الأساسية.")
