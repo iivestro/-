@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -124,21 +125,22 @@ main{padding:10px}
     <span class="small">نظام إدارة بيشنت | PATIENT</span>
    </div>
 
-   <div class="card">
-    <div class="section-title">
-     <h2>لوحة المؤشرات الرئيسية</h2>
-     <span class="small">إحصائيات المنصة الإجمالية</span>
-    </div>
-    <div class="grid">
-     <div class="stat"><span>إجمالي المراجعين المسجلين</span><strong id="totalPatients">—</strong></div>
-     <div class="stat"><span>المراجعون الذين حجزوا</span><strong id="bookedPatients">—</strong></div>
-     <div class="stat"><span>إجمالي الأطباء المسجلين</span><strong id="totalDoctors">—</strong></div>
-     <div class="stat"><span>إجمالي الحجوزات</span><strong id="totalAppointments">—</strong></div>
-    </div>
-    <p id="dashboardError"></p>
-   </div>
-
+   <!-- الرئيسية فقط: لوحة المؤشرات والمخططات -->
    <section id="homeSection">
+    <div class="card">
+     <div class="section-title">
+      <h2>لوحة المؤشرات الرئيسية</h2>
+      <span class="small">إحصائيات المنصة الإجمالية</span>
+     </div>
+     <div class="grid">
+      <div class="stat"><span>إجمالي المراجعين المسجلين</span><strong id="totalPatients">—</strong></div>
+      <div class="stat"><span>المراجعون الذين حجزوا</span><strong id="bookedPatients">—</strong></div>
+      <div class="stat"><span>إجمالي الأطباء المسجلين</span><strong id="totalDoctors">—</strong></div>
+      <div class="stat"><span>إجمالي الحجوزات</span><strong id="totalAppointments">—</strong></div>
+     </div>
+     <p id="dashboardError"></p>
+    </div>
+
     <div class="chart-card">
      <h3>نمو تسجيل المراجعين – آخر 30 يوماً</h3>
      <div class="chart-wrap"><canvas id="patientsChart"></canvas></div>
