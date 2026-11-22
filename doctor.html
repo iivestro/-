@@ -6,159 +6,396 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IRAQ MEDICAL | لوحة الطبيب</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
 *{box-sizing:border-box}
 :root{
 --sky:#38bdf8;
 --sky-dark:#0284c7;
---sky-soft:#eaf8ff;
+--sky-deep:#0369a1;
+--sky-soft:#effaff;
 --ink:#17324a;
---line:#cceeff;
+--muted:#668397;
+--line:#d7effb;
+--shadow:0 12px 34px rgba(2,132,199,.09)
 }
+html{scroll-behavior:smooth}
 body{
 margin:0;
-background:#fff;
+background:linear-gradient(180deg,#f5fbff 0,#fff 360px);
 color:var(--ink);
-font-family:Arial,sans-serif;
+font-family:Arial,Tahoma,sans-serif;
+min-height:100vh
 }
 header{
-background:#fff;
-color:var(--ink);
-padding:22px;
-border-bottom:3px solid var(--sky);
-box-shadow:0 3px 16px #0284c710;
+position:relative;
+overflow:hidden;
+background:linear-gradient(115deg,#fff 0%,#f0faff 65%,#e3f6ff 100%);
+padding:28px clamp(18px,4vw,64px);
+border-bottom:1px solid var(--line);
+box-shadow:0 5px 24px rgba(2,132,199,.06)
 }
-header h2{margin:0;color:var(--sky-dark)}
-header p{color:#52758d}
-main{max-width:900px;margin:25px auto;padding:15px}
+header:before{
+content:"✚";
+position:absolute;
+left:8%;
+top:-42px;
+font-size:190px;
+font-weight:bold;
+color:rgba(56,189,248,.07);
+transform:rotate(-12deg);
+pointer-events:none
+}
+header:after{
+content:"";
+position:absolute;
+width:220px;
+height:220px;
+border:28px solid rgba(56,189,248,.07);
+border-radius:50%;
+left:24%;
+bottom:-175px;
+pointer-events:none
+}
+.header-inner{
+position:relative;
+z-index:1;
+max-width:1500px;
+margin:auto
+}
+.brand{
+display:flex;
+align-items:center;
+gap:15px
+}
+.brand-mark{
+width:52px;
+height:52px;
+display:grid;
+place-items:center;
+border-radius:17px;
+background:linear-gradient(145deg,#38bdf8,#0284c7);
+color:white;
+font-size:27px;
+box-shadow:0 8px 18px #0284c733
+}
+header h2{
+margin:0;
+color:var(--sky-deep);
+font-size:clamp(22px,3vw,30px);
+letter-spacing:.4px
+}
+header p{
+margin:6px 0 0;
+color:#52758d;
+font-size:14px
+}
+main{
+width:min(1500px,100%);
+margin:28px auto;
+padding:0 clamp(14px,3vw,42px) 48px
+}
 .card{
+position:relative;
 background:#fff;
 border:1px solid var(--line);
-border-radius:16px;
-padding:22px;
-margin-bottom:18px;
-box-shadow:0 5px 22px #0284c710;
+border-radius:20px;
+padding:clamp(18px,2.2vw,28px);
+margin-bottom:20px;
+box-shadow:var(--shadow);
+min-width:0
 }
-h3{margin-top:0;color:var(--sky-dark)}
+.card:before{
+content:"";
+position:absolute;
+top:0;
+right:24px;
+width:58px;
+height:4px;
+border-radius:0 0 8px 8px;
+background:linear-gradient(90deg,#7dd3fc,#0284c7)
+}
+h3{
+margin:0 0 17px;
+color:var(--sky-deep);
+font-size:20px
+}
 .info{
-padding:13px;
-background:var(--sky-soft);
-border:1px solid #d8f1ff;
-border-radius:10px;
-margin:9px 0;
+padding:13px 15px;
+background:linear-gradient(110deg,#f1faff,#fff);
+border:1px solid #e0f3fc;
+border-radius:12px;
+margin:0;
+min-width:0;
+overflow-wrap:anywhere
 }
+.info strong{font-weight:700}
 button{
 border:0;
-border-radius:10px;
-padding:11px 15px;
-background:var(--sky-dark);
+border-radius:11px;
+padding:12px 18px;
+background:linear-gradient(135deg,var(--sky),var(--sky-dark));
 color:white;
 font-size:14px;
+font-weight:700;
 cursor:pointer;
 margin:4px;
-transition:background .2s,transform .2s;
+transition:transform .2s,box-shadow .2s,filter .2s;
+box-shadow:0 5px 13px rgba(2,132,199,.16)
 }
-button:hover{background:#0369a1;transform:translateY(-1px)}
-button:disabled{opacity:.55}
-.logout,.reject{background:#dc5555}
-.logout:hover,.reject:hover{background:#b93838}
-.complete{background:#0ea5e9}
-.muted{color:#668397}
-#app{display:none}
+button:hover{
+filter:brightness(.97);
+transform:translateY(-2px);
+box-shadow:0 8px 18px rgba(2,132,199,.22)
+}
+button:disabled{
+opacity:.55;
+cursor:not-allowed;
+transform:none
+}
+.logout,.reject{
+background:linear-gradient(135deg,#f87171,#dc5555);
+box-shadow:0 5px 13px #dc555522
+}
+.logout:hover,.reject:hover{
+background:linear-gradient(135deg,#ef6262,#b93838)
+}
+.complete{
+background:linear-gradient(135deg,#38bdf8,#0284c7)
+}
+.muted{
+color:var(--muted);
+line-height:1.8
+}
+#app{
+display:none;
+grid-template-columns:repeat(2,minmax(0,1fr));
+gap:0 20px;
+align-items:start
+}
+#app>.card:first-child,
+#app>.card:nth-child(4){
+grid-column:1/-1
+}
 .status{
-padding:12px;
-border-radius:10px;
+padding:12px 14px;
+border-radius:12px;
 background:var(--sky-soft);
 border:1px solid #d8f1ff;
 margin-top:12px;
 overflow-wrap:anywhere;
+color:#28536c;
+line-height:1.7
 }
-input[type=email],input[type=password],
-input[type=time],input[type=text],input[type=url]{
+input[type=email],
+input[type=password],
+input[type=time],
+input[type=text],
+input[type=url]{
 width:100%;
-padding:12px;
-margin:7px 0;
-border:1px solid #b9e6fb;
-border-radius:9px;
-background:#fff;
+padding:13px 14px;
+margin:8px 0 14px;
+border:1px solid #c6e8f8;
+border-radius:11px;
+background:#fbfeff;
 color:var(--ink);
 outline:none;
+font:inherit;
+transition:border .2s,box-shadow .2s
 }
 input:focus{
 border-color:var(--sky-dark);
 box-shadow:0 0 0 3px #38bdf826;
+background:white
+}
+label{
+display:block;
+font-weight:700;
+font-size:14px;
+color:#31566e
 }
 .day{
 display:grid;
-grid-template-columns:1fr 1fr 1fr 1fr;
-gap:10px;
+grid-template-columns:1.1fr .8fr 1fr 1fr;
+gap:12px;
 align-items:center;
-padding:13px 0;
-border-bottom:1px solid #e2f4fc;
+padding:14px 10px;
+border-bottom:1px solid #e6f4fb
 }
-.day strong{font-size:14px}
-.day label{font-size:13px}
+.day:last-child{border-bottom:0}
+.day strong{
+font-size:14px;
+color:#24516c
+}
+.day label{
+display:flex;
+align-items:center;
+gap:7px;
+font-weight:400
+}
+.day input[type=checkbox]{
+accent-color:var(--sky-dark);
+width:17px;
+height:17px
+}
 .day input[type=time]{margin:0}
 .appointment{
-border:1px solid #cceeff;
-background:#fff;
-border-radius:12px;
-padding:15px;
-margin:12px 0;
+border:1px solid var(--line);
+background:linear-gradient(145deg,#fff,#f8fcff);
+border-radius:15px;
+padding:18px;
+margin:13px 0;
+box-shadow:0 4px 14px #0284c70a
 }
-.appointment p{margin:7px 0;overflow-wrap:anywhere}
+.appointment p{
+margin:9px 0;
+overflow-wrap:anywhere;
+line-height:1.7
+}
 .tag{
 display:inline-block;
 background:#e0f5ff;
 color:#0369a1;
-padding:5px 10px;
-border-radius:20px;
+padding:6px 12px;
+border-radius:30px;
 font-size:12px;
+font-weight:700;
+margin-top:7px
 }
 .section-title{color:var(--sky-dark)}
-.actions{margin-top:12px}
-a{color:#0284c7}
+.actions{
+margin-top:12px;
+display:flex;
+flex-wrap:wrap;
+gap:5px
+}
+a{
+color:#0284c7;
+font-weight:700
+}
+#login{
+max-width:620px;
+margin:28px auto
+}
+#login .muted{margin-top:-7px}
+#loginButton{min-width:150px}
+#app>.card:first-child .info{
+display:flex;
+justify-content:space-between;
+gap:12px;
+align-items:center
+}
+#app>.card:first-child .info strong{text-align:left}
+#app>.card:first-child .logout{margin-top:17px}
+#scheduleList{
+border:1px solid #e4f3fb;
+border-radius:14px;
+overflow:hidden
+}
+#appointmentsList{
+display:grid;
+grid-template-columns:repeat(2,minmax(0,1fr));
+gap:12px
+}
+#appointmentsList .appointment{margin:0}
+
+@media(min-width:1100px){
+#app>.card:first-child .info{
+display:inline-flex;
+width:calc(25% - 9px);
+min-height:54px;
+margin:5px 3px
+}
+}
+@media(max-width:850px){
+#app{grid-template-columns:1fr}
+#app>.card{grid-column:1/-1!important}
+#appointmentsList{grid-template-columns:1fr}
+}
 @media(max-width:600px){
-.day{grid-template-columns:1fr 1fr}
+header{padding:22px 17px}
+.brand-mark{
+width:45px;
+height:45px;
+border-radius:14px
+}
+main{
+margin:18px auto;
+padding:0 12px 32px
+}
+.card{
+padding:17px;
+border-radius:16px;
+margin-bottom:14px
+}
+h3{font-size:18px}
+.day{
+grid-template-columns:1fr 1fr;
+gap:10px
+}
 .day strong{grid-column:1/-1}
-.card{padding:16px}
+#app>.card:first-child .info{
+display:flex;
+width:100%;
+margin:5px 0
+}
+button{padding:11px 14px}
 }
 </style>
 </head>
+
 <body>
 
 <header>
+<div class="header-inner">
+<div class="brand">
+<div class="brand-mark">✚</div>
+<div>
 <h2>IRAQ MEDICAL</h2>
-<p>لوحة الطبيب</p>
+<p>لوحة الطبيب | إدارة العيادة والحجوزات والدوام</p>
+</div>
+</div>
+</div>
 </header>
 
 <main>
+
 <section class="card" id="login">
 <h3>دخول الطبيب</h3>
 <p class="muted">سجل الدخول باستخدام البريد الإلكتروني وكلمة المرور.</p>
+
 <input id="email" type="email" placeholder="البريد الإلكتروني">
 <input id="password" type="password" placeholder="كلمة المرور">
+
 <button id="loginButton" onclick="loginDoctor()">تسجيل الدخول</button>
 <div id="loginStatus" class="status"></div>
 </section>
 
 <section id="app">
+
 <div class="card">
 <h3>مرحباً بك دكتور</h3>
+<p class="muted">من هنا يمكنك متابعة بياناتك المهنية وإدارة عيادتك ومواعيد المراجعين.</p>
+
 <div class="info">الاسم: <strong id="name">—</strong></div>
 <div class="info">رقم الهاتف: <strong id="phone">—</strong></div>
 <div class="info">الاختصاص: <strong id="specialty">—</strong></div>
 <div class="info">العيادة: <strong id="clinic">—</strong></div>
 <div class="info">العنوان: <strong id="clinicAddressDisplay">—</strong></div>
-<div class="info">الموقع:
+
+<div class="info">
+الموقع:
 <a id="clinicMapDisplay" href="#" target="_blank" rel="noopener" style="display:none">فتح الموقع على Google Maps</a>
 <strong id="clinicMapEmpty">—</strong>
 </div>
+
 <div class="info">المؤهل: <strong id="qualification">—</strong></div>
 <div class="info">سنوات الخبرة: <strong id="experience">—</strong></div>
 <div class="info">أجور الاستشارة: <strong id="fee">—</strong></div>
 <div class="info">نبذة الطبيب: <strong id="bio">—</strong></div>
+
 <div id="status" class="status">جارٍ تحميل البيانات...</div>
+
 <br>
 <button class="logout" onclick="logoutDoctor()">تسجيل الخروج</button>
 </div>
@@ -177,6 +414,7 @@ a{color:#0284c7}
 <input id="clinicMapInput" type="url" maxlength="1000" placeholder="الصق رابط Google Maps هنا">
 
 <p class="muted">يمكنك نسخ رابط المشاركة من تطبيق Google Maps ولصقه هنا.</p>
+
 <button id="saveClinicButton" onclick="saveClinicDetails()">حفظ معلومات العيادة</button>
 <div id="clinicStatus" class="status"></div>
 </div>
@@ -184,7 +422,9 @@ a{color:#0284c7}
 <div class="card">
 <h3 class="section-title">إدارة الدوام الأسبوعي</h3>
 <p class="muted">حدد أيام العمل وساعات استقبال المراجعين.</p>
+
 <div id="scheduleList">جارٍ تحميل الدوام...</div>
+
 <br>
 <button id="saveScheduleButton" onclick="saveSchedule()">حفظ الدوام الأسبوعي</button>
 <div id="scheduleStatus" class="status"></div>
@@ -192,10 +432,13 @@ a{color:#0284c7}
 
 <div class="card">
 <h3 class="section-title">إدارة حجوزات المرضى</h3>
+
 <button onclick="loadAppointments()">تحديث الحجوزات</button>
+
 <div id="appointmentsStatus" class="status">جارٍ تحميل الحجوزات...</div>
 <div id="appointmentsList"></div>
 </div>
+
 </section>
 </main>
 
@@ -305,7 +548,7 @@ document.getElementById("fee").textContent=doctor.consultation_fee??"—";
 document.getElementById("bio").textContent=doctor.bio||"—";
 
 document.getElementById("login").style.display="none";
-document.getElementById("app").style.display="block";
+document.getElementById("app").style.display="grid";
 
 showMessage("status","تم تحميل بيانات الطبيب بنجاح");
 
@@ -329,7 +572,9 @@ if(mapsUrl){
 try{
 const parsed=new URL(mapsUrl);
 const host=parsed.hostname.toLowerCase();
-const validHost=host==="maps.app.goo.gl"||
+
+const validHost=
+host==="maps.app.goo.gl"||
 host==="maps.google.com"||
 host==="google.com"||
 host==="www.google.com"||
@@ -373,6 +618,7 @@ mapEmpty.style.display="inline";
 }
 
 showMessage("clinicStatus","تم حفظ معلومات العيادة وموقعها بنجاح.");
+
 }catch(error){
 showMessage("clinicStatus","تعذر حفظ البيانات: "+error.message);
 }finally{
@@ -398,6 +644,7 @@ const checkbox=document.createElement("input");
 checkbox.type="checkbox";
 checkbox.id="available_"+day.number;
 checkbox.checked=record?record.is_available:false;
+
 label.appendChild(checkbox);
 label.append(" متاح");
 
@@ -444,6 +691,7 @@ showMessage("scheduleStatus","جارٍ حفظ الدوام...");
 
 try{
 for(const day of days){
+
 const available=document.getElementById("available_"+day.number).checked;
 const start=document.getElementById("start_"+day.number).value;
 const end=document.getElementById("end_"+day.number).value;
@@ -501,6 +749,7 @@ rejected:"مرفوض",
 cancelled:"ملغي",
 completed:"مكتمل"
 };
+
 return labels[status]||status||"غير محدد";
 }
 
@@ -509,6 +758,7 @@ if(!currentDoctorId)return;
 
 const list=document.getElementById("appointmentsList");
 list.innerHTML="";
+
 showMessage("appointmentsStatus","جارٍ تحميل الحجوزات...");
 
 const {data,error}=await db.rpc("doctor_appointment_patient_details");
@@ -526,6 +776,7 @@ return;
 showMessage("appointmentsStatus","عدد الحجوزات: "+data.length);
 
 data.forEach(item=>{
+
 const card=document.createElement("div");
 card.className="appointment";
 
@@ -534,12 +785,14 @@ title.textContent="موعد الحجز";
 
 const date=document.createElement("p");
 const parsedDate=new Date(item.appointment_at);
+
 date.textContent="التاريخ والوقت: "+(
 isNaN(parsedDate.getTime())?"غير متوفر":
 parsedDate.toLocaleString("ar-IQ",{dateStyle:"medium",timeStyle:"short"})
 );
 
 const patient=document.createElement("p");
+
 patient.textContent=
 "اسم المراجع: "+(item.patient_name||"غير متوفر")+
 " | العمر: "+(item.patient_age??"غير محدد")+
@@ -571,7 +824,9 @@ list.appendChild(card);
 function makeActionButton(label,className,callback){
 const button=document.createElement("button");
 button.textContent=label;
+
 if(className)button.className=className;
+
 button.addEventListener("click",callback);
 return button;
 }
@@ -619,5 +874,6 @@ db.auth.getSession().then(({data})=>{
 if(data.session)loadDoctor();
 });
 </script>
+
 </body>
 </html>
