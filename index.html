@@ -1,134 +1,181 @@
+from pathlib import Path
 
-<!DOCTYPE html>
+html = r'''<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#071827">
 <title>IRAQ MEDICAL | بوابة المراجعين</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
+:root{
+  --navy:#071827;--navy-2:#0b2234;--panel:#102b40;--panel-2:#14364b;
+  --teal:#20c6b2;--teal-2:#8ce8dc;--white:#f4fbff;--muted:#a9bfcc;
+  --line:rgba(153,196,211,.18);--danger:#ff9eaa;--warning:#f5d58a;
+  --shadow:0 18px 50px rgba(0,0,0,.22);
+}
 *{box-sizing:border-box}
-body{margin:0;background:#071827;color:#eef7f8;font-family:Arial,sans-serif}
-main{max-width:650px;margin:25px auto;padding:15px}
-.logo{text-align:center;margin-bottom:25px}
-.logo h1{color:#25c5b2;letter-spacing:2px}
-.card{background:#10283a;border:1px solid #244457;border-radius:18px;padding:20px;margin-bottom:18px}
-input,select,textarea{width:100%;padding:13px;margin:8px 0;border-radius:9px;border:1px solid #345468;background:#071827;color:white;font-size:15px}
-button{width:100%;padding:13px;border:0;border-radius:9px;background:#20b9a8;color:#061923;font-weight:bold;margin-top:10px;cursor:pointer}
-button:disabled{opacity:.5}
-.secondary{background:#244457;color:white}
-.msg{color:#9ee8df;line-height:1.8;overflow-wrap:anywhere}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 90% 0%,rgba(32,198,178,.12),transparent 34%),var(--navy);color:var(--white);font-family:Tahoma,Arial,sans-serif;line-height:1.7}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.page{width:min(1120px,calc(100% - 32px));margin:0 auto;padding:28px 0 48px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:26px}
+.brand{display:flex;align-items:center;gap:13px}
+.brand-mark{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(145deg,var(--teal),#138d91);color:#06202b;font-size:25px;font-weight:900;box-shadow:0 8px 24px rgba(32,198,178,.2)}
+.brand-name{margin:0;font-size:20px;letter-spacing:1.2px;font-weight:900}
+.brand-caption{margin:1px 0 0;color:var(--muted);font-size:12px}
+.secure-label{color:var(--teal-2);border:1px solid rgba(32,198,178,.28);background:rgba(32,198,178,.07);padding:7px 12px;border-radius:999px;font-size:12px;white-space:nowrap}
+.hero{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:26px;padding:30px;background:linear-gradient(115deg,rgba(18,57,76,.96),rgba(10,35,53,.96));box-shadow:var(--shadow);margin-bottom:20px}
+.hero:after{content:"";position:absolute;width:230px;height:230px;border:1px solid rgba(32,198,178,.18);border-radius:50%;left:-80px;top:-110px;box-shadow:0 0 0 28px rgba(32,198,178,.035),0 0 0 58px rgba(32,198,178,.025)}
+.hero-content{position:relative;z-index:1;max-width:690px}
+.eyebrow{color:var(--teal-2);font-size:12px;font-weight:700;letter-spacing:.5px}
+.hero h1{font-size:clamp(25px,4vw,37px);line-height:1.35;margin:8px 0}
+.hero p{color:#c0d2dc;margin:0;max-width:600px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:20px;align-items:start}
+.main-column{min-width:0}
+.side-card,.card{background:linear-gradient(160deg,rgba(17,44,64,.98),rgba(12,34,51,.98));border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow)}
+.card{padding:25px;margin-bottom:18px}
+.side-card{padding:21px;position:sticky;top:18px}
+h2{font-size:21px;margin:0 0 7px}
+h3{font-size:17px;margin:0 0 13px}
+.subtext,.small{color:var(--muted);font-size:13px;margin:0 0 18px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:5px;background:#071b2a;border:1px solid var(--line);border-radius:13px;margin:20px 0}
+.tabs button{border:0;border-radius:9px;padding:11px 9px;background:transparent;color:var(--muted);font-weight:700}
+.tabs button:not(.secondary){background:var(--teal);color:#05222b;box-shadow:0 5px 16px rgba(32,198,178,.16)}
+.field{margin:0 0 14px}
+label{display:block;color:#dceaf0;font-size:13px;font-weight:700;margin-bottom:6px}
+input,select,textarea{width:100%;padding:13px 14px;border-radius:11px;border:1px solid #315267;background:#071b2a;color:var(--white);outline:none;transition:border-color .2s,box-shadow .2s}
+input:focus,select:focus,textarea:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(32,198,178,.12)}
+input::placeholder,textarea::placeholder{color:#7893a3}
+input[type=number]{appearance:textfield}
+button.primary,button.secondary,button.action{width:100%;border:0;border-radius:11px;padding:13px 16px;font-weight:800;transition:transform .15s,filter .15s}
+button.primary,button.action{background:linear-gradient(135deg,var(--teal),#36d4c0);color:#05232d}
+button.secondary{background:#1b4056;color:#e6f4f8;border:1px solid #31566b}
+button:hover{filter:brightness(1.06)}
+button:active{transform:translateY(1px)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.msg{color:var(--teal-2);line-height:1.9;overflow-wrap:anywhere;margin:14px 0 0}
 .hidden{display:none!important}
-.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 18px}
-.tabs button{margin:0}
-.doctor{padding:16px;border:1px solid #345468;border-radius:12px;margin:12px 0;background:#0b2030}
-.doctor h3{color:#50d4c3;margin-bottom:10px}
-.info{padding:9px;background:#071827;border-radius:8px;margin:6px 0;font-size:14px}
-.small{font-size:13px;color:#a8bdc9}
-#booking{border-top:1px solid #345468;margin-top:18px;padding-top:18px}
-.status-rejected{color:#ff9ca8;background:#492632;border:1px solid #9e4656;padding:15px;border-radius:10px}
-.status-pending{color:#f5d58a;background:#44391f;border:1px solid #88703b;padding:15px;border-radius:10px}
-.status-approved{color:#9ee8df;background:#123e37;border:1px solid #287b6c;padding:15px;border-radius:10px}
+.helper{display:flex;gap:8px;align-items:flex-start;color:var(--muted);font-size:12px;margin-top:-7px;margin-bottom:14px}
+.helper:before{content:"i";flex:0 0 17px;width:17px;height:17px;border-radius:50%;display:grid;place-items:center;background:rgba(32,198,178,.15);color:var(--teal-2);font-weight:bold}
+.side-title{font-size:14px;margin:0 0 13px}
+.feature{display:flex;gap:11px;margin:14px 0;color:#c3d5df;font-size:13px}
+.feature-icon{flex:0 0 30px;height:30px;border-radius:9px;display:grid;place-items:center;background:rgba(32,198,178,.12);color:var(--teal-2)}
+.side-note{margin-top:20px;padding:13px;border-radius:12px;background:rgba(32,198,178,.07);border:1px solid rgba(32,198,178,.16);font-size:12px;color:#b9d5dc}
+.status-rejected,.status-pending,.status-approved{padding:15px 17px;border-radius:12px;border:1px solid;margin-top:13px}
+.status-rejected{color:var(--danger);background:rgba(128,42,58,.2);border-color:rgba(255,125,145,.3)}
+.status-pending{color:var(--warning);background:rgba(125,96,34,.18);border-color:rgba(245,213,138,.3)}
+.status-approved{color:var(--teal-2);background:rgba(18,102,86,.18);border-color:rgba(32,198,178,.3)}
+.doctor{padding:19px;border:1px solid var(--line);border-radius:15px;margin:14px 0;background:rgba(5,24,38,.55)}
+.doctor h3{color:var(--teal-2);margin-bottom:12px}
+.info{padding:9px 11px;background:#071b2a;border:1px solid rgba(153,196,211,.1);border-radius:9px;margin:7px 0;font-size:13px;color:#d3e2e9}
+#booking{border-top:1px solid var(--line);margin-top:20px;padding-top:19px}
+#booking label{margin-top:12px}
+#booking button{margin-top:13px}
+.appointment-list .doctor{border-right:3px solid var(--teal)}
+.footer{text-align:center;color:#718d9d;font-size:12px;padding:18px 0 0}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.side-card{position:static;order:2}.hero{padding:24px}.card{padding:20px}}
+@media(max-width:480px){.page{width:min(100% - 22px,1120px);padding-top:16px}.topbar{margin-bottom:17px}.brand-name{font-size:17px}.secure-label{font-size:10px;padding:6px 9px}.hero{border-radius:19px;padding:21px}.card{border-radius:16px;padding:17px}.side-card{padding:17px}}
 </style>
 </head>
 <body>
-<main>
+<main class="page">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">+</div>
+      <div><p class="brand-name">IRAQ MEDICAL</p><p class="brand-caption">منصة الرعاية الطبية الرقمية</p></div>
+    </div>
+    <div class="secure-label">● بوابة المراجعين</div>
+  </header>
 
-<div class="logo">
-<h1>IRAQ MEDICAL</h1>
-<p>بوابتك الطبية الرقمية</p>
-</div>
+  <section class="hero">
+    <div class="hero-content">
+      <div class="eyebrow">رعاية صحية أكثر سهولة وتنظيماً</div>
+      <h1>أهلاً بك في بوابتك الطبية</h1>
+      <p>أنشئ حسابك، تابع حالة طلبك، واستعرض الأطباء المعتمدين واحجز موعدك من مكان واحد.</p>
+    </div>
+  </section>
 
-<section id="auth" class="card">
-<h2>بوابة المراجع</h2>
+  <div class="layout">
+    <div class="main-column">
+      <section id="auth" class="card">
+        <h2>حساب المراجع</h2>
+        <p class="subtext">سجّل حساباً جديداً أو ادخل إلى حسابك لمتابعة خدماتك الطبية.</p>
+        <div class="tabs">
+          <button type="button" id="signupTab" onclick="showAuthTab('signup')">إنشاء حساب</button>
+          <button type="button" id="loginTab" class="secondary" onclick="showAuthTab('login')">تسجيل الدخول</button>
+        </div>
 
-<div class="tabs">
-<button type="button" id="signupTab" onclick="showAuthTab('signup')">إنشاء حساب</button>
-<button type="button" id="loginTab" class="secondary" onclick="showAuthTab('login')">تسجيل الدخول</button>
-</div>
+        <div id="signupPanel">
+          <h3>إنشاء حساب مراجع جديد</h3>
+          <div class="field"><label for="name">الاسم الكامل</label><input id="name" placeholder="اكتب الاسم الكامل" maxlength="150" autocomplete="name" required></div>
+          <div class="field"><label for="phone">رقم الهاتف (11 رقماً بالضبط)</label><input id="phone" type="tel" inputmode="numeric" maxlength="11" minlength="11" placeholder="07XXXXXXXXX" autocomplete="tel" required></div>
+          <p class="helper">يجب إدخال 11 رقماً، لا أكثر ولا أقل.</p>
+          <div class="field"><label for="age">العمر</label><input id="age" type="number" min="1" max="120" placeholder="العمر" required></div>
+          <div class="field"><label for="governorate">المحافظة</label>
+            <select id="governorate" required>
+              <option value="">اختر المحافظة</option>
+              <option value="بغداد">بغداد</option><option value="نينوى">نينوى</option><option value="البصرة">البصرة</option><option value="النجف">النجف</option><option value="كربلاء">كربلاء</option><option value="بابل">بابل</option><option value="القادسية">القادسية</option><option value="المثنى">المثنى</option><option value="ذي قار">ذي قار</option><option value="ميسان">ميسان</option><option value="واسط">واسط</option><option value="ديالى">ديالى</option><option value="صلاح الدين">صلاح الدين</option><option value="كركوك">كركوك</option><option value="الأنبار">الأنبار</option><option value="أربيل">أربيل</option><option value="السليمانية">السليمانية</option><option value="دهوك">دهوك</option><option value="حلبجة">حلبجة</option>
+            </select>
+          </div>
+          <div class="field"><label for="signupEmail">البريد الإلكتروني</label><input id="signupEmail" type="email" placeholder="name@example.com" autocomplete="email" required></div>
+          <div class="field"><label for="signupPassword">كلمة المرور</label><input id="signupPassword" type="password" placeholder="6 أحرف على الأقل" autocomplete="new-password" required></div>
+          <button id="signupButton" class="primary" onclick="signup()">إنشاء الحساب</button>
+        </div>
 
-<div id="signupPanel">
-<h3>إنشاء حساب مراجع جديد</h3>
-<input id="name" placeholder="الاسم الكامل" maxlength="150" required>
+        <div id="loginPanel" class="hidden">
+          <h3>تسجيل الدخول</h3>
+          <div class="field"><label for="email">البريد الإلكتروني</label><input id="email" type="email" placeholder="name@example.com" autocomplete="email"></div>
+          <div class="field"><label for="password">كلمة المرور</label><input id="password" type="password" placeholder="أدخل كلمة المرور" autocomplete="current-password"></div>
+          <button class="primary" onclick="login()">تسجيل الدخول</button>
+        </div>
+        <p id="message" class="msg" role="status" aria-live="polite"></p>
+      </section>
 
-<label for="phone">رقم الهاتف (11 رقماً بالضبط)</label>
-<input id="phone" type="tel" inputmode="numeric" maxlength="11" minlength="11"
-placeholder="مثال: 07XXXXXXXXX" autocomplete="tel" required>
-<p class="small">يجب إدخال 11 رقماً، لا أكثر ولا أقل.</p>
+      <section id="status" class="card hidden">
+        <h2>حالة الحساب</h2>
+        <p id="statusText" class="msg"></p>
+        <button class="secondary" onclick="logout()">تسجيل الخروج</button>
+      </section>
 
-<input id="age" type="number" min="1" max="120" placeholder="العمر" required>
+      <section id="doctors" class="card hidden">
+        <h2>الأطباء المعتمدون</h2>
+        <p class="subtext">اختر الطبيب المناسب للاطلاع على أوقات الدوام وحجز موعد.</p>
+        <div id="doctorList" class="msg">جاري تحميل الأطباء...</div>
+        <button class="secondary" onclick="logout()">تسجيل الخروج</button>
+      </section>
 
-<select id="governorate" required>
-<option value="">اختر المحافظة</option>
-<option value="بغداد">بغداد</option>
-<option value="نينوى">نينوى</option>
-<option value="البصرة">البصرة</option>
-<option value="النجف">النجف</option>
-<option value="كربلاء">كربلاء</option>
-<option value="بابل">بابل</option>
-<option value="القادسية">القادسية</option>
-<option value="المثنى">المثنى</option>
-<option value="ذي قار">ذي قار</option>
-<option value="ميسان">ميسان</option>
-<option value="واسط">واسط</option>
-<option value="ديالى">ديالى</option>
-<option value="صلاح الدين">صلاح الدين</option>
-<option value="كركوك">كركوك</option>
-<option value="الأنبار">الأنبار</option>
-<option value="أربيل">أربيل</option>
-<option value="السليمانية">السليمانية</option>
-<option value="دهوك">دهوك</option>
-<option value="حلبجة">حلبجة</option>
-</select>
+      <section id="myAppointments" class="card hidden">
+        <h2>حجوزاتي</h2>
+        <p class="subtext">تابع حالة طلبات المواعيد الخاصة بك.</p>
+        <div id="myAppointmentsList" class="msg appointment-list">جاري تحميل الحجوزات...</div>
+        <button class="secondary" onclick="loadMyAppointments()">تحديث الحجوزات</button>
+      </section>
+    </div>
 
-<input id="signupEmail" type="email" placeholder="البريد الإلكتروني" required>
-<input id="signupPassword" type="password" placeholder="كلمة المرور (6 أحرف على الأقل)" required>
-<button id="signupButton" onclick="signup()">إنشاء الحساب</button>
-</div>
-
-<div id="loginPanel" class="hidden">
-<h3>تسجيل الدخول</h3>
-<input id="email" type="email" placeholder="البريد الإلكتروني">
-<input id="password" type="password" placeholder="كلمة المرور">
-<button onclick="login()">تسجيل الدخول</button>
-</div>
-
-<p id="message" class="msg"></p>
-</section>
-
-<section id="status" class="card hidden">
-<h2>حالة الحساب</h2>
-<p id="statusText" class="msg"></p>
-<button class="secondary" onclick="logout()">تسجيل الخروج</button>
-</section>
-
-<section id="doctors" class="card hidden">
-<h2>الأطباء المعتمدون</h2>
-<p class="small">اختر الطبيب المناسب للاطلاع على أوقات الدوام وحجز موعد.</p>
-<div id="doctorList" class="msg">جاري تحميل الأطباء...</div>
-<button class="secondary" onclick="logout()">تسجيل الخروج</button>
-</section>
-
-<section id="myAppointments" class="card hidden">
-<h2>حجوزاتي</h2>
-<div id="myAppointmentsList" class="msg">جاري تحميل الحجوزات...</div>
-<button class="secondary" onclick="loadMyAppointments()">تحديث الحجوزات</button>
-</section>
-
+    <aside class="side-card">
+      <h3 class="side-title">خدمات بوابة المراجع</h3>
+      <div class="feature"><span class="feature-icon">✓</span><span>إنشاء حساب مراجع ببياناتك الأساسية.</span></div>
+      <div class="feature"><span class="feature-icon">⌕</span><span>استعراض الأطباء المعتمدين واختصاصاتهم.</span></div>
+      <div class="feature"><span class="feature-icon">▣</span><span>إرسال طلب حجز وفق أوقات دوام الطبيب.</span></div>
+      <div class="feature"><span class="feature-icon">↻</span><span>متابعة حالة الحجز من حسابك.</span></div>
+      <div class="side-note">تُعرض قائمة الأطباء بعد موافقة الإدارة على حساب المراجع.</div>
+    </aside>
+  </div>
+  <footer class="footer">IRAQ MEDICAL · بوابة الرعاية الطبية الرقمية</footer>
 </main>
 
 <script>
 const SUPABASE_URL="https://oejkeqlqkwdfropylxsv.supabase.co";
 const SUPABASE_KEY="sb_publishable_Ue8nsJFsLpDLFUgSTB24cw_rckeqWag";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-
 const el=id=>document.getElementById(id);
 let selectedDoctor=null;
 let selectedSchedules=[];
 
-function message(t){
- el("message").textContent=t;
-}
+function message(t){el("message").textContent=t;}
 
 function normalizeDigits(value){
  return String(value)
@@ -158,433 +205,179 @@ async function signup(){
  const governorate=el("governorate").value;
  const email=el("signupEmail").value.trim();
  const password=el("signupPassword").value;
-
  if(!full_name||!age||age<1||age>120||!governorate||!email||password.length<6){
-  message("أكمل جميع الحقول وتأكد من صحة العمر. كلمة المرور 6 أحرف على الأقل.");
-  return;
+  message("أكمل جميع الحقول وتأكد من صحة العمر. كلمة المرور 6 أحرف على الأقل.");return;
  }
-
  if(!/^[0-9]{11}$/.test(phone)){
-  message("رقم الهاتف يجب أن يتكون من 11 رقماً بالضبط.");
-  el("phone").focus();
-  return;
+  message("رقم الهاتف يجب أن يتكون من 11 رقماً بالضبط.");el("phone").focus();return;
  }
-
- const button=el("signupButton");
- button.disabled=true;
- message("جاري إنشاء الحساب...");
-
+ const button=el("signupButton");button.disabled=true;message("جاري إنشاء الحساب...");
  try{
-  const {error}=await db.auth.signUp({
-   email,
-   password,
-   options:{
-    data:{
-     full_name,
-     phone,
-     age:String(age),
-     governorate
-    }
-   }
-  });
-
+  const {error}=await db.auth.signUp({email,password,options:{data:{full_name,phone,age:String(age),governorate}}});
   if(error)throw error;
-
   message("تم إرسال طلب التسجيل. سيبقى الحساب قيد موافقة الإدارة. تحقق من بريدك الإلكتروني إذا طُلب تأكيده.");
- }catch(error){
-  message("تعذر إنشاء الحساب: "+error.message);
- }finally{
-  button.disabled=false;
- }
+ }catch(error){message("تعذر إنشاء الحساب: "+error.message);}
+ finally{button.disabled=false;}
 }
 
 async function login(){
- const email=el("email").value.trim();
- const password=el("password").value;
-
- if(!email||!password){
-  message("أدخل البريد الإلكتروني وكلمة المرور.");
-  return;
- }
-
+ const email=el("email").value.trim();const password=el("password").value;
+ if(!email||!password){message("أدخل البريد الإلكتروني وكلمة المرور.");return;}
  message("جاري تسجيل الدخول...");
-
  const {error}=await db.auth.signInWithPassword({email,password});
-
- if(error){
-  message("تعذر تسجيل الدخول: "+error.message);
-  return;
- }
-
+ if(error){message("تعذر تسجيل الدخول: "+error.message);return;}
  await loadAccount();
 }
 
 async function loadAccount(){
  const {data:{user},error:userError}=await db.auth.getUser();
-
- if(userError||!user){
-  message("تعذر التحقق من جلسة الدخول. يرجى تسجيل الدخول مجدداً.");
-  return;
- }
-
- const {data:profile,error}=await db.from("profiles")
- .select("full_name,role,approval_status")
- .eq("id",user.id)
- .maybeSingle();
-
- if(error){
-  el("statusText").textContent="تعذر قراءة حالة الحساب: "+error.message;
-  return;
- }
-
+ if(userError||!user){message("تعذر التحقق من جلسة الدخول. يرجى تسجيل الدخول مجدداً.");return;}
+ const {data:profile,error}=await db.from("profiles").select("full_name,role,approval_status").eq("id",user.id).maybeSingle();
+ if(error){el("statusText").textContent="تعذر قراءة حالة الحساب: "+error.message;return;}
  if(!profile){
   el("statusText").textContent="لم يتم العثور على ملف الحساب. يرجى مراجعة الإدارة.";
-  el("auth").classList.add("hidden");
-  el("status").classList.remove("hidden");
-  return;
+  el("auth").classList.add("hidden");el("status").classList.remove("hidden");return;
  }
-
- el("auth").classList.add("hidden");
- el("status").classList.remove("hidden");
- el("doctors").classList.add("hidden");
- el("myAppointments").classList.add("hidden");
-
- if(profile.role!=="patient"){
-  el("statusText").textContent="هذا الحساب ليس حساب مراجع.";
-  return;
- }
-
+ el("auth").classList.add("hidden");el("status").classList.remove("hidden");
+ el("doctors").classList.add("hidden");el("myAppointments").classList.add("hidden");
+ if(profile.role!=="patient"){el("statusText").textContent="هذا الحساب ليس حساب مراجع.";return;}
  const name=profile.full_name||"بك";
-
  if(profile.approval_status==="rejected"){
   el("statusText").className="msg status-rejected";
-  el("statusText").textContent="مرحباً "+name+". تم رفض طلب إنشاء حسابك من قبل الإدارة. يرجى التواصل مع الإدارة لمعرفة التفاصيل.";
-  return;
+  el("statusText").textContent="مرحباً "+name+". تم رفض طلب إنشاء حسابك من قبل الإدارة. يرجى التواصل مع الإدارة لمعرفة التفاصيل.";return;
  }
-
  if(profile.approval_status==="pending"){
   el("statusText").className="msg status-pending";
-  el("statusText").textContent="مرحباً "+name+". حسابك قيد مراجعة الإدارة. ستظهر قائمة الأطباء بعد الموافقة.";
-  return;
+  el("statusText").textContent="مرحباً "+name+". حسابك قيد مراجعة الإدارة. ستظهر قائمة الأطباء بعد الموافقة.";return;
  }
-
  if(profile.approval_status!=="approved"){
   el("statusText").className="msg";
-  el("statusText").textContent="مرحباً "+name+". حالة حسابك غير محددة. يرجى مراجعة الإدارة.";
-  return;
+  el("statusText").textContent="مرحباً "+name+". حالة حسابك غير محددة. يرجى مراجعة الإدارة.";return;
  }
-
- el("status").classList.add("hidden");
- el("doctors").classList.remove("hidden");
- el("myAppointments").classList.remove("hidden");
-
- await loadDoctors();
- await loadMyAppointments();
+ el("status").classList.add("hidden");el("doctors").classList.remove("hidden");el("myAppointments").classList.remove("hidden");
+ await loadDoctors();await loadMyAppointments();
 }
 
 async function loadDoctors(){
- const list=el("doctorList");
- list.textContent="جاري تحميل الأطباء...";
-
- const {data:doctors,error}=await db.from("doctors")
- .select("id,profile_id,qualification,experience_years,consultation_fee,bio,specialties(name_ar),clinics(name)");
-
- if(error){
-  list.textContent="تعذر تحميل الأطباء: "+error.message;
-  return;
- }
-
- if(!doctors||doctors.length===0){
-  list.textContent="لا توجد سجلات أطباء في قاعدة البيانات.";
-  return;
- }
-
+ const list=el("doctorList");list.textContent="جاري تحميل الأطباء...";
+ const {data:doctors,error}=await db.from("doctors").select("id,profile_id,qualification,experience_years,consultation_fee,bio,specialties(name_ar),clinics(name)");
+ if(error){list.textContent="تعذر تحميل الأطباء: "+error.message;return;}
+ if(!doctors||doctors.length===0){list.textContent="لا توجد سجلات أطباء في قاعدة البيانات.";return;}
  const profileIds=doctors.map(d=>d.profile_id).filter(Boolean);
-
- const {data:profiles,error:profileError}=await db.from("profiles")
- .select("id,full_name,role,approval_status,phone")
- .in("id",profileIds);
-
- if(profileError){
-  list.textContent="تعذر تحميل أسماء الأطباء: "+profileError.message;
-  return;
- }
-
- const approvedProfiles=(profiles||[]).filter(p=>
-  p.role==="doctor"&&p.approval_status==="approved"
- );
-
+ const {data:profiles,error:profileError}=await db.from("profiles").select("id,full_name,role,approval_status,phone").in("id",profileIds);
+ if(profileError){list.textContent="تعذر تحميل أسماء الأطباء: "+profileError.message;return;}
+ const approvedProfiles=(profiles||[]).filter(p=>p.role==="doctor"&&p.approval_status==="approved");
  const approvedIds=new Set(approvedProfiles.map(p=>p.id));
  const visibleDoctors=doctors.filter(d=>approvedIds.has(d.profile_id));
-
- if(visibleDoctors.length===0){
-  list.textContent="لا يوجد أطباء معتمدون حالياً أو لا تسمح صلاحيات القراءة بعرضهم.";
-  return;
- }
-
+ if(visibleDoctors.length===0){list.textContent="لا يوجد أطباء معتمدون حالياً أو لا تسمح صلاحيات القراءة بعرضهم.";return;}
  list.innerHTML="";
-
  visibleDoctors.forEach(d=>{
   const profile=approvedProfiles.find(p=>p.id===d.profile_id);
-  const item=document.createElement("div");
-  item.className="doctor";
-
-  const title=document.createElement("h3");
-  title.textContent=profile.full_name||"طبيب";
-
-  const specialty=document.createElement("div");
-  specialty.className="info";
-  specialty.textContent="الاختصاص: "+(d.specialties?.name_ar||"غير محدد");
-
-  const clinic=document.createElement("div");
-  clinic.className="info";
-  clinic.textContent="العيادة: "+(d.clinics?.name||"غير محددة");
-
-  const qualification=document.createElement("div");
-  qualification.className="info";
-  qualification.textContent="المؤهل: "+(d.qualification||"غير محدد");
-
-  const experience=document.createElement("div");
-  experience.className="info";
-  experience.textContent="سنوات الخبرة: "+(d.experience_years??"غير محدد");
-
-  const fee=document.createElement("div");
-  fee.className="info";
-  fee.textContent="أجور الاستشارة: "+(d.consultation_fee??"غير محددة");
-
-  const bio=document.createElement("p");
-  bio.className="small";
-  bio.textContent=d.bio||"";
-
-  const button=document.createElement("button");
-  button.textContent="اختيار الطبيب وحجز موعد";
-  button.onclick=()=>selectDoctor(d,profile.full_name||"طبيب");
-
-  item.append(title,specialty,clinic,qualification,experience,fee,bio,button);
-  list.appendChild(item);
+  const item=document.createElement("div");item.className="doctor";
+  const title=document.createElement("h3");title.textContent=profile.full_name||"طبيب";
+  const specialty=document.createElement("div");specialty.className="info";specialty.textContent="الاختصاص: "+(d.specialties?.name_ar||"غير محدد");
+  const clinic=document.createElement("div");clinic.className="info";clinic.textContent="العيادة: "+(d.clinics?.name||"غير محددة");
+  const qualification=document.createElement("div");qualification.className="info";qualification.textContent="المؤهل: "+(d.qualification||"غير محدد");
+  const experience=document.createElement("div");experience.className="info";experience.textContent="سنوات الخبرة: "+(d.experience_years??"غير محدد");
+  const fee=document.createElement("div");fee.className="info";fee.textContent="أجور الاستشارة: "+(d.consultation_fee??"غير محددة");
+  const bio=document.createElement("p");bio.className="small";bio.textContent=d.bio||"";
+  const button=document.createElement("button");button.className="action";button.textContent="اختيار الطبيب وحجز موعد";button.onclick=()=>selectDoctor(d,profile.full_name||"طبيب");
+  item.append(title,specialty,clinic,qualification,experience,fee,bio,button);list.appendChild(item);
  });
 }
 
 async function selectDoctor(doctor,name){
- selectedDoctor=doctor;
- selectedSchedules=[];
-
- const existing=el("booking");
- if(existing)existing.remove();
-
- const panel=document.createElement("div");
- panel.id="booking";
- panel.innerHTML=`
- <h3>حجز موعد مع الطبيب: ${escapeHTML(name)}</h3>
+ selectedDoctor=doctor;selectedSchedules=[];
+ const existing=el("booking");if(existing)existing.remove();
+ const panel=document.createElement("div");panel.id="booking";
+ panel.innerHTML=`<h3>حجز موعد مع الطبيب: ${escapeHTML(name)}</h3>
  <p class="small" id="scheduleMessage">جاري تحميل دوام الطبيب...</p>
- <label>تاريخ الموعد</label>
- <input type="date" id="appointmentDate">
- <label>وقت الموعد</label>
- <input type="time" id="appointmentTime">
- <label>ملاحظات للمراجع (اختياري)</label>
- <textarea id="appointmentNotes" rows="3" placeholder="اكتب ملاحظاتك هنا"></textarea>
- <button id="bookButton">إرسال طلب الحجز</button>
- <p id="bookingMessage" class="msg"></p>
- `;
-
+ <label>تاريخ الموعد</label><input type="date" id="appointmentDate">
+ <label>وقت الموعد</label><input type="time" id="appointmentTime">
+ <label>ملاحظات للمراجع (اختياري)</label><textarea id="appointmentNotes" rows="3" placeholder="اكتب ملاحظاتك هنا"></textarea>
+ <button id="bookButton" class="action">إرسال طلب الحجز</button><p id="bookingMessage" class="msg"></p>`;
  el("doctorList").prepend(panel);
-
  const today=new Date();
- const localToday=[
-  today.getFullYear(),
-  String(today.getMonth()+1).padStart(2,"0"),
-  String(today.getDate()).padStart(2,"0")
- ].join("-");
-
- el("appointmentDate").min=localToday;
- el("appointmentDate").value=localToday;
-
- el("appointmentDate").addEventListener("change",checkSelectedDay);
- el("bookButton").addEventListener("click",bookAppointment);
-
- const {data,error}=await db.from("doctor_schedules")
- .select("day_of_week,start_time,end_time,is_available")
- .eq("doctor_id",doctor.id)
- .eq("is_available",true);
-
- if(error){
-  el("scheduleMessage").textContent="تعذر تحميل الدوام: "+error.message;
-  return;
- }
-
+ const localToday=[today.getFullYear(),String(today.getMonth()+1).padStart(2,"0"),String(today.getDate()).padStart(2,"0")].join("-");
+ el("appointmentDate").min=localToday;el("appointmentDate").value=localToday;
+ el("appointmentDate").addEventListener("change",checkSelectedDay);el("bookButton").addEventListener("click",bookAppointment);
+ const {data,error}=await db.from("doctor_schedules").select("day_of_week,start_time,end_time,is_available").eq("doctor_id",doctor.id).eq("is_available",true);
+ if(error){el("scheduleMessage").textContent="تعذر تحميل الدوام: "+error.message;return;}
  selectedSchedules=data||[];
-
- if(selectedSchedules.length===0){
-  el("scheduleMessage").textContent="الطبيب لم يحدد أوقات دوام متاحة حالياً.";
-  el("bookButton").disabled=true;
-  return;
- }
-
+ if(selectedSchedules.length===0){el("scheduleMessage").textContent="الطبيب لم يحدد أوقات دوام متاحة حالياً.";el("bookButton").disabled=true;return;}
  checkSelectedDay();
 }
 
 function escapeHTML(value){
- return String(value??"").replace(/[&<>"']/g,char=>({
-  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
- }[char]));
+ return String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
 }
 
 function checkSelectedDay(){
- const dateValue=el("appointmentDate").value;
- if(!dateValue)return;
-
+ const dateValue=el("appointmentDate").value;if(!dateValue)return;
  const dayNumber=new Date(dateValue+"T12:00:00").getDay();
  const schedule=selectedSchedules.find(s=>Number(s.day_of_week)===dayNumber);
-
- if(!schedule){
-  el("scheduleMessage").textContent="لا يوجد دوام متاح للطبيب في هذا اليوم. اختر يوماً آخر.";
-  el("bookButton").disabled=true;
-  return;
- }
-
+ if(!schedule){el("scheduleMessage").textContent="لا يوجد دوام متاح للطبيب في هذا اليوم. اختر يوماً آخر.";el("bookButton").disabled=true;return;}
  el("scheduleMessage").textContent="دوام الطبيب في هذا اليوم من "+schedule.start_time.slice(0,5)+" إلى "+schedule.end_time.slice(0,5);
  el("bookButton").disabled=false;
 }
 
 async function bookAppointment(){
  if(!selectedDoctor)return;
-
- const dateValue=el("appointmentDate").value;
- const timeValue=el("appointmentTime").value;
- const notes=el("appointmentNotes").value.trim();
-
- if(!dateValue||!timeValue){
-  el("bookingMessage").textContent="اختر تاريخ ووقت الموعد.";
-  return;
- }
-
+ const dateValue=el("appointmentDate").value;const timeValue=el("appointmentTime").value;const notes=el("appointmentNotes").value.trim();
+ if(!dateValue||!timeValue){el("bookingMessage").textContent="اختر تاريخ ووقت الموعد.";return;}
  const dayNumber=new Date(dateValue+"T12:00:00").getDay();
  const schedule=selectedSchedules.find(s=>Number(s.day_of_week)===dayNumber);
-
- if(!schedule){
-  el("bookingMessage").textContent="لا يوجد دوام متاح للطبيب في هذا اليوم.";
-  return;
- }
-
- if(timeValue<schedule.start_time.slice(0,5)||timeValue>=schedule.end_time.slice(0,5)){
-  el("bookingMessage").textContent="الوقت المختار خارج ساعات دوام الطبيب.";
-  return;
- }
-
+ if(!schedule){el("bookingMessage").textContent="لا يوجد دوام متاح للطبيب في هذا اليوم.";return;}
+ if(timeValue<schedule.start_time.slice(0,5)||timeValue>=schedule.end_time.slice(0,5)){el("bookingMessage").textContent="الوقت المختار خارج ساعات دوام الطبيب.";return;}
  const appointmentDate=new Date(dateValue+"T"+timeValue+":00");
-
- if(appointmentDate<=new Date()){
-  el("bookingMessage").textContent="اختر موعداً في المستقبل.";
-  return;
- }
-
+ if(appointmentDate<=new Date()){el("bookingMessage").textContent="اختر موعداً في المستقبل.";return;}
  const {data:{user},error:authError}=await db.auth.getUser();
-
- if(authError||!user){
-  el("bookingMessage").textContent="انتهت جلسة الدخول. سجل الدخول مجدداً.";
-  return;
- }
-
- const button=el("bookButton");
- button.disabled=true;
- el("bookingMessage").textContent="جارٍ إرسال طلب الحجز...";
-
- const {error}=await db.from("appointments").insert({
-  patient_id:user.id,
-  doctor_id:selectedDoctor.id,
-  appointment_at:appointmentDate.toISOString(),
-  status:"pending",
-  notes:notes||null
- });
-
+ if(authError||!user){el("bookingMessage").textContent="انتهت جلسة الدخول. سجل الدخول مجدداً.";return;}
+ const button=el("bookButton");button.disabled=true;el("bookingMessage").textContent="جارٍ إرسال طلب الحجز...";
+ const {error}=await db.from("appointments").insert({patient_id:user.id,doctor_id:selectedDoctor.id,appointment_at:appointmentDate.toISOString(),status:"pending",notes:notes||null});
  button.disabled=false;
-
- if(error){
-  el("bookingMessage").textContent="تعذر إرسال الحجز: "+error.message;
-  return;
- }
-
+ if(error){el("bookingMessage").textContent="تعذر إرسال الحجز: "+error.message;return;}
  el("bookingMessage").textContent="تم إرسال طلب الحجز بنجاح. سيظهر للطبيب في لوحة الحجوزات.";
  await loadMyAppointments();
 }
 
 async function loadMyAppointments(){
- const {data:{user}}=await db.auth.getUser();
- if(!user)return;
-
- const list=el("myAppointmentsList");
- list.textContent="جاري تحميل الحجوزات...";
-
- const {data,error}=await db.from("appointments")
- .select("id,appointment_at,status,notes,doctors(profile_id)")
- .eq("patient_id",user.id)
- .order("appointment_at",{ascending:true});
-
- if(error){
-  list.textContent="تعذر تحميل الحجوزات: "+error.message;
-  return;
- }
-
- if(!data||data.length===0){
-  list.textContent="ليس لديك حجوزات حالياً.";
-  return;
- }
-
- const profileIds=data.map(a=>a.doctors?.profile_id).filter(Boolean);
- let profiles=[];
-
+ const {data:{user}}=await db.auth.getUser();if(!user)return;
+ const list=el("myAppointmentsList");list.textContent="جاري تحميل الحجوزات...";
+ const {data,error}=await db.from("appointments").select("id,appointment_at,status,notes,doctors(profile_id)").eq("patient_id",user.id).order("appointment_at",{ascending:true});
+ if(error){list.textContent="تعذر تحميل الحجوزات: "+error.message;return;}
+ if(!data||data.length===0){list.textContent="ليس لديك حجوزات حالياً.";return;}
+ const profileIds=data.map(a=>a.doctors?.profile_id).filter(Boolean);let profiles=[];
  if(profileIds.length){
-  const result=await db.from("profiles")
-  .select("id,full_name")
-  .in("id",profileIds);
-
+  const result=await db.from("profiles").select("id,full_name").in("id",profileIds);
   if(!result.error)profiles=result.data||[];
  }
-
  list.innerHTML="";
-
  data.forEach(a=>{
-  const card=document.createElement("div");
-  card.className="doctor";
-
-  const doctorProfile=profiles.find(p=>p.id===a.doctors?.profile_id);
-  const date=new Date(a.appointment_at);
-
-  const title=document.createElement("strong");
-  title.textContent="الطبيب: "+(doctorProfile?.full_name||"غير معروف");
-
-  const dateLine=document.createElement("p");
-  dateLine.textContent="الموعد: "+date.toLocaleString("ar-IQ",{dateStyle:"medium",timeStyle:"short"});
-
-  const status=document.createElement("p");
-  status.className="msg";
-  status.textContent="الحالة: "+appointmentStatus(a.status);
-
-  card.append(title,dateLine,status);
-  list.appendChild(card);
+  const card=document.createElement("div");card.className="doctor";
+  const doctorProfile=profiles.find(p=>p.id===a.doctors?.profile_id);const date=new Date(a.appointment_at);
+  const title=document.createElement("strong");title.textContent="الطبيب: "+(doctorProfile?.full_name||"غير معروف");
+  const dateLine=document.createElement("p");dateLine.textContent="الموعد: "+date.toLocaleString("ar-IQ",{dateStyle:"medium",timeStyle:"short"});
+  const status=document.createElement("p");status.className="msg";status.textContent="الحالة: "+appointmentStatus(a.status);
+  card.append(title,dateLine,status);list.appendChild(card);
  });
 }
 
 function appointmentStatus(status){
- const labels={
-  pending:"قيد الانتظار",
-  approved:"مقبول",
-  confirmed:"مؤكد",
-  rejected:"مرفوض",
-  cancelled:"ملغي",
-  completed:"مكتمل"
- };
+ const labels={pending:"قيد الانتظار",approved:"مقبول",confirmed:"مؤكد",rejected:"مرفوض",cancelled:"ملغي",completed:"مكتمل"};
  return labels[status]||status||"غير محدد";
 }
 
-async function logout(){
- await db.auth.signOut();
- location.reload();
-}
+async function logout(){await db.auth.signOut();location.reload();}
 
-db.auth.getSession().then(({data})=>{
- if(data.session)loadAccount();
-});
+db.auth.getSession().then(({data})=>{if(data.session)loadAccount();});
 </script>
 </body>
 </html>
+'''
+
+path = Path("/mnt/data/iraq_medical_index_redesigned.html")
+path.write_text(html, encoding="utf-8")
+print(f"تم إنشاء الملف: {path.name}")
+print(f"الحجم: {path.stat().st_size:,} بايت")
+print(f"عدد الأسطر: {len(html.splitlines())}")
