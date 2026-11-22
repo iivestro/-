@@ -1,4 +1,5 @@
-html = r'''<!DOCTYPE html>
+
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -7,32 +8,116 @@ html = r'''<!DOCTYPE html>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#f3f6fa;color:#172b4d;font-family:Arial,sans-serif}
-header{background:#102b46;color:white;padding:22px}
-header h2{margin:0;color:#50d4c3}
-main{max-width:900px;margin:25px auto;padding:15px}
-.card{background:white;border-radius:16px;padding:22px;margin-bottom:18px;box-shadow:0 4px 18px #102b4610}
-h3{margin-top:0}
-.info{padding:13px;background:#f4f8fb;border-radius:10px;margin:9px 0}
-button{border:0;border-radius:10px;padding:11px 15px;background:#087f8c;color:white;font-size:14px;cursor:pointer;margin:4px}
-button:disabled{opacity:.5}
-.logout,.reject{background:#a33}
-.complete{background:#416b9b}
-.muted{color:#68798d}
-#app{display:none}
-.status{padding:12px;border-radius:10px;background:#eef5f8;margin-top:12px;overflow-wrap:anywhere}
-input[type=email],input[type=password],input[type=time],input[type=text],input[type=url]{
-width:100%;padding:12px;margin:7px 0;border:1px solid #ccd5df;border-radius:9px
+:root{
+--sky:#38bdf8;
+--sky-dark:#0284c7;
+--sky-soft:#eaf8ff;
+--ink:#17324a;
+--line:#cceeff;
 }
-.day{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;align-items:center;padding:13px 0;border-bottom:1px solid #edf0f4}
+body{
+margin:0;
+background:#fff;
+color:var(--ink);
+font-family:Arial,sans-serif;
+}
+header{
+background:#fff;
+color:var(--ink);
+padding:22px;
+border-bottom:3px solid var(--sky);
+box-shadow:0 3px 16px #0284c710;
+}
+header h2{margin:0;color:var(--sky-dark)}
+header p{color:#52758d}
+main{max-width:900px;margin:25px auto;padding:15px}
+.card{
+background:#fff;
+border:1px solid var(--line);
+border-radius:16px;
+padding:22px;
+margin-bottom:18px;
+box-shadow:0 5px 22px #0284c710;
+}
+h3{margin-top:0;color:var(--sky-dark)}
+.info{
+padding:13px;
+background:var(--sky-soft);
+border:1px solid #d8f1ff;
+border-radius:10px;
+margin:9px 0;
+}
+button{
+border:0;
+border-radius:10px;
+padding:11px 15px;
+background:var(--sky-dark);
+color:white;
+font-size:14px;
+cursor:pointer;
+margin:4px;
+transition:background .2s,transform .2s;
+}
+button:hover{background:#0369a1;transform:translateY(-1px)}
+button:disabled{opacity:.55}
+.logout,.reject{background:#dc5555}
+.logout:hover,.reject:hover{background:#b93838}
+.complete{background:#0ea5e9}
+.muted{color:#668397}
+#app{display:none}
+.status{
+padding:12px;
+border-radius:10px;
+background:var(--sky-soft);
+border:1px solid #d8f1ff;
+margin-top:12px;
+overflow-wrap:anywhere;
+}
+input[type=email],input[type=password],
+input[type=time],input[type=text],input[type=url]{
+width:100%;
+padding:12px;
+margin:7px 0;
+border:1px solid #b9e6fb;
+border-radius:9px;
+background:#fff;
+color:var(--ink);
+outline:none;
+}
+input:focus{
+border-color:var(--sky-dark);
+box-shadow:0 0 0 3px #38bdf826;
+}
+.day{
+display:grid;
+grid-template-columns:1fr 1fr 1fr 1fr;
+gap:10px;
+align-items:center;
+padding:13px 0;
+border-bottom:1px solid #e2f4fc;
+}
 .day strong{font-size:14px}
 .day label{font-size:13px}
 .day input[type=time]{margin:0}
-.appointment{border:1px solid #e4eaf0;border-radius:12px;padding:15px;margin:12px 0}
+.appointment{
+border:1px solid #cceeff;
+background:#fff;
+border-radius:12px;
+padding:15px;
+margin:12px 0;
+}
 .appointment p{margin:7px 0;overflow-wrap:anywhere}
-.tag{display:inline-block;background:#e8f5f4;color:#087f8c;padding:5px 10px;border-radius:20px;font-size:12px}
-.section-title{color:#087f8c}
+.tag{
+display:inline-block;
+background:#e0f5ff;
+color:#0369a1;
+padding:5px 10px;
+border-radius:20px;
+font-size:12px;
+}
+.section-title{color:var(--sky-dark)}
 .actions{margin-top:12px}
+a{color:#0284c7}
 @media(max-width:600px){
 .day{grid-template-columns:1fr 1fr}
 .day strong{grid-column:1/-1}
@@ -65,7 +150,10 @@ width:100%;padding:12px;margin:7px 0;border:1px solid #ccd5df;border-radius:9px
 <div class="info">الاختصاص: <strong id="specialty">—</strong></div>
 <div class="info">العيادة: <strong id="clinic">—</strong></div>
 <div class="info">العنوان: <strong id="clinicAddressDisplay">—</strong></div>
-<div class="info">الموقع: <a id="clinicMapDisplay" href="#" target="_blank" rel="noopener" style="display:none">فتح الموقع على Google Maps</a><strong id="clinicMapEmpty">—</strong></div>
+<div class="info">الموقع:
+<a id="clinicMapDisplay" href="#" target="_blank" rel="noopener" style="display:none">فتح الموقع على Google Maps</a>
+<strong id="clinicMapEmpty">—</strong>
+</div>
 <div class="info">المؤهل: <strong id="qualification">—</strong></div>
 <div class="info">سنوات الخبرة: <strong id="experience">—</strong></div>
 <div class="info">أجور الاستشارة: <strong id="fee">—</strong></div>
@@ -77,13 +165,17 @@ width:100%;padding:12px;margin:7px 0;border:1px solid #ccd5df;border-radius:9px
 
 <div class="card">
 <h3 class="section-title">معلومات العيادة وموقعها</h3>
-<p class="muted">اكتب بيانات عيادتك مباشرة في الخانات التالية. لا توجد قوائم اختيار.</p>
+<p class="muted">اكتب بيانات عيادتك مباشرة في الخانات التالية.</p>
+
 <label for="clinicNameInput">اسم العيادة</label>
 <input id="clinicNameInput" type="text" maxlength="160" placeholder="اكتب اسم العيادة">
+
 <label for="clinicAddressInput">عنوان العيادة</label>
 <input id="clinicAddressInput" type="text" maxlength="300" placeholder="اكتب العنوان بالتفصيل">
+
 <label for="clinicMapInput">رابط موقع العيادة على Google Maps</label>
 <input id="clinicMapInput" type="url" maxlength="1000" placeholder="الصق رابط Google Maps هنا">
+
 <p class="muted">يمكنك نسخ رابط المشاركة من تطبيق Google Maps ولصقه هنا.</p>
 <button id="saveClinicButton" onclick="saveClinicDetails()">حفظ معلومات العيادة</button>
 <div id="clinicStatus" class="status"></div>
@@ -191,8 +283,10 @@ document.getElementById("phone").textContent=profile.phone||"—";
 document.getElementById("specialty").textContent=doctor.specialties?.name_ar||"—";
 document.getElementById("clinic").textContent=doctor.clinics?.name||"—";
 document.getElementById("clinicAddressDisplay").textContent=doctor.clinics?.address||"—";
+
 const mapLink=document.getElementById("clinicMapDisplay");
 const mapEmpty=document.getElementById("clinicMapEmpty");
+
 if(doctor.clinics?.maps_url){
 mapLink.href=doctor.clinics.maps_url;
 mapLink.style.display="inline";
@@ -201,6 +295,7 @@ mapEmpty.style.display="none";
 mapLink.style.display="none";
 mapEmpty.style.display="inline";
 }
+
 document.getElementById("clinicNameInput").value=doctor.clinics?.name||"";
 document.getElementById("clinicAddressInput").value=doctor.clinics?.address||"";
 document.getElementById("clinicMapInput").value=doctor.clinics?.maps_url||"";
@@ -239,6 +334,7 @@ host==="maps.google.com"||
 host==="google.com"||
 host==="www.google.com"||
 (host.startsWith("google.")&&parsed.pathname.startsWith("/maps"));
+
 if(parsed.protocol!=="https:"||!validHost){
 showMessage("clinicStatus","يرجى لصق رابط مشاركة صحيح من Google Maps يبدأ بـ https://");
 return;
@@ -263,8 +359,10 @@ if(error)throw error;
 
 document.getElementById("clinic").textContent=name;
 document.getElementById("clinicAddressDisplay").textContent=address;
+
 const mapLink=document.getElementById("clinicMapDisplay");
 const mapEmpty=document.getElementById("clinicMapEmpty");
+
 if(mapsUrl){
 mapLink.href=mapsUrl;
 mapLink.style.display="inline";
@@ -273,6 +371,7 @@ mapEmpty.style.display="none";
 mapLink.style.display="none";
 mapEmpty.style.display="inline";
 }
+
 showMessage("clinicStatus","تم حفظ معلومات العيادة وموقعها بنجاح.");
 }catch(error){
 showMessage("clinicStatus","تعذر حفظ البيانات: "+error.message);
@@ -522,9 +621,3 @@ if(data.session)loadDoctor();
 </script>
 </body>
 </html>
-'''
-path = "/mnt/data/doctor.html"
-with open(path, "w", encoding="utf-8") as f:
-    f.write(html)
-print(f"تم إنشاء الملف: {path}")
-print(f"الحجم: {len(html)} حرف")
