@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -64,6 +65,30 @@ canvas{width:100%;height:100%;display:block}
 .booking-toolbar input{flex:1;min-width:220px;margin:0}
 .booking-count{color:#668397;font-size:13px}
 .empty-state{text-align:center;padding:28px;color:#668397}
+
+/* رفع صورة الطبيب */
+.photo-upload{
+ display:flex;
+ align-items:center;
+ gap:16px;
+ flex-wrap:wrap;
+ padding:14px;
+ border:1px dashed #9bdcf7;
+ border-radius:12px;
+ background:#f7fcff;
+ margin:8px 0 16px;
+}
+.photo-upload img{
+ width:104px;
+ height:104px;
+ object-fit:cover;
+ border-radius:14px;
+ background:#eaf8ff;
+ border:1px solid var(--line);
+}
+.photo-upload-info{flex:1;min-width:180px}
+.photo-upload input[type=file]{max-width:100%;background:#fff}
+
 @media(max-width:900px){
 .dashboard-layout{grid-template-columns:1fr}
 .sidebar{position:static}
@@ -245,6 +270,17 @@ main{padding:10px}
       <div><label>سنوات الخبرة</label><input id="experience" type="number" min="0" max="70" value="0"></div>
       <div><label>أجرة الكشف</label><input id="fee" type="number" min="0" value="0"></div>
      </div>
+
+     <label>صورة الطبيب (اختياري)</label>
+     <div class="photo-upload">
+      <img id="doctorPhotoPreview" alt="معاينة صورة الطبيب" src="data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22104%22 height=%22104%22%3E%3Crect width=%22100%25%22 height=%22100%25%22 fill=%22%23eaf8ff%22/%3E%3Ccircle cx=%2252%22 cy=%2238%22 r=%2218%22 fill=%22%239bdcf7%22/%3E%3Cpath d=%22M15 104c3-25 16-38 37-38s34 13 37 38%22 fill=%22%239bdcf7%22/%3E%3C/svg%3E">
+      <div class="photo-upload-info">
+       <input id="doctorPhotoFile" type="file" accept="image/jpeg,image/png,image/webp">
+       <p class="small">JPG أو PNG أو WebP، بحد أقصى 5 ميغابايت.</p>
+       <p id="doctorPhotoInfo" class="small">لم يتم اختيار صورة بعد.</p>
+      </div>
+     </div>
+
      <label>نبذة عن الطبيب</label>
      <textarea id="bio"></textarea>
      <button id="createDoctorButton" type="submit">إنشاء حساب الطبيب</button>
@@ -572,7 +608,7 @@ async function updatePatientStatus(id,newStatus,button){
   setText("errorPatients",error?"فشل تحديث الحساب: "+error.message:"لم يتم تحديث الحساب. تحقق من صلاحيات RLS أو حالة الحساب.");
   button.disabled=false;return;
  }
- setText("message",isApprove?"تم قبول حساب المراجع بنجاح.":"تم رفض حساب المراجع بنجاح.");
+ setText("message",isApprove?"تم قبول حساب المراجع بنجاح.":"تم رفض حساب هذا المراجع بنجاح.");
  await Promise.all([loadPatients(),refreshDashboard()]);
 }
 
@@ -856,6 +892,42 @@ async function findOrCreateClinic(clinicName,clinicAddress,clinicMapsUrl){
  return created.id;
 }
 
+/* معاينة صورة الطبيب قبل الرفع */
+let doctorPhotoPreviewUrl=null;
+
+const doctorPhotoFallback="data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22104%22 height=%22104%22%3E%3Crect width=%22100%25%22 height=%22100%25%22 fill=%22%23eaf8ff%22/%3E%3Ccircle cx=%2252%22 cy=%2238%22 r=%2218%22 fill=%22%239bdcf7%22/%3E%3Cpath d=%22M15 104c3-25 16-38 37-38s34 13 37 38%22 fill=%22%239bdcf7%22/%3E%3C/svg%3E";
+
+document.getElementById("doctorPhotoFile").addEventListener("change",()=>{
+ const input=document.getElementById("doctorPhotoFile");
+ const file=input.files[0];
+ const preview=document.getElementById("doctorPhotoPreview");
+ const info=document.getElementById("doctorPhotoInfo");
+
+ if(doctorPhotoPreviewUrl){
+  URL.revokeObjectURL(doctorPhotoPreviewUrl);
+  doctorPhotoPreviewUrl=null;
+ }
+
+ if(!file){
+  preview.src=doctorPhotoFallback;
+  info.textContent="لم يتم اختيار صورة بعد.";
+  return;
+ }
+
+ if(!["image/jpeg","image/png","image/webp"].includes(file.type)||file.size>5242880){
+  input.value="";
+  preview.src=doctorPhotoFallback;
+  info.textContent="الصيغة غير مدعومة أو حجم الصورة أكبر من 5 ميغابايت.";
+  setText("doctorError","اختر JPG أو PNG أو WebP بحجم لا يتجاوز 5 ميغابايت.");
+  return;
+ }
+
+ setText("doctorError","");
+ doctorPhotoPreviewUrl=URL.createObjectURL(file);
+ preview.src=doctorPhotoPreviewUrl;
+ info.textContent=file.name+" — "+(file.size/1024/1024).toFixed(2)+" MB";
+});
+
 document.getElementById("doctorForm").addEventListener("submit",async event=>{
  event.preventDefault();
 
@@ -864,6 +936,8 @@ document.getElementById("doctorForm").addEventListener("submit",async event=>{
 
  const button=document.getElementById("createDoctorButton");
  button.disabled=true;
+
+ let uploadedPhotoPath=null;
 
  try{
   const {data:sessionData,error:sessionError}=await db.auth.getSession();
@@ -888,6 +962,33 @@ document.getElementById("doctorForm").addEventListener("submit",async event=>{
   setText("doctorMessage","جارٍ حفظ بيانات العيادة...");
 
   const clinicId=await findOrCreateClinic(clinicName,clinicAddress,clinicMapsUrl);
+
+  let photoUrl=null;
+  const photoFile=document.getElementById("doctorPhotoFile").files[0];
+
+  if(photoFile){
+   if(!["image/jpeg","image/png","image/webp"].includes(photoFile.type)||photoFile.size>5242880){
+    throw new Error("اختر JPG أو PNG أو WebP بحجم لا يتجاوز 5 ميغابايت.");
+   }
+
+   const extension=photoFile.type==="image/png"?"png":photoFile.type==="image/webp"?"webp":"jpg";
+   uploadedPhotoPath="doctors/"+crypto.randomUUID()+"."+extension;
+
+   setText("doctorMessage","جارٍ رفع صورة الطبيب...");
+
+   const {error:uploadError}=await db.storage.from("doctor-photos").upload(uploadedPhotoPath,photoFile,{
+    upsert:false,
+    contentType:photoFile.type,
+    cacheControl:"3600"
+   });
+
+   if(uploadError){
+    uploadedPhotoPath=null;
+    throw new Error("تعذر رفع صورة الطبيب: "+uploadError.message);
+   }
+
+   photoUrl=db.storage.from("doctor-photos").getPublicUrl(uploadedPhotoPath).data.publicUrl;
+  }
 
   const payload={
    full_name:document.getElementById("doctorName").value.trim(),
@@ -917,15 +1018,48 @@ document.getElementById("doctorForm").addEventListener("submit",async event=>{
   const result=await response.json().catch(()=>({}));
 
   if(!response.ok){
+   if(uploadedPhotoPath){
+    await db.storage.from("doctor-photos").remove([uploadedPhotoPath]);
+    uploadedPhotoPath=null;
+   }
    throw new Error(result.error||"فشل الطلب، رمز الحالة: "+response.status);
   }
 
-  setText("doctorMessage","تم إنشاء حساب الطبيب وحفظ عنوان وموقع العيادة بنجاح.");
+  if(photoUrl){
+   const {data:savedDoctor,error:photoSaveError}=await db.from("doctors")
+    .update({photo_url:photoUrl})
+    .eq("profile_id",result.doctor_id)
+    .select("id")
+    .maybeSingle();
+
+   if(photoSaveError||!savedDoctor){
+    setText("doctorMessage","تم إنشاء الحساب، لكن لم يتم ربط الصورة.");
+    throw new Error(
+     "تم إنشاء حساب الطبيب، لكن تعذر حفظ رابط الصورة. "+
+     (photoSaveError?.message||"لم يتم العثور على سجل الطبيب.")
+    );
+   }
+  }
+
+  setText("doctorMessage","تم إنشاء حساب الطبيب وحفظ بياناته وصورته بنجاح.");
   document.getElementById("doctorForm").reset();
+
+  document.getElementById("doctorPhotoPreview").src=doctorPhotoFallback;
+  document.getElementById("doctorPhotoInfo").textContent="لم يتم اختيار صورة بعد.";
+
+  if(doctorPhotoPreviewUrl){
+   URL.revokeObjectURL(doctorPhotoPreviewUrl);
+   doctorPhotoPreviewUrl=null;
+  }
 
   await refreshDashboard();
 
  }catch(e){
+  if(uploadedPhotoPath){
+   await db.storage.from("doctor-photos").remove([uploadedPhotoPath]);
+   uploadedPhotoPath=null;
+  }
+
   setText("doctorMessage","");
   setText("doctorError",e.message||"حدث خطأ أثناء إنشاء الطبيب.");
  }finally{
