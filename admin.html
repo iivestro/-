@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -42,9 +43,8 @@ table{width:100%;border-collapse:collapse;min-width:850px}
 th,td{padding:13px;text-align:right;border-bottom:1px solid #e2f4fc}
 th{color:var(--blue);white-space:nowrap}
 .status,.booking-status{display:inline-block;padding:6px 10px;border-radius:20px;font-size:12px;white-space:nowrap;background:#fff4d6;color:#8a6415}
-.approved,.booking-status.completed{background:#e0f7ee;color:#087a53}
+.approved,.booking-status.completed,.booking-status.approved{background:#e0f7ee;color:#087a53}
 .rejected,.booking-status.cancelled{background:#ffe8eb;color:#b42335}
-.booking-status.confirmed{background:#e0f2fe;color:#0369a1}
 .booking-status.pending{background:#fff4d6;color:#8a6415}
 #error,#errorPatients,#doctorError,#dashboardError,#appointmentsError,#manageDoctorsError{color:#c62828}
 #message,#doctorMessage,#manageDoctorsMessage{color:#087a53}
@@ -490,7 +490,13 @@ async function loadPatients(){
 }
 
 function appointmentStatusLabel(status){
- const labels={pending:"بانتظار التأكيد",confirmed:"مؤكد",completed:"مكتمل",cancelled:"ملغي",rejected:"مرفوض",no_show:"لم يحضر"};
+ const labels={
+  pending:"بانتظار التأكيد",
+  approved:"تمت الموافقة",
+  completed:"مكتمل",
+  cancelled:"ملغي",
+  rejected:"مرفوض"
+ };
  return labels[status]||status||"غير محدد";
 }
 
@@ -563,7 +569,7 @@ function renderAppointments(){
   const patient=a.patient||{},doctor=a.doctor?.profile||{};
   const specialty=a.doctor?.specialty?.name_ar||"غير محدد";
   const status=a.status||"";
-  const statusClass=["pending","confirmed","completed","cancelled","rejected"].includes(status)?status:"";
+  const statusClass=["pending","approved","completed","cancelled","rejected"].includes(status)?status:"";
   return `<tr>
    <td>${escapeHTML(patient.full_name||"غير محدد")}</td>
    <td>${escapeHTML(patient.phone||"غير مسجل")}</td>
