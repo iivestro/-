@@ -110,7 +110,7 @@ white-space:nowrap
 main{
 max-width:1380px;
 margin:0 auto;
-padding:26px 28px 55px
+padding:26px 28px 90px
 }
 .logo{
 position:relative;
@@ -135,16 +135,10 @@ border-radius:50%;
 pointer-events:none
 }
 .logo:before{
-width:360px;
-height:360px;
-left:-100px;
-top:-220px
+width:360px;height:360px;left:-100px;top:-220px
 }
 .logo:after{
-width:240px;
-height:240px;
-left:80px;
-bottom:-190px
+width:240px;height:240px;left:80px;bottom:-190px
 }
 .hero-copy{
 position:relative;
@@ -240,8 +234,7 @@ gap:10px
 }
 h2:before{
 content:"";
-width:5px;
-height:25px;
+width:5px;height:25px;
 border-radius:5px;
 background:var(--primary)
 }
@@ -427,8 +420,47 @@ font-size:13px;
 margin-top:-5px;
 margin-bottom:18px
 }
+
+/* زر حجوزاتي الثابت */
+.bookings-float-btn{
+position:fixed;
+right:24px;
+bottom:24px;
+z-index:999;
+width:auto;
+min-width:160px;
+padding:14px 22px;
+border-radius:40px;
+background:linear-gradient(120deg,#35b8e6,#087fae);
+color:white;
+box-shadow:0 8px 25px rgba(8,127,174,.28);
+display:flex;
+align-items:center;
+justify-content:center;
+gap:9px;
+font-size:15px;
+margin:0
+}
+.bookings-float-btn:hover{transform:translateY(-3px)}
+.bookings-close-btn{
+width:auto;
+padding:9px 17px;
+margin:0
+}
+.booking-status-label{
+display:inline-block;
+padding:5px 13px;
+border-radius:20px;
+font-size:13px;
+font-weight:bold
+}
+.booking-status-pending{background:#fff5d9;color:#946b0c}
+.booking-status-approved,.booking-status-confirmed{background:#e5f8ed;color:#18754b}
+.booking-status-rejected,.booking-status-cancelled{background:#fff0f1;color:#a83245}
+.booking-status-completed{background:#eaf4ff;color:#24618d}
+
 @media(max-width:760px){
-main{padding:18px 15px 40px}
+main{padding:18px 15px 100px}
 .topbar-inner{padding:9px 14px}
 .top-actions button{
 min-width:0;
@@ -440,19 +472,14 @@ width:160px;
 flex-basis:160px;
 transform:scale(.82)
 }
-.logo{
-padding:27px 24px;
-min-height:190px
-}
+.logo{padding:27px 24px;min-height:190px}
 .logo p{font-size:14px}
 .card{padding:19px}
 }
 @media(max-width:520px){
 .topbar-inner{gap:8px}
 .brand-mark{
-width:36px;
-height:36px;
-border-radius:12px
+width:36px;height:36px;border-radius:12px
 }
 .brand-name{font-size:13px}
 .brand-sub{font-size:9px}
@@ -462,10 +489,7 @@ font-size:11px;
 padding:8px 9px
 }
 .top-actions #lastUpdated{display:none}
-.logo{
-min-height:0;
-padding:25px 20px
-}
+.logo{min-height:0;padding:25px 20px}
 .medical-art{
 width:95px;
 flex-basis:95px;
@@ -473,33 +497,22 @@ height:115px;
 transform:scale(.72);
 margin-left:-12px
 }
-.medical-orbit{
-width:130px;
-height:130px
-}
-.medical-core{
-width:80px;
-height:80px;
-font-size:43px
-}
-.medical-chip{
-width:34px;
-height:34px;
-font-size:18px
-}
+.medical-orbit{width:130px;height:130px}
+.medical-core{width:80px;height:80px;font-size:43px}
+.medical-chip{width:34px;height:34px;font-size:18px}
 .logo h1{font-size:25px}
 .logo p{font-size:12px}
 .hero-note{font-size:10px}
-.card{
-padding:16px;
-border-radius:16px
-}
-.doctor-photo{
-width:70px;
-height:70px;
-min-width:70px
-}
+.card{padding:16px;border-radius:16px}
+.doctor-photo{width:70px;height:70px;min-width:70px}
 .doctor-name{font-size:15px}
+.bookings-float-btn{
+right:15px;
+bottom:15px;
+min-width:145px;
+padding:12px 18px;
+font-size:14px
+}
 }
 </style>
 </head>
@@ -601,13 +614,10 @@ min-width:70px
 
 <div id="loginPanel" class="hidden">
 <h3>تسجيل الدخول</h3>
-
 <label>البريد الإلكتروني</label>
 <input id="email" type="email" placeholder="البريد الإلكتروني">
-
 <label>كلمة المرور</label>
 <input id="password" type="password" placeholder="كلمة المرور">
-
 <button onclick="login()">تسجيل الدخول</button>
 </div>
 
@@ -628,11 +638,22 @@ min-width:70px
 </section>
 
 <section id="myAppointments" class="card hidden">
-<h2>حجوزاتي</h2>
-<div id="myAppointmentsList" class="msg">جاري تحميل الحجوزات...</div>
+ <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px">
+  <div>
+   <h2 style="margin-bottom:4px">حجوزاتي</h2>
+   <p class="section-intro" style="margin:0">تابع مواعيدك وحالة كل طلب حجز.</p>
+  </div>
+  <button type="button" class="secondary bookings-close-btn" onclick="backToDoctors()">العودة إلى الأطباء</button>
+ </div>
+ <div id="myAppointmentsList" class="msg">جاري تحميل الحجوزات...</div>
 </section>
 
 </main>
+
+<button id="myBookingsButton" class="bookings-float-btn hidden" type="button" onclick="openMyAppointments()">
+ <span>▤</span>
+ <span>حجوزاتي</span>
+</button>
 
 <script>
 const SUPABASE_URL="https://oejkeqlqkwdfropylxsv.supabase.co";
@@ -644,6 +665,7 @@ const el=id=>document.getElementById(id);
 let selectedDoctor=null;
 let selectedSchedules=[];
 let portalRefreshBusy=false;
+let appointmentsViewOpen=false;
 
 const DEFAULT_DOCTOR_PHOTO=
 "data:image/svg+xml;charset=UTF-8,"+
@@ -694,12 +716,7 @@ async function signup(){
   email,
   password,
   options:{
-   data:{
-    full_name,
-    phone,
-    age:String(age),
-    governorate
-   }
+   data:{full_name,phone,age:String(age),governorate}
   }
  });
 
@@ -737,6 +754,7 @@ async function loadAccount(){
 
  if(!user){
   el("portalTopbar").classList.add("hidden");
+  el("myBookingsButton").classList.add("hidden");
   return;
  }
 
@@ -763,6 +781,8 @@ async function loadAccount(){
  el("status").classList.remove("hidden");
  el("doctors").classList.add("hidden");
  el("myAppointments").classList.add("hidden");
+ el("myBookingsButton").classList.add("hidden");
+ appointmentsViewOpen=false;
 
  if(profile.role!=="patient"){
   el("statusText").textContent="هذا الحساب ليس حساب مراجع.";
@@ -783,10 +803,27 @@ async function loadAccount(){
 
  el("status").classList.add("hidden");
  el("doctors").classList.remove("hidden");
- el("myAppointments").classList.remove("hidden");
+ el("myBookingsButton").classList.remove("hidden");
 
  await loadDoctors();
  await loadMyAppointments();
+}
+
+function openMyAppointments(){
+ appointmentsViewOpen=true;
+ el("doctors").classList.add("hidden");
+ el("myAppointments").classList.remove("hidden");
+ el("myBookingsButton").classList.add("hidden");
+ window.scrollTo({top:0,behavior:"smooth"});
+ loadMyAppointments();
+}
+
+function backToDoctors(){
+ appointmentsViewOpen=false;
+ el("myAppointments").classList.add("hidden");
+ el("doctors").classList.remove("hidden");
+ el("myBookingsButton").classList.remove("hidden");
+ window.scrollTo({top:0,behavior:"smooth"});
 }
 
 async function loadDoctors(){
@@ -822,10 +859,7 @@ async function loadDoctors(){
  );
 
  const approvedIds=new Set(approvedProfiles.map(p=>p.id));
-
- const visibleDoctors=doctors.filter(d=>
-  approvedIds.has(d.profile_id)
- );
+ const visibleDoctors=doctors.filter(d=>approvedIds.has(d.profile_id));
 
  if(visibleDoctors.length===0){
   list.textContent="لا يوجد أطباء معتمدون حالياً أو لا تسمح صلاحيات القراءة بعرضهم.";
@@ -836,7 +870,6 @@ async function loadDoctors(){
 
  visibleDoctors.forEach(d=>{
   const profile=approvedProfiles.find(p=>p.id===d.profile_id);
-
   const item=document.createElement("div");
   item.className="doctor";
 
@@ -858,7 +891,6 @@ async function loadDoctors(){
   };
 
   const nameArea=document.createElement("div");
-
   const title=document.createElement("h3");
   title.className="doctor-name";
   title.textContent=profile.full_name||"طبيب";
@@ -872,7 +904,6 @@ async function loadDoctors(){
   const arrow=document.createElement("span");
   arrow.className="doctor-arrow";
   arrow.textContent="⌄";
-
   toggle.append(photo,nameArea,arrow);
 
   const details=document.createElement("div");
@@ -898,18 +929,15 @@ async function loadDoctors(){
   if(d.bio){
    const bioTitle=document.createElement("h4");
    bioTitle.textContent="نبذة عن الطبيب";
-
    const bio=document.createElement("p");
    bio.className="small";
    bio.textContent=d.bio;
-
    details.append(bioTitle,bio);
   }
 
   if(d.clinics?.maps_url){
    try{
     const mapUrl=new URL(d.clinics.maps_url);
-
     const validMap=
      mapUrl.protocol==="https:"&&
      (
@@ -1055,7 +1083,6 @@ function checkSelectedDay(){
  if(!dateValue)return;
 
  const dayNumber=new Date(dateValue+"T12:00:00").getDay();
-
  const schedule=selectedSchedules.find(s=>
   Number(s.day_of_week)===dayNumber
  );
@@ -1088,7 +1115,6 @@ async function bookAppointment(){
  }
 
  const dayNumber=new Date(dateValue+"T12:00:00").getDay();
-
  const schedule=selectedSchedules.find(s=>
   Number(s.day_of_week)===dayNumber
  );
@@ -1199,8 +1225,13 @@ async function loadMyAppointments(){
    });
 
   const status=document.createElement("p");
-  status.className="msg";
-  status.textContent="الحالة: "+appointmentStatus(a.status);
+  status.textContent="حالة الحجز: ";
+
+  const statusLabel=document.createElement("span");
+  statusLabel.className="booking-status-label booking-status-"+(a.status||"");
+  statusLabel.textContent=appointmentStatus(a.status);
+
+  status.appendChild(statusLabel);
 
   card.append(title,dateLine,status);
   list.appendChild(card);
@@ -1216,13 +1247,11 @@ function appointmentStatus(status){
   cancelled:"ملغي",
   completed:"مكتمل"
  };
-
  return labels[status]||status||"غير محدد";
 }
 
 function updateRefreshStamp(){
  const stamp=el("lastUpdated");
-
  if(stamp){
   stamp.textContent="آخر تحديث: "+
    new Date().toLocaleTimeString("ar-IQ",{
@@ -1233,14 +1262,11 @@ function updateRefreshStamp(){
  }
 }
 
-/* تحديث الحجوزات فقط دون إعادة تحميل بطاقة الطبيب المفتوحة */
 async function refreshPortal(){
  if(portalRefreshBusy)return;
-
  portalRefreshBusy=true;
 
  const refreshButton=document.querySelector(".top-actions .secondary");
-
  if(refreshButton)refreshButton.disabled=true;
 
  try{
@@ -1248,6 +1274,7 @@ async function refreshPortal(){
 
   if(!session){
    el("portalTopbar").classList.add("hidden");
+   el("myBookingsButton").classList.add("hidden");
    return;
   }
 
@@ -1276,6 +1303,7 @@ async function refreshPortal(){
 async function logout(){
  await db.auth.signOut();
  el("portalTopbar").classList.add("hidden");
+ el("myBookingsButton").classList.add("hidden");
  location.reload();
 }
 
@@ -1283,7 +1311,6 @@ db.auth.getSession().then(({data})=>{
  if(data.session)loadAccount();
 });
 
-/* تحديث الحجوزات تلقائياً كل 20 ثانية */
 setInterval(refreshPortal,20000);
 </script>
 
