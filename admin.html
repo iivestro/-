@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -30,8 +31,6 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .sidebar-nav button:hover{background:#f0faff;color:#0369a1}
 .sidebar-nav button.active{background:var(--soft);color:#0369a1;border:1px solid var(--line)}
 .workspace{min-width:0}
-.welcome-card{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.welcome-card h2{margin:0 0 8px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:13px}
 .stat{background:var(--soft);padding:20px;border-radius:12px;border:1px solid var(--line)}
 .stat span{color:#52758d;font-size:14px}
@@ -116,14 +115,6 @@ main{padding:10px}
   </aside>
 
   <div class="workspace">
-   <div class="card welcome-card">
-    <div>
-     <h2>مرحباً بك في الإدارة</h2>
-     <p class="muted" id="adminEmail"></p>
-    </div>
-    <span class="small">نظام إدارة بيشنت | PATIENT</span>
-   </div>
-
    <section id="homeSection">
     <div class="card">
      <div class="section-title">
@@ -309,7 +300,6 @@ async function showDashboard(user){
  document.getElementById("login").classList.add("hidden");
  document.getElementById("dashboard").classList.remove("hidden");
  document.getElementById("topActions").classList.remove("hidden");
- setText("adminEmail",user.email);
  await Promise.all([refreshDashboard(),loadPatients(),loadDoctorOptions(),loadAppointments()]);
  if(bookingsRefreshTimer)clearInterval(bookingsRefreshTimer);
  bookingsRefreshTimer=setInterval(async()=>{
