@@ -1,5 +1,4 @@
-
-<!DOCTYPE html>
+html = r'''<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -22,7 +21,7 @@ button:disabled{opacity:.5}
 .muted{color:#68798d}
 #app{display:none}
 .status{padding:12px;border-radius:10px;background:#eef5f8;margin-top:12px;overflow-wrap:anywhere}
-input[type=email],input[type=password],input[type=time]{
+input[type=email],input[type=password],input[type=time],input[type=text],input[type=url]{
 width:100%;padding:12px;margin:7px 0;border:1px solid #ccd5df;border-radius:9px
 }
 .day{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;align-items:center;padding:13px 0;border-bottom:1px solid #edf0f4}
@@ -65,6 +64,8 @@ width:100%;padding:12px;margin:7px 0;border:1px solid #ccd5df;border-radius:9px
 <div class="info">رقم الهاتف: <strong id="phone">—</strong></div>
 <div class="info">الاختصاص: <strong id="specialty">—</strong></div>
 <div class="info">العيادة: <strong id="clinic">—</strong></div>
+<div class="info">العنوان: <strong id="clinicAddressDisplay">—</strong></div>
+<div class="info">الموقع: <a id="clinicMapDisplay" href="#" target="_blank" rel="noopener" style="display:none">فتح الموقع على Google Maps</a><strong id="clinicMapEmpty">—</strong></div>
 <div class="info">المؤهل: <strong id="qualification">—</strong></div>
 <div class="info">سنوات الخبرة: <strong id="experience">—</strong></div>
 <div class="info">أجور الاستشارة: <strong id="fee">—</strong></div>
@@ -72,6 +73,20 @@ width:100%;padding:12px;margin:7px 0;border:1px solid #ccd5df;border-radius:9px
 <div id="status" class="status">جارٍ تحميل البيانات...</div>
 <br>
 <button class="logout" onclick="logoutDoctor()">تسجيل الخروج</button>
+</div>
+
+<div class="card">
+<h3 class="section-title">معلومات العيادة وموقعها</h3>
+<p class="muted">اكتب بيانات عيادتك مباشرة في الخانات التالية. لا توجد قوائم اختيار.</p>
+<label for="clinicNameInput">اسم العيادة</label>
+<input id="clinicNameInput" type="text" maxlength="160" placeholder="اكتب اسم العيادة">
+<label for="clinicAddressInput">عنوان العيادة</label>
+<input id="clinicAddressInput" type="text" maxlength="300" placeholder="اكتب العنوان بالتفصيل">
+<label for="clinicMapInput">رابط موقع العيادة على Google Maps</label>
+<input id="clinicMapInput" type="url" maxlength="1000" placeholder="الصق رابط Google Maps هنا">
+<p class="muted">يمكنك نسخ رابط المشاركة من تطبيق Google Maps ولصقه هنا.</p>
+<button id="saveClinicButton" onclick="saveClinicDetails()">حفظ معلومات العيادة</button>
+<div id="clinicStatus" class="status"></div>
 </div>
 
 <div class="card">
@@ -160,7 +175,7 @@ return;
 
 const {data:doctor,error:doctorError}=await db
 .from("doctors")
-.select("id,qualification,experience_years,consultation_fee,bio,specialties(name_ar),clinics(name)")
+.select("id,qualification,experience_years,consultation_fee,bio,specialties(name_ar),clinics(name,address,maps_url)")
 .eq("profile_id",user.id)
 .maybeSingle();
 
@@ -175,6 +190,20 @@ document.getElementById("name").textContent=profile.full_name||"—";
 document.getElementById("phone").textContent=profile.phone||"—";
 document.getElementById("specialty").textContent=doctor.specialties?.name_ar||"—";
 document.getElementById("clinic").textContent=doctor.clinics?.name||"—";
+document.getElementById("clinicAddressDisplay").textContent=doctor.clinics?.address||"—";
+const mapLink=document.getElementById("clinicMapDisplay");
+const mapEmpty=document.getElementById("clinicMapEmpty");
+if(doctor.clinics?.maps_url){
+mapLink.href=doctor.clinics.maps_url;
+mapLink.style.display="inline";
+mapEmpty.style.display="none";
+}else{
+mapLink.style.display="none";
+mapEmpty.style.display="inline";
+}
+document.getElementById("clinicNameInput").value=doctor.clinics?.name||"";
+document.getElementById("clinicAddressInput").value=doctor.clinics?.address||"";
+document.getElementById("clinicMapInput").value=doctor.clinics?.maps_url||"";
 document.getElementById("qualification").textContent=doctor.qualification||"—";
 document.getElementById("experience").textContent=doctor.experience_years??"—";
 document.getElementById("fee").textContent=doctor.consultation_fee??"—";
@@ -186,6 +215,70 @@ document.getElementById("app").style.display="block";
 showMessage("status","تم تحميل بيانات الطبيب بنجاح");
 
 await Promise.all([loadSchedule(),loadAppointments()]);
+}
+
+async function saveClinicDetails(){
+if(!currentDoctorId)return;
+
+const name=document.getElementById("clinicNameInput").value.trim();
+const address=document.getElementById("clinicAddressInput").value.trim();
+const mapsUrl=document.getElementById("clinicMapInput").value.trim();
+const button=document.getElementById("saveClinicButton");
+
+if(!name||!address){
+showMessage("clinicStatus","يرجى كتابة اسم العيادة وعنوانها.");
+return;
+}
+
+if(mapsUrl){
+try{
+const parsed=new URL(mapsUrl);
+const host=parsed.hostname.toLowerCase();
+const validHost=host==="maps.app.goo.gl"||
+host==="maps.google.com"||
+host==="google.com"||
+host==="www.google.com"||
+(host.startsWith("google.")&&parsed.pathname.startsWith("/maps"));
+if(parsed.protocol!=="https:"||!validHost){
+showMessage("clinicStatus","يرجى لصق رابط مشاركة صحيح من Google Maps يبدأ بـ https://");
+return;
+}
+}catch(e){
+showMessage("clinicStatus","رابط Google Maps غير صحيح.");
+return;
+}
+}
+
+button.disabled=true;
+showMessage("clinicStatus","جارٍ حفظ معلومات العيادة...");
+
+try{
+const {error}=await db.rpc("update_my_clinic_details",{
+p_name:name,
+p_address:address,
+p_maps_url:mapsUrl||null
+});
+
+if(error)throw error;
+
+document.getElementById("clinic").textContent=name;
+document.getElementById("clinicAddressDisplay").textContent=address;
+const mapLink=document.getElementById("clinicMapDisplay");
+const mapEmpty=document.getElementById("clinicMapEmpty");
+if(mapsUrl){
+mapLink.href=mapsUrl;
+mapLink.style.display="inline";
+mapEmpty.style.display="none";
+}else{
+mapLink.style.display="none";
+mapEmpty.style.display="inline";
+}
+showMessage("clinicStatus","تم حفظ معلومات العيادة وموقعها بنجاح.");
+}catch(error){
+showMessage("clinicStatus","تعذر حفظ البيانات: "+error.message);
+}finally{
+button.disabled=false;
+}
 }
 
 function renderSchedule(records){
@@ -429,3 +522,9 @@ if(data.session)loadDoctor();
 </script>
 </body>
 </html>
+'''
+path = "/mnt/data/doctor.html"
+with open(path, "w", encoding="utf-8") as f:
+    f.write(html)
+print(f"تم إنشاء الملف: {path}")
+print(f"الحجم: {len(html)} حرف")
