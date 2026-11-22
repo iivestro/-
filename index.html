@@ -25,16 +25,8 @@ main{
  padding:15px;
 }
 
-.logo{
- text-align:center;
- margin-bottom:25px;
-}
-
-.logo h1{
- color:#25c5b2;
- letter-spacing:2px;
- font-size:29px;
-}
+.logo{text-align:center;margin-bottom:25px}
+.logo h1{color:#25c5b2;letter-spacing:2px;font-size:29px}
 
 .card{
  background:#10283a;
@@ -70,22 +62,9 @@ button{
  cursor:pointer;
 }
 
-button:disabled{
- opacity:.5;
- cursor:not-allowed;
-}
-
-.secondary{
- background:#244457;
- color:white;
-}
-
-.msg{
- color:#9ee8df;
- line-height:1.8;
- overflow-wrap:anywhere;
-}
-
+button:disabled{opacity:.5;cursor:not-allowed}
+.secondary{background:#244457;color:white}
+.msg{color:#9ee8df;line-height:1.8;overflow-wrap:anywhere}
 .hidden{display:none!important}
 
 .tabs{
@@ -94,34 +73,35 @@ button:disabled{
  gap:8px;
  margin:12px 0 18px;
 }
-
 .tabs button{margin:0}
 
+/* بطاقات الأطباء العمودية */
 .doctor{
- padding:16px;
+ padding:14px;
  border:1px solid #345468;
- border-radius:14px;
+ border-radius:15px;
  margin:14px 0;
  background:#0b2030;
 }
 
-.doctor h3{
- color:#50d4c3;
- margin-bottom:10px;
-}
-
-.doctor-header{
+.doctor-toggle{
+ width:100%;
  display:flex;
  align-items:center;
- gap:15px;
- margin-bottom:15px;
+ gap:14px;
+ padding:0;
+ margin:0;
+ background:transparent;
+ color:white;
+ text-align:right;
+ cursor:pointer;
 }
 
 .doctor-photo{
- width:88px;
- height:88px;
- min-width:88px;
- border-radius:14px;
+ width:85px;
+ height:85px;
+ min-width:85px;
+ border-radius:13px;
  object-fit:cover;
  border:2px solid #20b9a8;
  background:#17394b;
@@ -130,14 +110,28 @@ button:disabled{
 .doctor-name{
  margin:0;
  color:#50d4c3;
- font-size:18px;
+ font-size:17px;
 }
 
 .doctor-specialty{
  color:#a8bdc9;
  font-size:13px;
- margin:4px 0 0;
+ margin:5px 0 0;
 }
+
+.doctor-arrow{
+ margin-right:auto;
+ color:#50d4c3;
+ font-size:22px;
+}
+
+.doctor-details{
+ border-top:1px solid #345468;
+ margin-top:14px;
+ padding-top:12px;
+}
+
+.doctor-details.hidden{display:none!important}
 
 .info{
  padding:9px;
@@ -147,10 +141,16 @@ button:disabled{
  font-size:14px;
 }
 
-.small{
- font-size:13px;
- color:#a8bdc9;
+.small{font-size:13px;color:#a8bdc9}
+
+.map-link{
+ display:block;
+ margin:12px 0;
+ color:#50d4c3;
+ text-decoration:none;
 }
+
+.map-link:hover{text-decoration:underline}
 
 #booking{
  border-top:1px solid #345468;
@@ -164,30 +164,19 @@ button:disabled{
  margin-top:10px;
 }
 
-.status-pending{
- background:#493d20;
- color:#ffe1a0;
-}
-
-.status-rejected{
- background:#49252d;
- color:#ffb4bf;
-}
-
-.status-approved{
- background:#123e39;
- color:#9ee8df;
-}
+.status-pending{background:#493d20;color:#ffe1a0}
+.status-rejected{background:#49252d;color:#ffb4bf}
+.status-approved{background:#123e39;color:#9ee8df}
 
 @media(max-width:480px){
  main{padding:10px}
  .card{padding:15px}
  .doctor-photo{
-  width:75px;
-  height:75px;
-  min-width:75px;
+  width:72px;
+  height:72px;
+  min-width:72px;
  }
- .doctor-name{font-size:16px}
+ .doctor-name{font-size:15px}
 }
 </style>
 </head>
@@ -283,7 +272,7 @@ button:disabled{
 <section id="doctors" class="card hidden">
 
 <h2>الأطباء المعتمدون</h2>
-<p class="small">اختر الطبيب المناسب للاطلاع على معلوماته وأوقات الدوام وحجز موعد.</p>
+<p class="small">اضغط على بطاقة الطبيب للاطلاع على معلوماته وأوقات الدوام وحجز موعد.</p>
 
 <div id="doctorList" class="msg">جاري تحميل الأطباء...</div>
 
@@ -463,13 +452,14 @@ async function loadAccount(){
  await loadMyAppointments();
 }
 
+/* تحميل الأطباء وعرضهم كبطاقات عمودية قابلة للفتح */
 async function loadDoctors(){
 
  const list=el("doctorList");
  list.textContent="جاري تحميل الأطباء...";
 
  const {data:doctors,error}=await db.from("doctors")
- .select("id,profile_id,qualification,experience_years,consultation_fee,bio,photo_url,specialties(name_ar),clinics(name)");
+ .select("id,profile_id,qualification,experience_years,consultation_fee,bio,photo_url,specialties(name_ar),clinics(name,address,phone,maps_url)");
 
  if(error){
   list.textContent="تعذر تحميل الأطباء: "+error.message;
@@ -516,15 +506,17 @@ async function loadDoctors(){
   const item=document.createElement("div");
   item.className="doctor";
 
-  const header=document.createElement("div");
-  header.className="doctor-header";
+  /* رأس البطاقة */
+  const toggle=document.createElement("button");
+  toggle.type="button";
+  toggle.className="doctor-toggle";
+  toggle.setAttribute("aria-expanded","false");
 
   const photo=document.createElement("img");
   photo.className="doctor-photo";
-  photo.alt="صورة الطبيب "+(profile.full_name||"");
+  photo.alt="صورة الطبيب";
   photo.loading="lazy";
   photo.referrerPolicy="no-referrer";
-
   photo.src=d.photo_url||DEFAULT_DOCTOR_PHOTO;
 
   photo.onerror=()=>{
@@ -543,47 +535,89 @@ async function loadDoctors(){
   specialtyShort.textContent=d.specialties?.name_ar||"اختصاص غير محدد";
 
   nameArea.append(title,specialtyShort);
-  header.append(photo,nameArea);
 
-  const specialty=document.createElement("div");
-  specialty.className="info";
-  specialty.textContent="الاختصاص: "+(d.specialties?.name_ar||"غير محدد");
+  const arrow=document.createElement("span");
+  arrow.className="doctor-arrow";
+  arrow.textContent="⌄";
 
-  const clinic=document.createElement("div");
-  clinic.className="info";
-  clinic.textContent="العيادة: "+(d.clinics?.name||"غير محددة");
+  toggle.append(photo,nameArea,arrow);
 
-  const qualification=document.createElement("div");
-  qualification.className="info";
-  qualification.textContent="المؤهل: "+(d.qualification||"غير محدد");
+  /* التفاصيل التي تظهر عند الضغط */
+  const details=document.createElement("div");
+  details.className="doctor-details hidden";
 
-  const experience=document.createElement("div");
-  experience.className="info";
-  experience.textContent="سنوات الخبرة: "+(d.experience_years??"غير محدد");
+  function addInfo(label,value){
+   const box=document.createElement("div");
+   box.className="info";
+   box.textContent=label+": "+(
+    value!==null&&value!==undefined&&value!==""?value:"غير محدد"
+   );
+   details.appendChild(box);
+  }
 
-  const fee=document.createElement("div");
-  fee.className="info";
-  fee.textContent="أجور الاستشارة: "+(d.consultation_fee??"غير محددة");
+  addInfo("اسم الطبيب",profile.full_name);
+  addInfo("الاختصاص",d.specialties?.name_ar);
+  addInfo("العيادة",d.clinics?.name);
+  addInfo("عنوان العيادة",d.clinics?.address);
+  addInfo("هاتف العيادة",d.clinics?.phone);
+  addInfo("المؤهل العلمي",d.qualification);
+  addInfo("سنوات الخبرة",d.experience_years);
+  addInfo("أجور الاستشارة",d.consultation_fee);
 
-  const bio=document.createElement("p");
-  bio.className="small";
-  bio.textContent=d.bio||"";
+  if(d.bio){
+   const bioTitle=document.createElement("h4");
+   bioTitle.textContent="نبذة عن الطبيب";
 
-  const button=document.createElement("button");
-  button.textContent="اختيار الطبيب وحجز موعد";
-  button.onclick=()=>selectDoctor(d,profile.full_name||"طبيب");
+   const bio=document.createElement("p");
+   bio.className="small";
+   bio.textContent=d.bio;
 
-  item.append(
-   header,
-   specialty,
-   clinic,
-   qualification,
-   experience,
-   fee,
-   bio,
-   button
-  );
+   details.append(bioTitle,bio);
+  }
 
+  /* رابط Google Maps */
+  if(d.clinics?.maps_url){
+   try{
+    const mapUrl=new URL(d.clinics.maps_url);
+
+    const validMap=
+     mapUrl.protocol==="https:"&&
+     (
+      /(^|\.)google\.[^/]+$/i.test(mapUrl.hostname)||
+      mapUrl.hostname==="maps.app.goo.gl"||
+      mapUrl.hostname==="maps.google.com"
+     );
+
+    if(validMap){
+     const mapLink=document.createElement("a");
+     mapLink.className="map-link";
+     mapLink.href=mapUrl.href;
+     mapLink.target="_blank";
+     mapLink.rel="noopener noreferrer";
+     mapLink.textContent="عرض موقع العيادة على Google Maps";
+     details.appendChild(mapLink);
+    }
+   }catch(e){}
+  }
+
+  /* زر حجز الموعد */
+  const bookingButton=document.createElement("button");
+  bookingButton.type="button";
+  bookingButton.textContent="اختيار الطبيب وحجز موعد";
+  bookingButton.onclick=()=>{
+   selectDoctor(d,profile.full_name||"طبيب");
+  };
+
+  details.appendChild(bookingButton);
+
+  /* فتح وإغلاق تفاصيل الطبيب */
+  toggle.onclick=()=>{
+   const isHidden=details.classList.toggle("hidden");
+   toggle.setAttribute("aria-expanded",String(!isHidden));
+   arrow.textContent=isHidden?"⌄":"⌃";
+  };
+
+  item.append(toggle,details);
   list.appendChild(item);
  });
 }
