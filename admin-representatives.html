@@ -1,0 +1,203 @@
+```html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>بيشنت | إدارة المندوبين</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f5fbff;color:#17324a;font-family:Arial,sans-serif}
+header{background:white;padding:18px 24px;border-bottom:1px solid #cceeff}
+.brand{font-size:24px;font-weight:bold;color:#0284c7}
+main{max-width:1100px;margin:25px auto;padding:0 15px}
+.card{background:white;border:1px solid #cceeff;border-radius:16px;padding:20px;margin-bottom:18px;box-shadow:0 5px 20px #0284c710}
+h2{color:#0284c7}
+input{width:100%;padding:13px;border:1px solid #b9e6fb;border-radius:9px;margin:8px 0}
+button{border:0;border-radius:9px;padding:11px 15px;margin:3px;background:#0284c7;color:white;font-weight:bold;cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}
+.reject{background:#dc5555}
+.suspend{background:#7c3aed}
+.light{background:#eaf8ff;color:#0369a1;border:1px solid #cceeff}
+.status{display:inline-block;padding:6px 10px;border-radius:20px;background:#fff4d6;color:#8a6415;font-size:12px}
+.approved{background:#e0f7ee;color:#087a53}
+.rejected{background:#ffe8eb;color:#b42335}
+.suspended{background:#f1eafe;color:#6d28d9}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.rep{border:1px solid #d7effb;border-radius:14px;padding:16px;background:#fff}
+.rep h3{margin:0 0 10px;color:#0369a1}
+.meta{font-size:14px;line-height:1.9;color:#526f82}
+.actions{display:flex;flex-wrap:wrap;gap:5px;margin-top:12px}
+.error{color:#c62828}
+.success{color:#087a53}
+.hidden{display:none!important}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<header>
+ <div class="brand">بيشنت | PATIENT</div>
+ <div>لوحة إدارة المندوبين</div>
+</header>
+<main>
+ <section class="card" id="loginBox">
+  <h2>دخول المدير</h2>
+  <input id="email" type="email" placeholder="البريد الإلكتروني">
+  <input id="password" type="password" placeholder="كلمة المرور">
+  <button id="loginBtn" onclick="login()">تسجيل الدخول</button>
+  <p id="loginError" class="error"></p>
+ </section>
+
+ <section id="panel" class="hidden">
+  <div class="card">
+   <div class="top">
+    <div>
+     <h2>إدارة حسابات المندوبين</h2>
+     <p>قبول الحسابات أو رفضها أو تعليقها وإعادة تفعيلها.</p>
+    </div>
+    <button class="light" onclick="loadRepresentatives()">تحديث القائمة</button>
+   </div>
+   <input id="search" placeholder="ابحث باسم المندوب أو جهة العمل أو المحافظة..." oninput="render()">
+   <p id="message"></p>
+   <p id="error" class="error"></p>
+   <div class="grid" id="list"></div>
+  </div>
+ </section>
+</main>
+<script>
+const URL="https://oejkeqlqkwdfropylxsv.supabase.co";
+const KEY="sb_publishable_Ue8nsJFsLpDLFUgSTB24cw_rckeqWag";
+const db=window.supabase.createClient(URL,KEY);
+let reps=[];
+
+const $=id=>document.getElementById(id);
+function esc(v){
+ return String(v??"").replace(/[&<>"']/g,c=>({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ }[c]));
+}
+function label(s){
+ return ({pending:"بانتظار الموافقة",approved:"معتمد",rejected:"مرفوض",suspended:"موقوف"})[s]||s;
+}
+async function isAdmin(user){
+ const {data,error}=await db.from("profiles")
+  .select("role,approval_status").eq("id",user.id).single();
+ return !error&&data?.role==="admin"&&data?.approval_status==="approved";
+}
+async function login(){
+ $("loginError").textContent="";
+ $("loginBtn").disabled=true;
+ try{
+  const {data,error}=await db.auth.signInWithPassword({
+   email:$("email").value.trim(),password:$("password").value
+  });
+  if(error)throw error;
+  if(!await isAdmin(data.user)){
+   await db.auth.signOut();
+   throw new Error("هذا الحساب لا يملك صلاحية المدير.");
+  }
+  await openPanel();
+ }catch(e){$("loginError").textContent=e.message;}
+ finally{$("loginBtn").disabled=false;}
+}
+async function openPanel(){
+ $("loginBox").classList.add("hidden");
+ $("panel").classList.remove("hidden");
+ await loadRepresentatives();
+}
+async function loadRepresentatives(){
+ $("error").textContent="";
+ $("list").innerHTML="<p>جارٍ تحميل المندوبين...</p>";
+ const {data,error}=await db.from("rep_accounts")
+  .select("profile_id,employer_type,employer_name,status,created_at,profiles!rep_accounts_profile_id_fkey(full_name,governorate,approval_status)")
+  .order("created_at",{ascending:false});
+ if(error){
+  $("list").innerHTML="";
+  $("error").textContent="تعذر تحميل القائمة: "+error.message;
+  return;
+ }
+ reps=data||[];
+ const ids=reps.map(r=>r.profile_id);
+ if(ids.length){
+  const result=await db.rpc("admin_get_profile_phones",{p_profile_ids:ids});
+  if(result.error){
+   $("error").textContent="تم تحميل المندوبين، لكن تعذر تحميل أرقام الهواتف: "+result.error.message;
+  }else{
+   const map=new Map((result.data||[]).map(x=>[x.profile_id,x.phone]));
+   reps=reps.map(r=>({...r,phone:map.get(r.profile_id)||"غير مسجل"}));
+  }
+ }
+ render();
+}
+function render(){
+ const term=$("search").value.trim().toLowerCase();
+ const rows=reps.filter(r=>{
+  const p=r.profiles||{};
+  return [p.full_name,r.employer_name,p.governorate,r.phone]
+   .some(x=>String(x||"").toLowerCase().includes(term));
+ });
+ if(!rows.length){
+  $("list").innerHTML="<div class='rep'>لا توجد حسابات مطابقة.</div>";
+  return;
+ }
+ $("list").innerHTML=rows.map(r=>{
+  const p=r.profiles||{};
+  const status=r.status||"pending";
+  const kind=r.employer_type==="company"?"شركة":"مكتب علمي";
+  let actions="";
+  if(status==="pending"){
+   actions=`<button onclick="changeStatus('${r.profile_id}','approved',this)">قبول المندوب</button>
+   <button class="reject" onclick="changeStatus('${r.profile_id}','rejected',this)">رفض الحساب</button>`;
+  }else if(status==="approved"){
+   actions=`<button class="suspend" onclick="changeStatus('${r.profile_id}','suspended',this)">تعليق الحساب</button>`;
+  }else{
+   actions=`<button onclick="changeStatus('${r.profile_id}','approved',this)">إعادة تفعيل الحساب</button>
+   <button class="reject" onclick="changeStatus('${r.profile_id}','rejected',this)">رفض الحساب</button>`;
+  }
+  const date=r.created_at?new Date(r.created_at).toLocaleDateString("ar-IQ"):"—";
+  return `<article class="rep">
+   <h3>${esc(p.full_name||"مندوب بدون اسم")}</h3>
+   <div class="meta">
+    <div>الهاتف: ${esc(r.phone||"غير مسجل")}</div>
+    <div>المحافظة: ${esc(p.governorate||"غير محددة")}</div>
+    <div>جهة العمل: ${esc(kind)} — ${esc(r.employer_name)}</div>
+    <div>تاريخ التسجيل: ${esc(date)}</div>
+    <div>الحالة: <span class="status ${esc(status)}">${esc(label(status))}</span></div>
+   </div>
+   <div class="actions">${actions}</div>
+  </article>`;
+ }).join("");
+}
+async function changeStatus(id,status,button){
+ const prompts={
+  approved:"هل تريد اعتماد هذا المندوب والسماح له باستخدام بوابة المندوبين؟",
+  rejected:"هل تريد رفض حساب هذا المندوب؟",
+  suspended:"هل تريد تعليق حساب هذا المندوب؟"
+ };
+ if(!confirm(prompts[status]))return;
+ button.disabled=true;
+ $("message").textContent="جارٍ تحديث حالة المندوب...";
+ $("error").textContent="";
+ try{
+  const {data,error}=await db.rpc("admin_set_representative_status",{
+   p_profile_id:id,p_status:status
+  });
+  if(error)throw error;
+  if(data!==true)throw new Error("لم يتم تأكيد تحديث الحالة.");
+  $("message").textContent="تم تحديث حالة المندوب بنجاح.";
+  await loadRepresentatives();
+ }catch(e){
+  $("message").textContent="";
+  $("error").textContent="تعذر تحديث الحالة: "+e.message;
+  button.disabled=false;
+ }
+}
+db.auth.getSession().then(async({data})=>{
+ const user=data.session?.user;
+ if(user&&await isAdmin(user))await openPanel();
+});
+</script>
+</body>
+</html>
+```
