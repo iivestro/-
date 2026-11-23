@@ -1287,7 +1287,7 @@ db.auth.getSession().then(async({data})=>{
 
 <script>
 /* ==========================================
-   إدارة المراكز الطبية - إضافة إلى admin.html
+   إدارة المراكز الطبية والاشتراكات والأطباء
    ========================================== */
 (function () {
   "use strict";
@@ -1302,8 +1302,13 @@ db.auth.getSession().then(async({data})=>{
     return;
   }
 
+  const PAYMENT_DAYS = 30;
+  const PAYMENT_FEE = 50000;
+  const IMAGE_BUCKET = "medical-center-images";
+
   let centers = [];
-  let doctors = [];
+  let centerDoctors = [];
+  let selectedCenterId = "";
 
   const section = document.createElement("section");
   section.id = "medicalCentersAdminSection";
@@ -1313,11 +1318,28 @@ db.auth.getSession().then(async({data})=>{
     <div class="section-title">
       <div>
         <h2>إدارة المراكز الطبية</h2>
-        <p class="muted">
-          إنشاء حسابات المراكز وربط الأطباء المعتمدين بها.
-        </p>
+        <p class="muted">إدارة المراكز والأطباء والاشتراكات الشهرية.</p>
       </div>
       <button class="btn-light" id="mcRefresh">تحديث البيانات</button>
+    </div>
+
+    <div class="grid" style="margin:16px 0">
+      <div class="stat">
+        <span>إجمالي المراكز</span>
+        <strong id="mcTotal">0</strong>
+      </div>
+      <div class="stat">
+        <span>المراكز الفعالة</span>
+        <strong id="mcActive">0</strong>
+      </div>
+      <div class="stat">
+        <span>المراكز المتأخرة</span>
+        <strong id="mcOverdue">0</strong>
+      </div>
+      <div class="stat">
+        <span>إجمالي أطباء المراكز</span>
+        <strong id="mcDoctorsTotal">0</strong>
+      </div>
     </div>
 
     <hr>
@@ -1332,7 +1354,7 @@ db.auth.getSession().then(async({data})=>{
         </div>
         <div>
           <label>رقم الهاتف</label>
-          <input id="mcPhone" maxlength="30">
+          <input id="mcPhone" maxlength="30" inputmode="tel">
         </div>
         <div>
           <label>المحافظة *</label>
@@ -1344,7 +1366,7 @@ db.auth.getSession().then(async({data})=>{
         </div>
         <div>
           <label>رابط الموقع على الخريطة</label>
-          <input id="mcMaps" type="url" placeholder="https://...">
+          <input id="mcMaps" type="url" maxlength="1000" placeholder="https://...">
         </div>
         <div>
           <label>البريد الإلكتروني للحساب *</label>
@@ -1352,22 +1374,32 @@ db.auth.getSession().then(async({data})=>{
         </div>
         <div>
           <label>كلمة المرور الأولية *</label>
-          <input id="mcPassword" type="password"
-                 required minlength="10" autocomplete="new-password">
+          <input id="mcPassword" type="password" required minlength="10" autocomplete="new-password">
         </div>
       </div>
-
-      <button id="mcCreateButton" type="submit">
-        إنشاء حساب المركز
-      </button>
+      <button id="mcCreateButton" type="submit">إنشاء حساب المركز</button>
     </form>
 
     <p id="mcCreateMessage"></p>
-    <p id="mcCreateError" class="error"></p>
+    <p id="mcCreateError" style="color:#c62828"></p>
 
     <hr>
 
-    <h3>المراكز المسجلة</h3>
+    <div class="section-title">
+      <div>
+        <h3>اشتراكات المراكز الطبية</h3>
+        <p class="muted">
+          مدة الاشتراك 30 يوماً. يتم احتساب التأخر من تاريخ آخر دفعة،
+          أو من تاريخ إنشاء المركز إذا لم تسجل دفعة سابقة.
+        </p>
+      </div>
+      <button id="mcStopOverdue" class="reject-btn" type="button">
+        إيقاف جميع المراكز المتأخرة
+      </button>
+    </div>
+
+    <p id="mcPaymentMessage"></p>
+    <p id="mcPaymentError" style="color:#c62828"></p>
 
     <div class="table-wrap">
       <table>
@@ -1376,49 +1408,123 @@ db.auth.getSession().then(async({data})=>{
             <th>اسم المركز</th>
             <th>المحافظة</th>
             <th>الهاتف</th>
-            <th>الحالة</th>
-            <th>عدد الأطباء</th>
+            <th>بداية الاشتراك</th>
+            <th>حالة الاشتراك</th>
+            <th>حالة المركز</th>
+            <th>الأطباء</th>
+            <th>الإجراءات</th>
           </tr>
         </thead>
         <tbody id="mcCentersTable">
-          <tr><td colspan="5">اضغط تحديث البيانات.</td></tr>
+          <tr><td colspan="8">جارٍ تحميل المراكز...</td></tr>
         </tbody>
       </table>
     </div>
 
     <hr>
 
-    <h3>إضافة طبيب إلى مركز</h3>
+    <h3>إدارة صورة المركز</h3>
+    <p class="muted">يمكنك رفع صورة خاصة بالمركز لتظهر في صفحة المراكز.</p>
 
     <div class="form-grid">
       <div>
         <label>اختر المركز</label>
-        <select id="mcSelectCenter">
+        <select id="mcImageCenter">
           <option value="">اختر المركز</option>
         </select>
       </div>
-
       <div>
-        <label>اختر الطبيب المعتمد</label>
-        <select id="mcSelectDoctor">
-          <option value="">اختر الطبيب</option>
-        </select>
+        <label>صورة المركز</label>
+        <input id="mcImageFile" type="file" accept="image/jpeg,image/png,image/webp">
       </div>
     </div>
-
-    <button id="mcAssignButton" type="button">
-      ربط الطبيب بالمركز
-    </button>
-
-    <p id="mcAssignMessage"></p>
-    <p id="mcAssignError" class="error"></p>
+    <div class="photo-preview">
+      <img id="mcImagePreview" alt="صورة المركز" src="data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect width='120' height='120' fill='%23eaf8ff'/%3E%3C/svg%3E">
+      <span id="mcImageInfo">اختر مركزاً وصورة للرفع.</span>
+    </div>
+    <button id="mcUploadImage" type="button">رفع صورة المركز</button>
+    <p id="mcImageMessage"></p>
+    <p id="mcImageError" style="color:#c62828"></p>
 
     <hr>
 
-    <h3>الأطباء المرتبطون بالمركز</h3>
+    <h3>إضافة طبيب إلى مركز طبي</h3>
+    <p class="muted">
+      يتم إنشاء سجل مستقل لكل طبيب داخل المركز، ولا يحتاج الطبيب إلى أن يكون
+      مسجلاً كطبيب مستقل في المنصة.
+    </p>
 
-    <div id="mcLinkedDoctors">
-      <div class="empty-state">اختر مركزاً لعرض أطبائه.</div>
+    <form id="mcDoctorForm">
+      <div class="form-grid">
+        <div>
+          <label>اختر المركز *</label>
+          <select id="mcDoctorCenter" required>
+            <option value="">اختر المركز</option>
+          </select>
+        </div>
+        <div>
+          <label>اسم الطبيب الكامل *</label>
+          <input id="mcDoctorName" required maxlength="180">
+        </div>
+        <div>
+          <label>رقم الهاتف</label>
+          <input id="mcDoctorPhone" maxlength="30" inputmode="tel">
+        </div>
+        <div>
+          <label>التخصص *</label>
+          <input id="mcDoctorSpecialty" required maxlength="150" placeholder="مثلاً: طب الأسنان">
+        </div>
+        <div>
+          <label>المؤهل العلمي</label>
+          <input id="mcDoctorQualification" maxlength="180">
+        </div>
+        <div>
+          <label>سنوات الخبرة</label>
+          <input id="mcDoctorExperience" type="number" min="0" max="70" value="0">
+        </div>
+        <div>
+          <label>أجرة الكشف بالدينار</label>
+          <input id="mcDoctorFee" type="number" min="0" value="0">
+        </div>
+      </div>
+      <label>نبذة عن الطبيب</label>
+      <textarea id="mcDoctorBio" maxlength="2000"></textarea>
+      <button id="mcDoctorCreateButton" type="submit">إضافة الطبيب إلى المركز</button>
+    </form>
+
+    <p id="mcDoctorMessage"></p>
+    <p id="mcDoctorError" style="color:#c62828"></p>
+
+    <hr>
+
+    <div class="section-title">
+      <div>
+        <h3>الأطباء المسجلون داخل المراكز</h3>
+        <p class="muted">اختر مركزاً لعرض أطبائه وإدارة حالتهم.</p>
+      </div>
+      <button class="btn-light" id="mcDoctorsRefresh" type="button">تحديث الأطباء</button>
+    </div>
+
+    <select id="mcDoctorsCenter">
+      <option value="">اختر المركز</option>
+    </select>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>اسم الطبيب</th>
+            <th>الهاتف</th>
+            <th>التخصص</th>
+            <th>المؤهل</th>
+            <th>الحالة</th>
+            <th>الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="mcDoctorsTable">
+          <tr><td colspan="6">اختر مركزاً لعرض الأطباء.</td></tr>
+        </tbody>
+      </table>
     </div>
   `;
 
@@ -1436,58 +1542,80 @@ db.auth.getSession().then(async({data})=>{
   }
 
   function message(id, value) {
-    el(id).textContent = value || "";
+    const node = el(id);
+    if (node) node.textContent = value || "";
   }
 
-  function openSection() {
-    [
-      "homeSection",
-      "patientsSection",
-      "bookingsSection",
-      "doctorsSection",
-      "manageDoctorsSection",
-      "representativesSection",
-      "emergencyDoctorSection",
-      "medicalCentersAdminSection"
-    ].forEach(id => {
-      const item = document.getElementById(id);
-      if (item) item.classList.add("hidden");
+  function formatDate(value) {
+    if (!value) return "غير محدد";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "غير محدد";
+    return date.toLocaleDateString("ar-IQ", {
+      year: "numeric",
+      month: "long",
+      day: "numeric"
     });
+  }
 
-    section.classList.remove("hidden");
+  function getSubscriptionStart(center) {
+    return center.last_payment_at || center.created_at || null;
+  }
 
-    document.querySelectorAll(".side-link").forEach(button => {
-      button.classList.remove("active");
-    });
+  function getSubscriptionInfo(center) {
+    const startValue = getSubscriptionStart(center);
+    if (!startValue) {
+      return {
+        overdue: true,
+        remaining: 0,
+        start: null,
+        expiry: null
+      };
+    }
 
-    navButton.classList.add("active");
+    const start = new Date(startValue);
+    if (Number.isNaN(start.getTime())) {
+      return {
+        overdue: true,
+        remaining: 0,
+        start: null,
+        expiry: null
+      };
+    }
 
-    loadMedicalCenters();
+    const expiry = new Date(start);
+    expiry.setDate(expiry.getDate() + PAYMENT_DAYS);
+
+    const remaining = Math.ceil(
+      (expiry.getTime() - Date.now()) / (24 * 60 * 60 * 1000)
+    );
+
+    return {
+      overdue: remaining <= 0,
+      remaining: Math.max(0, remaining),
+      start,
+      expiry
+    };
   }
 
   async function getAdminSession() {
     const { data, error } = await db.auth.getSession();
-
     if (error) throw error;
 
     const session = data.session;
-
     if (!session?.access_token) {
       throw new Error("انتهت جلسة الإدارة. سجل الدخول مجدداً.");
     }
 
-    const { data: userData, error: userError } =
-      await db.auth.getUser();
-
+    const { data: userData, error: userError } = await db.auth.getUser();
     if (userError || !userData.user) {
       throw new Error("تعذر التحقق من حساب المدير.");
     }
 
-    const { data: profile, error: profileError } =
-      await db.from("profiles")
-        .select("role,approval_status")
-        .eq("id", userData.user.id)
-        .maybeSingle();
+    const { data: profile, error: profileError } = await db
+      .from("profiles")
+      .select("role,approval_status")
+      .eq("id", userData.user.id)
+      .maybeSingle();
 
     if (
       profileError ||
@@ -1498,6 +1626,160 @@ db.auth.getSession().then(async({data})=>{
     }
 
     return session;
+  }
+
+  async function loadMedicalCenters() {
+    message("mcCreateError", "");
+    message("mcPaymentError", "");
+
+    el("mcCentersTable").innerHTML =
+      '<tr><td colspan="8">جارٍ تحميل المراكز...</td></tr>';
+
+    try {
+      await getAdminSession();
+
+      const { data, error } = await db
+        .from("medical_centers")
+        .select("id,profile_id,name,city,address,phone,maps_url,is_active,created_at,last_payment_at,image_url")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      centers = data || [];
+
+      const { data: doctorRows, error: doctorError } = await db
+        .from("center_doctors")
+        .select("id,center_id,full_name,phone,specialty,qualification,bio,experience_years,consultation_fee,is_active,created_at");
+
+      if (doctorError) throw doctorError;
+
+      centerDoctors = doctorRows || [];
+
+      renderCenterStats();
+      renderCentersTable();
+      fillCenterSelects();
+
+      if (selectedCenterId && centers.some(c => c.id === selectedCenterId)) {
+        el("mcDoctorsCenter").value = selectedCenterId;
+        await loadCenterDoctors();
+      } else {
+        selectedCenterId = "";
+        el("mcDoctorsTable").innerHTML =
+          '<tr><td colspan="6">اختر مركزاً لعرض الأطباء.</td></tr>';
+      }
+
+    } catch (error) {
+      el("mcCentersTable").innerHTML =
+        '<tr><td colspan="8">تعذر تحميل المراكز.</td></tr>';
+
+      message("mcCreateError", "خطأ تحميل المراكز: " + error.message);
+    }
+  }
+
+  function renderCenterStats() {
+    const overdueCount = centers.filter(c => getSubscriptionInfo(c).overdue).length;
+    const activeCount = centers.filter(c => c.is_active === true).length;
+
+    el("mcTotal").textContent = centers.length;
+    el("mcActive").textContent = activeCount;
+    el("mcOverdue").textContent = overdueCount;
+    el("mcDoctorsTotal").textContent = centerDoctors.length;
+  }
+
+  function renderCentersTable() {
+    const tbody = el("mcCentersTable");
+
+    if (!centers.length) {
+      tbody.innerHTML =
+        '<tr><td colspan="8">لا توجد مراكز مسجلة حتى الآن.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = centers.map(center => {
+      const subscription = getSubscriptionInfo(center);
+      const overdue = subscription.overdue;
+      const active = center.is_active === true;
+      const doctorCount = centerDoctors.filter(
+        d => d.center_id === center.id
+      ).length;
+
+      const subscriptionLabel = overdue
+        ? "منتهي / متأخر"
+        : "متبقي " + subscription.remaining + " يوم";
+
+      const subscriptionClass = overdue ? "rejected" : "approved";
+      const centerLabel = active ? "فعال" : "موقوف";
+      const centerClass = active ? "approved" : "rejected";
+
+      const startLabel = subscription.start
+        ? formatDate(subscription.start)
+        : "غير محدد";
+
+      return `
+        <tr>
+          <td><strong>${escapeHTML(center.name || "مركز")}</strong></td>
+          <td>${escapeHTML(center.city || "—")}</td>
+          <td>${escapeHTML(center.phone || "—")}</td>
+          <td>${escapeHTML(startLabel)}</td>
+          <td>
+            <span class="status ${subscriptionClass}">
+              ${subscriptionLabel}
+            </span>
+            <div class="small">
+              ${subscription.expiry ? "الانتهاء: " + escapeHTML(formatDate(subscription.expiry)) : ""}
+            </div>
+          </td>
+          <td>
+            <span class="status ${centerClass}">${centerLabel}</span>
+          </td>
+          <td>${doctorCount}</td>
+          <td>
+            <div class="patient-actions">
+              <button type="button"
+                onclick="mcRenewCenter('${center.id}')">
+                تسجيل الدفع وتجديد 30 يوماً
+              </button>
+
+              <button type="button"
+                class="${active ? "reject-btn" : "approve-btn"}"
+                onclick="mcToggleCenter('${center.id}')">
+                ${active ? "إيقاف المركز" : "إعادة التفعيل"}
+              </button>
+
+              <button type="button" class="btn-light"
+                onclick="mcChooseCenter('${center.id}')">
+                إدارة الأطباء
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  function fillCenterSelects() {
+    const selectIds = [
+      "mcImageCenter",
+      "mcDoctorCenter",
+      "mcDoctorsCenter"
+    ];
+
+    selectIds.forEach(id => {
+      const select = el(id);
+      const previous = select.value;
+
+      select.innerHTML =
+        '<option value="">اختر المركز</option>' +
+        centers.map(center => `
+          <option value="${center.id}">
+            ${escapeHTML(center.name)}
+          </option>
+        `).join("");
+
+      if (centers.some(c => c.id === previous)) {
+        select.value = previous;
+      }
+    });
   }
 
   async function createCenter(event) {
@@ -1530,9 +1812,7 @@ db.auth.getSession().then(async({data})=>{
         throw new Error("كلمة المرور يجب أن تكون 10 أحرف على الأقل.");
       }
 
-      if (!confirm(
-        "هل تريد إنشاء حساب دخول مستقل لهذا المركز؟"
-      )) return;
+      if (!confirm("هل تريد إنشاء حساب دخول مستقل لهذا المركز؟")) return;
 
       message("mcCreateMessage", "جارٍ إنشاء حساب المركز...");
 
@@ -1553,358 +1833,658 @@ db.auth.getSession().then(async({data})=>{
 
       if (!response.ok) {
         throw new Error(
-          result.error ||
-          "تعذر إنشاء المركز. رمز الاستجابة: " + response.status
+          result.error || "تعذر إنشاء المركز. رمز الاستجابة: " + response.status
         );
       }
 
       el("mcCreateForm").reset();
       el("mcCity").value = "النجف";
 
-      message(
-        "mcCreateMessage",
-        "تم إنشاء حساب المركز الطبي بنجاح."
-      );
-
+      message("mcCreateMessage", "تم إنشاء حساب المركز الطبي بنجاح.");
       await loadMedicalCenters();
 
     } catch (error) {
       message("mcCreateMessage", "");
-      message(
-        "mcCreateError",
-        error.message || "حدث خطأ أثناء إنشاء المركز."
-      );
+      message("mcCreateError", error.message || "حدث خطأ أثناء إنشاء المركز.");
     } finally {
       button.disabled = false;
     }
   }
 
-  async function loadMedicalCenters() {
-    message("mcCreateError", "");
-    el("mcCentersTable").innerHTML =
-      '<tr><td colspan="5">جارٍ تحميل المراكز...</td></tr>';
+  async function renewCenter(centerId) {
+    const center = centers.find(c => c.id === centerId);
+    if (!center) return;
+
+    if (!confirm(
+      "هل استلمت فعلياً مبلغ " +
+      PAYMENT_FEE.toLocaleString("en-US") +
+      " دينار من مركز " + center.name +
+      "؟ سيتم تسجيل تاريخ الدفع وتجديد الاشتراك 30 يوماً."
+    )) return;
+
+    message("mcPaymentError", "");
+    message("mcPaymentMessage", "جارٍ تسجيل الدفعة...");
 
     try {
+      await getAdminSession();
+
+      const now = new Date().toISOString();
+
       const { data, error } = await db
         .from("medical_centers")
-        .select("id,profile_id,name,city,address,phone,is_active,created_at")
-        .order("created_at", { ascending: false });
+        .update({
+          last_payment_at: now,
+          is_active: true,
+          updated_at: now
+        })
+        .eq("id", centerId)
+        .select("id,last_payment_at,is_active")
+        .maybeSingle();
 
       if (error) throw error;
-
-      centers = data || [];
-
-      const { data: assignments, error: assignmentError } =
-        await db.from("medical_center_doctors")
-          .select("id,center_id,doctor_id");
-
-      if (assignmentError) throw assignmentError;
-
-      const counts = {};
-
-      (assignments || []).forEach(item => {
-        counts[item.center_id] = (counts[item.center_id] || 0) + 1;
-      });
-
-      if (!centers.length) {
-        el("mcCentersTable").innerHTML =
-          '<tr><td colspan="5">لا توجد مراكز مسجلة حتى الآن.</td></tr>';
-      } else {
-        el("mcCentersTable").innerHTML = centers.map(center => `
-          <tr>
-            <td>${escapeHTML(center.name)}</td>
-            <td>${escapeHTML(center.city || "—")}</td>
-            <td>${escapeHTML(center.phone || "—")}</td>
-            <td>
-              ${center.is_active ? "فعال" : "موقوف"}
-            </td>
-            <td>${counts[center.id] || 0}</td>
-          </tr>
-        `).join("");
+      if (!data) {
+        throw new Error("لم يتم تحديث المركز. تحقق من صلاحيات قاعدة البيانات.");
       }
 
-      const select = el("mcSelectCenter");
-      const previous = select.value;
-
-      select.innerHTML =
-        '<option value="">اختر المركز</option>' +
-        centers.map(center => `
-          <option value="${center.id}">
-            ${escapeHTML(center.name)}
-          </option>
-        `).join("");
-
-      if (centers.some(c => c.id === previous)) {
-        select.value = previous;
-      }
-
-      await loadAssignableDoctors();
-
-      if (select.value) {
-        await loadLinkedDoctors();
-      }
-
-    } catch (error) {
-      el("mcCentersTable").innerHTML =
-        '<tr><td colspan="5">تعذر تحميل المراكز.</td></tr>';
+      await loadMedicalCenters();
 
       message(
-        "mcCreateError",
-        "خطأ تحميل المراكز: " + error.message
+        "mcPaymentMessage",
+        "تم تسجيل استلام الدفعة وتجديد اشتراك مركز " +
+        center.name + " لمدة 30 يوماً، وتم تفعيل المركز."
       );
+
+    } catch (error) {
+      message("mcPaymentMessage", "");
+      message("mcPaymentError", "تعذر تسجيل الدفعة: " + error.message);
     }
   }
 
-  async function loadAssignableDoctors() {
-    const select = el("mcSelectDoctor");
+  async function toggleCenter(centerId) {
+    const center = centers.find(c => c.id === centerId);
+    if (!center) return;
 
-    select.innerHTML =
-      '<option value="">جارٍ تحميل الأطباء...</option>';
+    const nextActive = center.is_active !== true;
 
-    const { data, error } = await db
-      .from("doctors")
-      .select("id,profile_id,specialties(name_ar)")
-      .eq("is_active", true)
-      .eq("admin_is_active", true);
+    if (!confirm(
+      nextActive
+        ? "هل تريد إعادة تفعيل مركز " + center.name + "؟"
+        : "هل تريد إيقاف مركز " + center.name + "؟ لن يتم حذف بياناته."
+    )) return;
 
-    if (error) {
-      select.innerHTML =
-        '<option value="">تعذر تحميل الأطباء</option>';
-      message("mcAssignError", error.message);
-      return;
-    }
+    message("mcPaymentError", "");
+    message("mcPaymentMessage", "جارٍ تحديث حالة المركز...");
 
-    const rows = data || [];
-    const profileIds = rows.map(d => d.profile_id).filter(Boolean);
+    try {
+      await getAdminSession();
 
-    let profiles = [];
+      const { data, error } = await db
+        .from("medical_centers")
+        .update({
+          is_active: nextActive,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", centerId)
+        .select("id,is_active")
+        .maybeSingle();
 
-    if (profileIds.length) {
-      const result = await db
-        .from("profiles")
-        .select("id,full_name,role,approval_status")
-        .in("id", profileIds);
-
-      if (result.error) {
-        message("mcAssignError", result.error.message);
-        return;
+      if (error) throw error;
+      if (!data) {
+        throw new Error("لم يتم تحديث حالة المركز. تحقق من صلاحيات قاعدة البيانات.");
       }
 
-      profiles = result.data || [];
-    }
+      await loadMedicalCenters();
 
-    const approvedProfiles = new Map(
-      profiles
-        .filter(p =>
-          p.role === "doctor" &&
-          p.approval_status === "approved"
-        )
-        .map(p => [p.id, p])
-    );
+      message(
+        "mcPaymentMessage",
+        nextActive
+          ? "تمت إعادة تفعيل المركز بنجاح."
+          : "تم إيقاف المركز إدارياً بنجاح."
+      );
 
-    doctors = rows
-      .filter(d => approvedProfiles.has(d.profile_id))
-      .map(d => ({
-        ...d,
-        profile: approvedProfiles.get(d.profile_id)
-      }));
-
-    select.innerHTML =
-      '<option value="">اختر الطبيب</option>' +
-      doctors.map(doctor => `
-        <option value="${doctor.id}">
-          ${escapeHTML(doctor.profile.full_name)}
-          — ${escapeHTML(doctor.specialties?.name_ar || "اختصاص غير محدد")}
-        </option>
-      `).join("");
-
-    if (!doctors.length) {
-      select.innerHTML =
-        '<option value="">لا يوجد أطباء معتمدون متاحون</option>';
+    } catch (error) {
+      message("mcPaymentMessage", "");
+      message("mcPaymentError", "تعذر تغيير حالة المركز: " + error.message);
     }
   }
 
-  async function assignDoctor() {
-    message("mcAssignError", "");
-    message("mcAssignMessage", "");
+  async function stopOverdueCenters() {
+    const overdueCenters = centers.filter(c =>
+      c.is_active === true && getSubscriptionInfo(c).overdue
+    );
 
-    const centerId = el("mcSelectCenter").value;
-    const doctorId = el("mcSelectDoctor").value;
-
-    if (!centerId || !doctorId) {
-      message("mcAssignError", "اختر المركز والطبيب أولاً.");
-      return;
-    }
-
-    const doctor = doctors.find(d => d.id === doctorId);
-    const center = centers.find(c => c.id === centerId);
-
-    if (!doctor || !center) {
-      message("mcAssignError", "تعذر التحقق من بيانات الاختيار.");
+    if (!overdueCenters.length) {
+      message("mcPaymentError", "");
+      message("mcPaymentMessage", "لا توجد مراكز فعالة متأخرة عن التسديد حالياً.");
       return;
     }
 
     if (!confirm(
-      "هل تريد ربط الطبيب " +
-      doctor.profile.full_name +
-      " بمركز " + center.name + "؟"
+      "سيتم إيقاف " + overdueCenters.length +
+      " مركزاً تجاوز اشتراكه 30 يوماً دون تسجيل دفعة.\n\nهل تريد المتابعة؟"
     )) return;
 
-    const button = el("mcAssignButton");
+    const button = el("mcStopOverdue");
     button.disabled = true;
 
+    message("mcPaymentError", "");
+    message("mcPaymentMessage", "جارٍ إيقاف المراكز المتأخرة...");
+
     try {
-      const { error } = await db
-        .from("medical_center_doctors")
-        .insert({
-          center_id: centerId,
-          doctor_id: doctorId
-        });
+      await getAdminSession();
 
-      if (error) {
-        if (error.code === "23505") {
-          throw new Error("هذا الطبيب مرتبط بالمركز مسبقاً.");
-        }
-        throw error;
-      }
+      const ids = overdueCenters.map(c => c.id);
 
-      message(
-        "mcAssignMessage",
-        "تم ربط الطبيب بالمركز بنجاح."
-      );
+      const { data, error } = await db
+        .from("medical_centers")
+        .update({
+          is_active: false,
+          updated_at: new Date().toISOString()
+        })
+        .in("id", ids)
+        .eq("is_active", true)
+        .select("id");
+
+      if (error) throw error;
+
+      const stoppedCount = (data || []).length;
 
       await loadMedicalCenters();
-      await loadLinkedDoctors();
+
+      message(
+        "mcPaymentMessage",
+        "اكتملت العملية. تم إيقاف " +
+        stoppedCount + " مركزاً من المراكز المتأخرة."
+      );
 
     } catch (error) {
-      message(
-        "mcAssignError",
-        "تعذر ربط الطبيب: " + error.message
-      );
+      message("mcPaymentMessage", "");
+      message("mcPaymentError", "تعذر إيقاف المراكز: " + error.message);
     } finally {
       button.disabled = false;
     }
   }
 
-  async function loadLinkedDoctors() {
-    const centerId = el("mcSelectCenter").value;
-    const host = el("mcLinkedDoctors");
+  async function createCenterDoctor(event) {
+    event.preventDefault();
 
-    if (!centerId) {
-      host.innerHTML =
-        '<div class="empty-state">اختر مركزاً لعرض أطبائه.</div>';
-      return;
-    }
+    message("mcDoctorError", "");
+    message("mcDoctorMessage", "");
 
-    host.textContent = "جارٍ تحميل الأطباء...";
+    const button = el("mcDoctorCreateButton");
+    button.disabled = true;
 
-    const { data, error } = await db
-      .from("medical_center_doctors")
-      .select("id,doctor_id")
-      .eq("center_id", centerId);
+    try {
+      await getAdminSession();
 
-    if (error) {
-      host.textContent = "تعذر تحميل ارتباطات الأطباء: " + error.message;
-      return;
-    }
+      const payload = {
+        center_id: el("mcDoctorCenter").value,
+        full_name: el("mcDoctorName").value.trim(),
+        phone: el("mcDoctorPhone").value.trim(),
+        specialty: el("mcDoctorSpecialty").value.trim(),
+        qualification: el("mcDoctorQualification").value.trim(),
+        bio: el("mcDoctorBio").value.trim(),
+        experience_years: Number(el("mcDoctorExperience").value || 0),
+        consultation_fee: Number(el("mcDoctorFee").value || 0),
+        is_active: true
+      };
 
-    const assignments = data || [];
+      if (!payload.center_id) {
+        throw new Error("يرجى اختيار المركز.");
+      }
 
-    if (!assignments.length) {
-      host.innerHTML =
-        '<div class="empty-state">لم تتم إضافة أطباء لهذا المركز بعد.</div>';
-      return;
-    }
+      if (!payload.full_name || !payload.specialty) {
+        throw new Error("يرجى إدخال اسم الطبيب والتخصص.");
+      }
 
-    const doctorIds = assignments.map(x => x.doctor_id);
+      if (
+        !Number.isInteger(payload.experience_years) ||
+        payload.experience_years < 0 ||
+        payload.experience_years > 70
+      ) {
+        throw new Error("تحقق من سنوات الخبرة.");
+      }
 
-    const { data: doctorRows, error: doctorError } = await db
-      .from("doctors")
-      .select("id,profile_id,specialties(name_ar)")
-      .in("id", doctorIds);
+      if (
+        !Number.isFinite(payload.consultation_fee) ||
+        payload.consultation_fee < 0
+      ) {
+        throw new Error("أجرة الكشف غير صحيحة.");
+      }
 
-    if (doctorError) {
-      host.textContent = doctorError.message;
-      return;
-    }
+      if (!confirm(
+        "هل تريد إضافة الطبيب " + payload.full_name +
+        " إلى المركز المحدد؟"
+      )) return;
 
-    const ids = (doctorRows || []).map(x => x.profile_id).filter(Boolean);
+      const { data, error } = await db
+        .from("center_doctors")
+        .insert(payload)
+        .select("id")
+        .single();
 
-    const { data: profileRows, error: profileError } = await db
-      .from("profiles")
-      .select("id,full_name")
-      .in("id", ids);
+      if (error) throw error;
+      if (!data?.id) throw new Error("لم يتم تأكيد إنشاء سجل الطبيب.");
 
-    if (profileError) {
-      host.textContent = profileError.message;
-      return;
-    }
+      const center = centers.find(c => c.id === payload.center_id);
 
-    const names = new Map(
-      (profileRows || []).map(p => [p.id, p.full_name])
-    );
+      el("mcDoctorForm").reset();
+      el("mcDoctorExperience").value = "0";
+      el("mcDoctorFee").value = "0";
+      el("mcDoctorCenter").value = payload.center_id;
 
-    host.innerHTML = assignments.map(assignment => {
-      const doctor = (doctorRows || []).find(
-        d => d.id === assignment.doctor_id
+      selectedCenterId = payload.center_id;
+      el("mcDoctorsCenter").value = payload.center_id;
+
+      message(
+        "mcDoctorMessage",
+        "تمت إضافة الطبيب إلى مركز " +
+        (center?.name || "") + " بنجاح."
       );
 
-      if (!doctor) return "";
+      await loadMedicalCenters();
+      await loadCenterDoctors();
 
-      return `
-        <div class="card">
-          <strong>
-            ${escapeHTML(names.get(doctor.profile_id) || "طبيب")}
-          </strong>
-          <span class="muted">
-            — ${escapeHTML(doctor.specialties?.name_ar || "اختصاص غير محدد")}
-          </span>
-          <button
-            class="reject-btn"
-            type="button"
-            data-remove-center-doctor="${assignment.id}">
-            إلغاء ارتباط الطبيب بالمركز
-          </button>
-        </div>
-      `;
-    }).join("");
+    } catch (error) {
+      message("mcDoctorMessage", "");
+      message("mcDoctorError", "تعذر إضافة الطبيب: " + error.message);
+    } finally {
+      button.disabled = false;
+    }
+  }
 
-    host.querySelectorAll("[data-remove-center-doctor]")
-      .forEach(button => {
-        button.addEventListener("click", async () => {
-          const assignmentId =
-            button.getAttribute("data-remove-center-doctor");
+  async function loadCenterDoctors() {
+    const centerId = el("mcDoctorsCenter").value;
+    const tbody = el("mcDoctorsTable");
 
-          if (!confirm("هل تريد إلغاء ارتباط هذا الطبيب بالمركز؟")) {
-            return;
-          }
+    selectedCenterId = centerId || "";
 
-          button.disabled = true;
+    if (!centerId) {
+      tbody.innerHTML =
+        '<tr><td colspan="6">اختر مركزاً لعرض الأطباء.</td></tr>';
+      return;
+    }
 
-          const { error } = await db
-            .from("medical_center_doctors")
-            .delete()
-            .eq("id", assignmentId);
+    tbody.innerHTML =
+      '<tr><td colspan="6">جارٍ تحميل الأطباء...</td></tr>';
 
-          if (error) {
-            button.disabled = false;
-            alert("تعذر إلغاء الارتباط: " + error.message);
-            return;
-          }
+    try {
+      await getAdminSession();
 
-          await loadMedicalCenters();
-          await loadLinkedDoctors();
+      const { data, error } = await db
+        .from("center_doctors")
+        .select("id,center_id,full_name,phone,specialty,qualification,bio,experience_years,consultation_fee,is_active,created_at")
+        .eq("center_id", centerId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      const rows = data || [];
+      centerDoctors = centerDoctors.filter(d => d.center_id !== centerId).concat(rows);
+
+      if (!rows.length) {
+        tbody.innerHTML =
+          '<tr><td colspan="6">لا يوجد أطباء مسجلون في هذا المركز.</td></tr>';
+        renderCenterStats();
+        renderCentersTable();
+        return;
+      }
+
+      tbody.innerHTML = rows.map(doctor => {
+        const active = doctor.is_active === true;
+
+        return `
+          <tr>
+            <td><strong>${escapeHTML(doctor.full_name || "طبيب")}</strong></td>
+            <td>${escapeHTML(doctor.phone || "—")}</td>
+            <td>${escapeHTML(doctor.specialty || "—")}</td>
+            <td>${escapeHTML(doctor.qualification || "—")}</td>
+            <td>
+              <span class="status ${active ? "approved" : "rejected"}">
+                ${active ? "فعال" : "موقوف"}
+              </span>
+            </td>
+            <td>
+              <div class="patient-actions">
+                <button type="button" class="btn-light"
+                  onclick="mcEditCenterDoctor('${doctor.id}')">
+                  تعديل
+                </button>
+                <button type="button"
+                  class="${active ? "reject-btn" : "approve-btn"}"
+                  onclick="mcToggleCenterDoctor('${doctor.id}')">
+                  ${active ? "إيقاف الطبيب" : "تفعيل الطبيب"}
+                </button>
+                <button type="button" class="reject-btn"
+                  onclick="mcDeleteCenterDoctor('${doctor.id}')">
+                  حذف السجل
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      renderCenterStats();
+      renderCentersTable();
+
+    } catch (error) {
+      tbody.innerHTML =
+        '<tr><td colspan="6">تعذر تحميل الأطباء: ' +
+        escapeHTML(error.message) + '</td></tr>';
+    }
+  }
+
+  async function toggleCenterDoctor(doctorId) {
+    const doctor = centerDoctors.find(d => d.id === doctorId);
+    if (!doctor) return;
+
+    const nextActive = doctor.is_active !== true;
+
+    if (!confirm(
+      nextActive
+        ? "هل تريد إعادة تفعيل الطبيب " + doctor.full_name + "؟"
+        : "هل تريد إيقاف الطبيب " + doctor.full_name + " داخل المركز؟"
+    )) return;
+
+    try {
+      await getAdminSession();
+
+      const { error } = await db
+        .from("center_doctors")
+        .update({
+          is_active: nextActive,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", doctorId);
+
+      if (error) throw error;
+
+      message("mcDoctorError", "");
+      message(
+        "mcDoctorMessage",
+        nextActive ? "تم تفعيل الطبيب." : "تم إيقاف الطبيب."
+      );
+
+      await loadCenterDoctors();
+
+    } catch (error) {
+      message("mcDoctorError", "تعذر تحديث الطبيب: " + error.message);
+    }
+  }
+
+  async function editCenterDoctor(doctorId) {
+    const doctor = centerDoctors.find(d => d.id === doctorId);
+    if (!doctor) return;
+
+    const fullName = prompt("اسم الطبيب:", doctor.full_name || "");
+    if (fullName === null) return;
+
+    const phone = prompt("رقم الهاتف:", doctor.phone || "");
+    if (phone === null) return;
+
+    const specialty = prompt("التخصص:", doctor.specialty || "");
+    if (specialty === null) return;
+
+    const qualification = prompt("المؤهل العلمي:", doctor.qualification || "");
+    if (qualification === null) return;
+
+    const experienceText = prompt(
+      "سنوات الخبرة:",
+      String(doctor.experience_years ?? 0)
+    );
+    if (experienceText === null) return;
+
+    const feeText = prompt(
+      "أجرة الكشف:",
+      String(doctor.consultation_fee ?? 0)
+    );
+    if (feeText === null) return;
+
+    const bio = prompt("نبذة عن الطبيب:", doctor.bio || "");
+    if (bio === null) return;
+
+    const experience = Number(experienceText);
+    const fee = Number(feeText);
+
+    if (
+      !fullName.trim() ||
+      !specialty.trim() ||
+      !Number.isInteger(experience) ||
+      experience < 0 ||
+      experience > 70 ||
+      !Number.isFinite(fee) ||
+      fee < 0
+    ) {
+      alert("تحقق من الاسم والتخصص وسنوات الخبرة وأجرة الكشف.");
+      return;
+    }
+
+    try {
+      await getAdminSession();
+
+      const { error } = await db
+        .from("center_doctors")
+        .update({
+          full_name: fullName.trim(),
+          phone: phone.trim(),
+          specialty: specialty.trim(),
+          qualification: qualification.trim(),
+          experience_years: experience,
+          consultation_fee: fee,
+          bio: bio.trim(),
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", doctorId);
+
+      if (error) throw error;
+
+      message("mcDoctorError", "");
+      message("mcDoctorMessage", "تم تحديث بيانات الطبيب بنجاح.");
+      await loadCenterDoctors();
+
+    } catch (error) {
+      message("mcDoctorError", "تعذر تعديل بيانات الطبيب: " + error.message);
+    }
+  }
+
+  async function deleteCenterDoctor(doctorId) {
+    const doctor = centerDoctors.find(d => d.id === doctorId);
+    if (!doctor) return;
+
+    if (!confirm(
+      "هل تريد حذف سجل الطبيب " + doctor.full_name +
+      " من هذا المركز؟ لا يمكن التراجع عن الحذف."
+    )) return;
+
+    try {
+      await getAdminSession();
+
+      const { error } = await db
+        .from("center_doctors")
+        .delete()
+        .eq("id", doctorId);
+
+      if (error) throw error;
+
+      message("mcDoctorError", "");
+      message("mcDoctorMessage", "تم حذف سجل الطبيب من المركز.");
+      await loadMedicalCenters();
+      await loadCenterDoctors();
+
+    } catch (error) {
+      message("mcDoctorError", "تعذر حذف الطبيب: " + error.message);
+    }
+  }
+
+  async function uploadCenterImage() {
+    message("mcImageMessage", "");
+    message("mcImageError", "");
+
+    const centerId = el("mcImageCenter").value;
+    const file = el("mcImageFile").files?.[0];
+
+    if (!centerId) {
+      message("mcImageError", "اختر المركز أولاً.");
+      return;
+    }
+
+    if (!file) {
+      message("mcImageError", "اختر صورة المركز.");
+      return;
+    }
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      message("mcImageError", "الصيغ المقبولة JPG وPNG وWebP فقط.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      message("mcImageError", "حجم الصورة يجب ألا يتجاوز 5 ميغابايت.");
+      return;
+    }
+
+    const button = el("mcUploadImage");
+    button.disabled = true;
+
+    try {
+      await getAdminSession();
+
+      const extension = file.type === "image/png"
+        ? "png"
+        : file.type === "image/webp"
+          ? "webp"
+          : "jpg";
+
+      const path = centerId + "/" + Date.now() + "." + extension;
+
+      const { error: uploadError } = await db.storage
+        .from(IMAGE_BUCKET)
+        .upload(path, file, {
+          upsert: false,
+          contentType: file.type,
+          cacheControl: "3600"
         });
-      });
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicData } = db.storage
+        .from(IMAGE_BUCKET)
+        .getPublicUrl(path);
+
+      const imageUrl = publicData?.publicUrl;
+      if (!imageUrl) {
+        await db.storage.from(IMAGE_BUCKET).remove([path]);
+        throw new Error("تعذر استخراج رابط الصورة.");
+      }
+
+      const { error: updateError } = await db
+        .from("medical_centers")
+        .update({
+          image_url: imageUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", centerId);
+
+      if (updateError) {
+        await db.storage.from(IMAGE_BUCKET).remove([path]);
+        throw updateError;
+      }
+
+      message("mcImageMessage", "تم رفع صورة المركز وحفظها بنجاح.");
+      el("mcImagePreview").src = imageUrl;
+      el("mcImageInfo").textContent = file.name;
+
+      await loadMedicalCenters();
+
+    } catch (error) {
+      message("mcImageError", "تعذر رفع الصورة: " + error.message);
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  function chooseCenter(centerId) {
+    selectedCenterId = centerId;
+    el("mcDoctorsCenter").value = centerId;
+    el("mcDoctorCenter").value = centerId;
+    loadCenterDoctors();
+    el("mcDoctorsCenter").scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+  }
+
+  function openSection() {
+    [
+      "homeSection",
+      "patientsSection",
+      "bookingsSection",
+      "doctorsSection",
+      "manageDoctorsSection",
+      "representativesSection",
+      "emergencyDoctorSection",
+      "medicalCentersAdminSection"
+    ].forEach(id => {
+      const item = document.getElementById(id);
+      if (item) item.classList.add("hidden");
+    });
+
+    section.classList.remove("hidden");
+
+    document.querySelectorAll(".side-link").forEach(button => {
+      button.classList.remove("active");
+    });
+
+    navButton.classList.add("active");
+    loadMedicalCenters();
   }
 
   el("mcCreateForm").addEventListener("submit", createCenter);
   el("mcRefresh").addEventListener("click", loadMedicalCenters);
-  el("mcAssignButton").addEventListener("click", assignDoctor);
-  el("mcSelectCenter").addEventListener("change", loadLinkedDoctors);
+  el("mcStopOverdue").addEventListener("click", stopOverdueCenters);
+  el("mcDoctorForm").addEventListener("submit", createCenterDoctor);
+  el("mcDoctorsCenter").addEventListener("change", loadCenterDoctors);
+  el("mcDoctorsRefresh").addEventListener("click", loadCenterDoctors);
+  el("mcUploadImage").addEventListener("click", uploadCenterImage);
+
+  el("mcImageCenter").addEventListener("change", () => {
+    const center = centers.find(c => c.id === el("mcImageCenter").value);
+    if (center?.image_url) {
+      el("mcImagePreview").src = center.image_url;
+      el("mcImageInfo").textContent = "الصورة الحالية للمركز.";
+    } else {
+      el("mcImageInfo").textContent = "لا توجد صورة مسجلة لهذا المركز.";
+    }
+  });
+
+  el("mcImageFile").addEventListener("change", event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      message("mcImageError", "صيغة الصورة غير مدعومة.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      message("mcImageError", "حجم الصورة أكبر من 5 ميغابايت.");
+      event.target.value = "";
+      return;
+    }
+
+    el("mcImagePreview").src = URL.createObjectURL(file);
+    el("mcImageInfo").textContent = file.name;
+    message("mcImageError", "");
+  });
+
+  window.mcRenewCenter = renewCenter;
+  window.mcToggleCenter = toggleCenter;
+  window.mcChooseCenter = chooseCenter;
+  window.mcToggleCenterDoctor = toggleCenterDoctor;
+  window.mcEditCenterDoctor = editCenterDoctor;
+  window.mcDeleteCenterDoctor = deleteCenterDoctor;
 
 })();
 </script>
-
-</body>
-</html>
