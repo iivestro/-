@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -7,12 +8,14 @@
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
+
 :root{
  --sky:#35b8e6;
  --sky-dark:#087fae;
  --sky-light:#cceaf6;
  --white:#fff;
 }
+
 body{
  min-height:100vh;
  background:#fff;
@@ -21,14 +24,23 @@ body{
  overflow-x:hidden;
  position:relative;
 }
+
 .medical-bg{
- position:fixed;inset:0;pointer-events:none;
- overflow:hidden;z-index:0;
+ position:fixed;
+ inset:0;
+ pointer-events:none;
+ overflow:hidden;
+ z-index:0;
 }
+
 .medical-symbol{
- position:absolute;color:var(--sky);
- opacity:.10;font-weight:300;user-select:none;
+ position:absolute;
+ color:var(--sky);
+ opacity:.10;
+ font-weight:300;
+ user-select:none;
 }
+
 .symbol-1{top:13%;right:8%;font-size:65px}
 .symbol-2{top:25%;left:9%;font-size:75px}
 .symbol-3{top:48%;right:16%;font-size:45px}
@@ -37,101 +49,214 @@ body{
 .symbol-6{bottom:15%;left:30%;font-size:48px}
 .symbol-7{top:8%;left:38%;font-size:38px}
 .symbol-8{bottom:32%;right:42%;font-size:55px}
+
 .circle{
- position:absolute;border:2px solid var(--sky);
- border-radius:50%;opacity:.08;
+ position:absolute;
+ border:2px solid var(--sky);
+ border-radius:50%;
+ opacity:.08;
 }
-.circle-1{width:180px;height:180px;top:16%;left:-75px}
-.circle-2{width:240px;height:240px;bottom:-110px;right:-80px}
+
+.circle-1{
+ width:180px;
+ height:180px;
+ top:16%;
+ left:-75px;
+}
+
+.circle-2{
+ width:240px;
+ height:240px;
+ bottom:-110px;
+ right:-80px;
+}
+
 .page{
- min-height:100vh;position:relative;z-index:1;
- display:flex;flex-direction:column;
+ min-height:100vh;
+ position:relative;
+ z-index:1;
+ display:flex;
+ flex-direction:column;
 }
+
 header{
- height:82px;background:#fff;
+ height:82px;
+ background:#fff;
  border-bottom:1px solid #e1f3fa;
- display:flex;align-items:center;justify-content:center;
+ display:flex;
+ align-items:center;
+ justify-content:center;
  padding:0 25px;
 }
-.brand{display:flex;align-items:center;gap:12px}
-.brand-logo{width:48px;height:48px}
-.brand-logo svg{width:100%;height:100%}
-.brand-name{display:flex;flex-direction:column;line-height:1.2}
+
+.brand{
+ display:flex;
+ align-items:center;
+ gap:12px;
+}
+
+.brand-logo{
+ width:48px;
+ height:48px;
+}
+
+.brand-logo svg{
+ width:100%;
+ height:100%;
+}
+
+.brand-name{
+ display:flex;
+ flex-direction:column;
+ line-height:1.2;
+}
+
 .brand-name strong{
- color:#35b8e6;font-size:25px;font-weight:800
+ color:#35b8e6;
+ font-size:25px;
+ font-weight:800;
 }
+
 .brand-name span{
- color:#087fae;font-size:12px;font-weight:700;
- letter-spacing:2px;direction:ltr
+ color:#087fae;
+ font-size:12px;
+ font-weight:700;
+ letter-spacing:2px;
+ direction:ltr;
 }
+
 main{
- flex:1;display:flex;align-items:center;
- justify-content:center;padding:45px 20px;
+ flex:1;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ padding:45px 20px;
 }
+
 .portal-bar{
- width:min(1180px,100%);
- background:#fff;border:1px solid #cceaf6;
+ width:min(1250px,100%);
+ background:#fff;
+ border:1px solid #cceaf6;
  border-radius:25px;
  box-shadow:0 15px 45px rgba(53,184,230,.10);
  display:grid;
- grid-template-columns:repeat(4,minmax(0,1fr));
- padding:22px;gap:16px;
+ grid-template-columns:repeat(5,minmax(0,1fr));
+ padding:22px;
+ gap:16px;
 }
+
 .portal{
- text-decoration:none;background:#fff;
- border:1px solid #d5eff8;border-radius:19px;
- display:flex;flex-direction:column;
- align-items:center;justify-content:center;
- gap:15px;color:var(--sky);
- min-height:175px;transition:.25s ease;
- position:relative;overflow:hidden;
+ text-decoration:none;
+ background:#fff;
+ border:1px solid #d5eff8;
+ border-radius:19px;
+ display:flex;
+ flex-direction:column;
+ align-items:center;
+ justify-content:center;
+ gap:15px;
+ color:var(--sky);
+ min-height:175px;
+ transition:.25s ease;
+ position:relative;
+ overflow:hidden;
  padding:18px 10px;
 }
+
 .portal:hover{
- border-color:var(--sky);background:#f7fdff;
+ border-color:var(--sky);
+ background:#f7fdff;
  transform:translateY(-5px);
  box-shadow:0 10px 25px rgba(53,184,230,.14);
 }
+
 .portal-icon{
- width:68px;height:68px;border-radius:20px;
- background:#eaf8ff;display:flex;
- align-items:center;justify-content:center;
+ width:68px;
+ height:68px;
+ border-radius:20px;
+ background:#eaf8ff;
+ display:flex;
+ align-items:center;
+ justify-content:center;
  flex-shrink:0;
 }
+
 .portal-icon svg{
- width:36px;height:36px;stroke:var(--sky);
- stroke-width:1.8;fill:none;
- stroke-linecap:round;stroke-linejoin:round;
+ width:36px;
+ height:36px;
+ stroke:var(--sky);
+ stroke-width:1.8;
+ fill:none;
+ stroke-linecap:round;
+ stroke-linejoin:round;
 }
+
 .portal-title{
- font-size:20px;font-weight:800;
- color:var(--sky);text-align:center;
+ font-size:18px;
+ font-weight:800;
+ color:var(--sky);
+ text-align:center;
+ line-height:1.5;
 }
+
 footer{
- text-align:center;padding:19px;
- color:#4aaac9;font-size:12px;
- border-top:1px solid #e8f6fb;background:#fff;
+ text-align:center;
+ padding:19px;
+ color:#4aaac9;
+ font-size:12px;
+ border-top:1px solid #e8f6fb;
+ background:#fff;
 }
-@media(max-width:900px){
- .portal-bar{grid-template-columns:repeat(2,minmax(0,1fr));max-width:700px}
+
+@media(max-width:1050px){
+ .portal-bar{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  max-width:900px;
+ }
 }
-@media(max-width:600px){
+
+@media(max-width:650px){
  header{height:72px}
- .brand-logo{width:43px;height:43px}
+
+ .brand-logo{
+  width:43px;
+  height:43px;
+ }
+
  .brand-name strong{font-size:23px}
+
  main{padding:30px 14px}
+
  .portal-bar{
   grid-template-columns:repeat(2,minmax(0,1fr));
-  padding:13px;gap:11px;border-radius:21px;
+  padding:13px;
+  gap:11px;
+  border-radius:21px;
  }
- .portal{min-height:135px;gap:11px;padding:12px 5px}
- .portal-icon{width:55px;height:55px;border-radius:16px}
- .portal-icon svg{width:30px;height:30px}
- .portal-title{font-size:16px}
+
+ .portal{
+  min-height:145px;
+  gap:11px;
+  padding:12px 5px;
+ }
+
+ .portal-icon{
+  width:55px;
+  height:55px;
+  border-radius:16px;
+ }
+
+ .portal-icon svg{
+  width:30px;
+  height:30px;
+ }
+
+ .portal-title{font-size:15px}
 }
+
 @media(max-width:360px){
  .portal-title{font-size:14px}
- .portal{min-height:125px}
+ .portal{min-height:130px}
 }
 </style>
 </head>
@@ -155,21 +280,27 @@ footer{
 
 <header>
  <div class="brand">
+
   <div class="brand-logo">
    <svg viewBox="0 0 48 48">
     <rect x="3" y="3" width="42" height="42" rx="14" fill="#eaf8ff"/>
-    <path d="M24 11v26M11 24h26" stroke="#35b8e6"
-     stroke-width="5" stroke-linecap="round"/>
+    <path d="M24 11v26M11 24h26"
+     stroke="#35b8e6"
+     stroke-width="5"
+     stroke-linecap="round"/>
    </svg>
   </div>
+
   <div class="brand-name">
    <strong>بيشنت</strong>
    <span>PATIENT</span>
   </div>
+
  </div>
 </header>
 
 <main>
+
  <div class="portal-bar">
 
   <!-- بوابة المراجع -->
@@ -198,6 +329,17 @@ footer{
    <span class="portal-title">بوابة الطبيب</span>
   </a>
 
+  <!-- محادثة الطوارئ للمراجعين -->
+  <a class="portal" href="emergency-chat.html">
+   <div class="portal-icon">
+    <svg viewBox="0 0 24 24">
+     <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3H13a8.5 8.5 0 0 1 8 8v.5z"/>
+     <path d="M8 12h8M12 8v8"/>
+    </svg>
+   </div>
+   <span class="portal-title">محادثة الطوارئ</span>
+  </a>
+
   <!-- بوابة طبيب الطوارئ -->
   <a class="portal" href="emergency.html">
    <div class="portal-icon">
@@ -222,6 +364,7 @@ footer{
   </a>
 
  </div>
+
 </main>
 
 <footer>
@@ -229,5 +372,6 @@ footer{
 </footer>
 
 </div>
+
 </body>
 </html>
