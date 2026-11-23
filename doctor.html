@@ -686,78 +686,53 @@ await loadRepVisitSlots();
 
 async function loadRepBookings(){
 if(!currentDoctorId)return;
+
 const container=document.getElementById("repBookingsList");
 container.innerHTML="";
 showMessage("repBookingsStatus","جارٍ تحميل طلبات المندوبين...");
 
-const {data:appointments,error}=await db.from("rep_appointments")
-.select("id,slot_id,doctor_id,rep_profile_id,status,notes,created_at,updated_at")
-.eq("doctor_id",currentDoctorId)
-.order("created_at",{ascending:false});
+const {data:appointments,error}=await db.rpc("doctor_rep_appointment_details_v2");
 
 if(error){
-showMessage("repBookingsStatus","تعذر تحميل طلبات المندوبين: "+error.message);
+showMessage("repBookingsStatus","تعذر تحميل بيانات المندوبين: "+error.message);
 return;
 }
+
 if(!appointments||appointments.length===0){
 showMessage("repBookingsStatus","لا توجد طلبات زيارات من المندوبين حالياً.");
 container.innerHTML='<div class="rep-empty">ستظهر طلبات المندوبين هنا عند حجزهم موعداً.</div>';
 return;
 }
 
-const profileIds=[...new Set(appointments.map(a=>a.rep_profile_id).filter(Boolean))];
-const slotIds=[...new Set(appointments.map(a=>a.slot_id).filter(Boolean))];
-let repMap={};
-let slotMap={};
-
-if(profileIds.length){
-const {data:reps,error:repError}=await db.from("rep_accounts")
-.select("*").in("profile_id",profileIds);
-if(!repError)(reps||[]).forEach(rep=>repMap[rep.profile_id]=rep);
-}
-
-if(slotIds.length){
-const {data:slots}=await db.from("rep_visit_slots")
-.select("id,visit_date,start_time,end_time")
-.in("id",slotIds);
-(slots||[]).forEach(slot=>slotMap[slot.id]=slot);
-}
-
-/* قراءة أسماء المندوبين من profiles بشكل منفصل */
-let namesMap={};
-if(profileIds.length){
-const {data:profiles}=await db.from("profiles")
-.select("id,full_name,governorate").in("id",profileIds);
-(profiles||[]).forEach(p=>namesMap[p.id]=p);
-}
-
 showMessage("repBookingsStatus","عدد طلبات الزيارات: "+appointments.length);
 
 appointments.forEach(item=>{
-const rep=repMap[item.rep_profile_id]||{};
-const profile=namesMap[item.rep_profile_id]||{};
-const slot=slotMap[item.slot_id]||{};
-
 const card=document.createElement("article");
 card.className="rep-card";
 
 const title=document.createElement("h4");
-title.textContent=profile.full_name||"مندوب غير معروف";
+title.textContent=item.rep_name||"مندوب غير معروف";
+
+const age=document.createElement("p");
+age.textContent="العمر: "+(item.rep_age!=null?item.rep_age+" سنة":"غير مسجل");
 
 const company=document.createElement("p");
-company.textContent="جهة العمل: "+(rep.employer_name||"غير محددة");
+company.textContent="اسم جهة العمل: "+(item.employer_name||"غير محددة");
 
 const type=document.createElement("p");
-type.textContent="نوع الجهة: "+(rep.employer_type==="scientific_office"?"مكتب علمي":rep.employer_type==="company"?"شركة":"غير محدد");
+type.textContent="نوع جهة العمل: "+
+(item.employer_type==="scientific_office"?"مكتب علمي":
+item.employer_type==="company"?"شركة":"غير محدد");
 
 const governorate=document.createElement("p");
-governorate.textContent="المحافظة: "+(profile.governorate||"غير محددة");
+governorate.textContent="المحافظة: "+(item.governorate||"غير محددة");
 
 const visitDate=document.createElement("p");
-visitDate.textContent="موعد الزيارة: "+formatRepDate(slot.visit_date);
+visitDate.textContent="موعد الزيارة: "+formatRepDate(item.visit_date);
 
 const visitTime=document.createElement("p");
-visitTime.textContent="الوقت: "+formatRepTime(slot.start_time)+" إلى "+formatRepTime(slot.end_time);
+visitTime.textContent="الوقت: "+
+formatRepTime(item.start_time)+" إلى "+formatRepTime(item.end_time);
 
 const notes=document.createElement("p");
 notes.textContent="ملاحظات المندوب: "+(item.notes||"لا توجد ملاحظات");
@@ -770,14 +745,18 @@ const actions=document.createElement("div");
 actions.className="actions";
 
 if(item.status==="pending"){
-actions.appendChild(makeActionButton("قبول الطلب","complete",()=>updateRepAppointment(item.id,"approved")));
-actions.appendChild(makeActionButton("رفض الطلب","reject",()=>updateRepAppointment(item.id,"rejected")));
+actions.appendChild(makeActionButton("قبول الطلب","complete",
+()=>updateRepAppointment(item.appointment_id,"approved")));
+actions.appendChild(makeActionButton("رفض الطلب","reject",
+()=>updateRepAppointment(item.appointment_id,"rejected")));
 }else if(item.status==="approved"||item.status==="confirmed"){
-actions.appendChild(makeActionButton("تسجيل الزيارة مكتملة","complete",()=>updateRepAppointment(item.id,"completed")));
-actions.appendChild(makeActionButton("رفض الطلب","reject",()=>updateRepAppointment(item.id,"rejected")));
+actions.appendChild(makeActionButton("تسجيل الزيارة مكتملة","complete",
+()=>updateRepAppointment(item.appointment_id,"completed")));
+actions.appendChild(makeActionButton("رفض الطلب","reject",
+()=>updateRepAppointment(item.appointment_id,"rejected")));
 }
 
-card.append(title,company,type,governorate,visitDate,visitTime,notes,status,actions);
+card.append(title,age,company,type,governorate,visitDate,visitTime,notes,status,actions);
 container.appendChild(card);
 });
 }
