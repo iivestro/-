@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -7,347 +6,228 @@
 <title>بيشنت | PATIENT</title>
 
 <style>
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+ --sky:#35b8e6;
+ --sky-dark:#087fae;
+ --sky-light:#cceaf6;
+ --white:#fff;
 }
-
-:root {
-    --sky: #35b8e6;
-    --sky-dark: #087fae;
-    --sky-light: #cceaf6;
-    --white: #ffffff;
+body{
+ min-height:100vh;
+ background:#fff;
+ color:var(--sky);
+ font-family:"Segoe UI",Tahoma,Arial,sans-serif;
+ overflow-x:hidden;
+ position:relative;
 }
-
-body {
-    min-height: 100vh;
-    background: #ffffff;
-    color: var(--sky);
-    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
-    overflow-x: hidden;
-    position: relative;
+.medical-bg{
+ position:fixed;inset:0;pointer-events:none;
+ overflow:hidden;z-index:0;
 }
-
-/* الخلفية الطبية */
-.medical-bg {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    overflow: hidden;
-    z-index: 0;
+.medical-symbol{
+ position:absolute;color:var(--sky);
+ opacity:.10;font-weight:300;user-select:none;
 }
-
-.medical-symbol {
-    position: absolute;
-    color: var(--sky);
-    opacity: .10;
-    font-weight: 300;
-    user-select: none;
+.symbol-1{top:13%;right:8%;font-size:65px}
+.symbol-2{top:25%;left:9%;font-size:75px}
+.symbol-3{top:48%;right:16%;font-size:45px}
+.symbol-4{top:67%;left:13%;font-size:65px}
+.symbol-5{bottom:8%;right:10%;font-size:75px}
+.symbol-6{bottom:15%;left:30%;font-size:48px}
+.symbol-7{top:8%;left:38%;font-size:38px}
+.symbol-8{bottom:32%;right:42%;font-size:55px}
+.circle{
+ position:absolute;border:2px solid var(--sky);
+ border-radius:50%;opacity:.08;
 }
-
-.symbol-1 { top: 13%; right: 8%; font-size: 65px; }
-.symbol-2 { top: 25%; left: 9%; font-size: 75px; }
-.symbol-3 { top: 48%; right: 16%; font-size: 45px; }
-.symbol-4 { top: 67%; left: 13%; font-size: 65px; }
-.symbol-5 { bottom: 8%; right: 10%; font-size: 75px; }
-.symbol-6 { bottom: 15%; left: 30%; font-size: 48px; }
-.symbol-7 { top: 8%; left: 38%; font-size: 38px; }
-.symbol-8 { bottom: 32%; right: 42%; font-size: 55px; }
-
-.circle {
-    position: absolute;
-    border: 2px solid var(--sky);
-    border-radius: 50%;
-    opacity: .08;
+.circle-1{width:180px;height:180px;top:16%;left:-75px}
+.circle-2{width:240px;height:240px;bottom:-110px;right:-80px}
+.page{
+ min-height:100vh;position:relative;z-index:1;
+ display:flex;flex-direction:column;
 }
-
-.circle-1 {
-    width: 180px;
-    height: 180px;
-    top: 16%;
-    left: -75px;
+header{
+ height:82px;background:#fff;
+ border-bottom:1px solid #e1f3fa;
+ display:flex;align-items:center;justify-content:center;
+ padding:0 25px;
 }
-
-.circle-2 {
-    width: 240px;
-    height: 240px;
-    bottom: -110px;
-    right: -80px;
+.brand{display:flex;align-items:center;gap:12px}
+.brand-logo{width:48px;height:48px}
+.brand-logo svg{width:100%;height:100%}
+.brand-name{display:flex;flex-direction:column;line-height:1.2}
+.brand-name strong{
+ color:#35b8e6;font-size:25px;font-weight:800
 }
-
-/* الصفحة */
-.page {
-    min-height: 100vh;
-    position: relative;
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
+.brand-name span{
+ color:#087fae;font-size:12px;font-weight:700;
+ letter-spacing:2px;direction:ltr
 }
-
-/* الشريط العلوي والشعار */
-header {
-    height: 82px;
-    background: #ffffff;
-    border-bottom: 1px solid #e1f3fa;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 25px;
+main{
+ flex:1;display:flex;align-items:center;
+ justify-content:center;padding:45px 20px;
 }
-
-.brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+.portal-bar{
+ width:min(1180px,100%);
+ background:#fff;border:1px solid #cceaf6;
+ border-radius:25px;
+ box-shadow:0 15px 45px rgba(53,184,230,.10);
+ display:grid;
+ grid-template-columns:repeat(4,minmax(0,1fr));
+ padding:22px;gap:16px;
 }
-
-.brand-logo {
-    width: 48px;
-    height: 48px;
+.portal{
+ text-decoration:none;background:#fff;
+ border:1px solid #d5eff8;border-radius:19px;
+ display:flex;flex-direction:column;
+ align-items:center;justify-content:center;
+ gap:15px;color:var(--sky);
+ min-height:175px;transition:.25s ease;
+ position:relative;overflow:hidden;
+ padding:18px 10px;
 }
-
-.brand-logo svg {
-    width: 100%;
-    height: 100%;
+.portal:hover{
+ border-color:var(--sky);background:#f7fdff;
+ transform:translateY(-5px);
+ box-shadow:0 10px 25px rgba(53,184,230,.14);
 }
-
-.brand-name {
-    display: flex;
-    flex-direction: column;
-    line-height: 1.2;
+.portal-icon{
+ width:68px;height:68px;border-radius:20px;
+ background:#eaf8ff;display:flex;
+ align-items:center;justify-content:center;
+ flex-shrink:0;
 }
-
-.brand-name strong {
-    color: #35b8e6;
-    font-size: 25px;
-    font-weight: 800;
+.portal-icon svg{
+ width:36px;height:36px;stroke:var(--sky);
+ stroke-width:1.8;fill:none;
+ stroke-linecap:round;stroke-linejoin:round;
 }
-
-.brand-name span {
-    color: #087fae;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    direction: ltr;
+.portal-title{
+ font-size:20px;font-weight:800;
+ color:var(--sky);text-align:center;
 }
-
-/* المحتوى الرئيسي */
-main {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 45px 20px;
+footer{
+ text-align:center;padding:19px;
+ color:#4aaac9;font-size:12px;
+ border-top:1px solid #e8f6fb;background:#fff;
 }
-
-/* المستطيل الرئيسي */
-.portal-bar {
-    width: min(850px, 100%);
-    min-height: 190px;
-    background: #ffffff;
-    border: 1px solid #cceaf6;
-    border-radius: 25px;
-    box-shadow: 0 15px 45px rgba(53, 184, 230, .10);
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 22px;
-    gap: 18px;
+@media(max-width:900px){
+ .portal-bar{grid-template-columns:repeat(2,minmax(0,1fr));max-width:700px}
 }
-
-/* بوابات الدخول */
-.portal {
-    text-decoration: none;
-    background: #ffffff;
-    border: 1px solid #d5eff8;
-    border-radius: 19px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 17px;
-    color: var(--sky);
-    min-height: 145px;
-    transition: .25s ease;
-    position: relative;
-    overflow: hidden;
+@media(max-width:600px){
+ header{height:72px}
+ .brand-logo{width:43px;height:43px}
+ .brand-name strong{font-size:23px}
+ main{padding:30px 14px}
+ .portal-bar{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  padding:13px;gap:11px;border-radius:21px;
+ }
+ .portal{min-height:135px;gap:11px;padding:12px 5px}
+ .portal-icon{width:55px;height:55px;border-radius:16px}
+ .portal-icon svg{width:30px;height:30px}
+ .portal-title{font-size:16px}
 }
-
-.portal:hover {
-    border-color: var(--sky);
-    background: #f7fdff;
-    transform: translateY(-4px);
-    box-shadow: 0 10px 25px rgba(53, 184, 230, .12);
-}
-
-.portal-icon {
-    width: 65px;
-    height: 65px;
-    border-radius: 18px;
-    background: #eaf8ff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.portal-icon svg {
-    width: 35px;
-    height: 35px;
-    stroke: var(--sky);
-    stroke-width: 1.8;
-    fill: none;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.portal-title {
-    font-size: 23px;
-    font-weight: 800;
-    color: var(--sky);
-}
-
-/* التذييل */
-footer {
-    text-align: center;
-    padding: 19px;
-    color: #4aaac9;
-    font-size: 12px;
-    border-top: 1px solid #e8f6fb;
-    background: #ffffff;
-}
-
-/* الشاشات الصغيرة */
-@media (max-width: 600px) {
-    header {
-        height: 72px;
-    }
-
-    .brand-logo {
-        width: 43px;
-        height: 43px;
-    }
-
-    .brand-name strong {
-        font-size: 23px;
-    }
-
-    main {
-        padding: 35px 16px;
-    }
-
-    .portal-bar {
-        grid-template-columns: 1fr;
-        padding: 15px;
-        gap: 13px;
-        border-radius: 21px;
-    }
-
-    .portal {
-        min-height: 105px;
-        justify-content: center;
-    }
-
-    .portal-icon {
-        width: 55px;
-        height: 55px;
-    }
-
-    .portal-title {
-        font-size: 20px;
-    }
+@media(max-width:360px){
+ .portal-title{font-size:14px}
+ .portal{min-height:125px}
 }
 </style>
 </head>
 
 <body>
 
-<!-- الخلفية الطبية -->
 <div class="medical-bg">
-    <div class="medical-symbol symbol-1">✚</div>
-    <div class="medical-symbol symbol-2">⚕</div>
-    <div class="medical-symbol symbol-3">♡</div>
-    <div class="medical-symbol symbol-4">✚</div>
-    <div class="medical-symbol symbol-5">⚕</div>
-    <div class="medical-symbol symbol-6">✚</div>
-    <div class="medical-symbol symbol-7">♡</div>
-    <div class="medical-symbol symbol-8">✚</div>
-    <div class="circle circle-1"></div>
-    <div class="circle circle-2"></div>
+ <div class="medical-symbol symbol-1">✚</div>
+ <div class="medical-symbol symbol-2">⚕</div>
+ <div class="medical-symbol symbol-3">♡</div>
+ <div class="medical-symbol symbol-4">✚</div>
+ <div class="medical-symbol symbol-5">⚕</div>
+ <div class="medical-symbol symbol-6">✚</div>
+ <div class="medical-symbol symbol-7">♡</div>
+ <div class="medical-symbol symbol-8">✚</div>
+ <div class="circle circle-1"></div>
+ <div class="circle circle-2"></div>
 </div>
 
 <div class="page">
 
-    <!-- الشعار العلوي -->
-    <header>
-        <div class="brand">
+<header>
+ <div class="brand">
+  <div class="brand-logo">
+   <svg viewBox="0 0 48 48">
+    <rect x="3" y="3" width="42" height="42" rx="14" fill="#eaf8ff"/>
+    <path d="M24 11v26M11 24h26" stroke="#35b8e6"
+     stroke-width="5" stroke-linecap="round"/>
+   </svg>
+  </div>
+  <div class="brand-name">
+   <strong>بيشنت</strong>
+   <span>PATIENT</span>
+  </div>
+ </div>
+</header>
 
-            <div class="brand-logo">
-                <svg viewBox="0 0 48 48">
-                    <rect x="3" y="3" width="42" height="42"
-                          rx="14" fill="#eaf8ff"/>
-                    <path d="M24 11v26M11 24h26"
-                          stroke="#35b8e6"
-                          stroke-width="5"
-                          stroke-linecap="round"/>
-                </svg>
-            </div>
+<main>
+ <div class="portal-bar">
 
-            <div class="brand-name">
-                <strong>بيشنت</strong>
-                <span>PATIENT</span>
-            </div>
+  <!-- بوابة المراجع -->
+  <a class="portal" href="patients.html">
+   <div class="portal-icon">
+    <svg viewBox="0 0 24 24">
+     <circle cx="9" cy="8" r="4"/>
+     <path d="M2 21v-2a7 7 0 0 1 14 0v2"/>
+     <path d="M19 8v6M16 11h6"/>
+    </svg>
+   </div>
+   <span class="portal-title">بوابة المراجع</span>
+  </a>
 
-        </div>
-    </header>
+  <!-- بوابة الطبيب -->
+  <a class="portal" href="doctor.html">
+   <div class="portal-icon">
+    <svg viewBox="0 0 24 24">
+     <path d="M12 3v5"/>
+     <path d="M9.5 5.5h5"/>
+     <path d="M7 8H5a2 2 0 0 0-2 2v4a7 7 0 0 0 14 0v-1"/>
+     <path d="M17 10h4v4h-4z"/>
+     <path d="M10 21v-2"/>
+    </svg>
+   </div>
+   <span class="portal-title">بوابة الطبيب</span>
+  </a>
 
-    <!-- بوابات الدخول -->
-    <main>
+  <!-- بوابة طبيب الطوارئ -->
+  <a class="portal" href="emergency.html">
+   <div class="portal-icon">
+    <svg viewBox="0 0 24 24">
+     <path d="M12 3v18M3 12h18"/>
+     <path d="M5 5l14 14M19 5L5 19"/>
+    </svg>
+   </div>
+   <span class="portal-title">بوابة طبيب الطوارئ</span>
+  </a>
 
-        <div class="portal-bar">
+  <!-- بوابة المندوبين -->
+  <a class="portal" href="representative.html">
+   <div class="portal-icon">
+    <svg viewBox="0 0 24 24">
+     <rect x="3" y="7" width="18" height="14" rx="2"/>
+     <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+     <path d="M3 12h18M10 12v2h4v-2"/>
+    </svg>
+   </div>
+   <span class="portal-title">بوابة المندوبين</span>
+  </a>
 
-            <!-- بوابة الطبيب -->
-            <a class="portal" href="doctor.html">
+ </div>
+</main>
 
-                <div class="portal-icon">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12 3v5"/>
-                        <path d="M9.5 5.5h5"/>
-                        <path d="M7 8H5a2 2 0 0 0-2 2v4a7 7 0 0 0 14 0v-1"/>
-                        <path d="M17 10h4v4h-4z"/>
-                        <path d="M10 21v-2"/>
-                    </svg>
-                </div>
-
-                <span class="portal-title">بوابة الطبيب</span>
-
-            </a>
-
-            <!-- بوابة المراجع -->
-            <a class="portal" href="patients.html">
-
-                <div class="portal-icon">
-                    <svg viewBox="0 0 24 24">
-                        <circle cx="9" cy="8" r="4"/>
-                        <path d="M2 21v-2a7 7 0 0 1 14 0v2"/>
-                        <path d="M19 8v6"/>
-                        <path d="M16 11h6"/>
-                    </svg>
-                </div>
-
-                <span class="portal-title">بوابة المراجع</span>
-
-            </a>
-
-        </div>
-
-    </main>
-
-    <!-- التذييل -->
-    <footer>
-        © 2026 PATIENT — جميع الحقوق محفوظة
-    </footer>
+<footer>
+ © 2026 PATIENT — جميع الحقوق محفوظة
+</footer>
 
 </div>
-
 </body>
 </html>
