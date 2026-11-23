@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -270,7 +269,7 @@ main{padding:10px}
         <input id="emergencyDoctorPassword" type="password" required minlength="10" placeholder="10 أحرف على الأقل">
        </div>
       </div>
-      <button id="crpZEAWYtiB6bJ16NuLbGCc6CZ6jJdKfb63" type="submit">إنشاء حساب طبيب الطوارئ</button>
+      <button id="crpZELkorMwhkkpShF5PvT8YnqRCupnLTNG" type="submit">إنشاء حساب طبيب الطوارئ</button>
      </form>
     </div>
 
@@ -441,13 +440,28 @@ async function showDashboard(user){
  },10000);
 }
 
+/* تم إصلاح التنقل: صفحة المراكز تدخل ضمن الأقسام التي يتم إخفاؤها */
 function showSection(id,button){
- ["homeSection","patientsSection","bookingsSection","doctorsSection","manageDoctorsSection","representativesSection","emergencyDoctorSection"].forEach(x=>{
-  document.getElementById(x).classList.add("hidden");
+ [
+  "homeSection",
+  "patientsSection",
+  "bookingsSection",
+  "doctorsSection",
+  "manageDoctorsSection",
+  "representativesSection",
+  "emergencyDoctorSection",
+  "medicalCentersAdminSection"
+ ].forEach(x=>{
+  const section=document.getElementById(x);
+  if(section)section.classList.add("hidden");
  });
- document.getElementById(id).classList.remove("hidden");
+
+ const target=document.getElementById(id);
+ if(target)target.classList.remove("hidden");
+
  document.querySelectorAll(".side-link").forEach(b=>b.classList.remove("active"));
  if(button)button.classList.add("active");
+
  if(id==="homeSection")renderCharts();
  if(id==="bookingsSection")loadAppointments();
  if(id==="manageDoctorsSection")loadDoctors();
@@ -1077,7 +1091,7 @@ document.getElementById("emergencyDoctorForm").addEventListener("submit",async e
  event.preventDefault();
  setText("emergencyDoctorError","");
  setText("emergencyDoctorMessage","");
- const button=document.getElementById("crpZEAWYtiB6bJ16NuLbGCc6CZ6jJdKfb63");
+ const button=document.getElementById("crpZELkorMwhkkpShF5PvT8YnqRCupnLTNG");
  button.disabled=true;
  try{
   const payload={
@@ -1145,7 +1159,7 @@ db.auth.getSession().then(async({data})=>{
  if(await verifyAdmin(user))await showDashboard(user);
  else await db.auth.signOut();
 });
- 
+
 (function(){
  const originalLoadRepresentatives=window.loadRepresentatives;
  if(typeof originalLoadRepresentatives!=='function'){console.error('loadRepresentatives غير موجودة');return;}
@@ -1197,7 +1211,7 @@ db.auth.getSession().then(async({data})=>{
    if(status==='pending'){
     actions='<button class="approve-btn" onclick="changeRepresentativeStatus(\''+id+'\',\'approved\')">قبول</button><button class="reject-btn" onclick="changeRepresentativeStatus(\''+id+'\',\'rejected\')">رفض</button>';
    }else if(status==='approved'){
-    actions='<button class="reject-btn" onclick="changeRepresentativeStatus(\''+id+'\',\'suspended\')">إيقاف الحساب</button><button onclick="renewRepresentativeSubscription(\''+id+'\')">تأكيد استلام 20,000 د.ع وتجديد 30 يوماً</button>';
+    actions='<button class="reject-btn" onclick="changeRepresentativeStatus(\''+id+'\',\'suspended\')">إيقاف الحساب</button><button onclick="rpZEAWYtiB6bJ16NuLbGCc6CZ6jJdKfb63(\''+id+'\')">تأكيد استلام 20,000 د.ع وتجديد 30 يوماً</button>';
    }else if(status==='suspended'){
     actions='<button class="approve-btn" onclick="changeRepresentativeStatus(\''+id+'\',\'approved\')">إعادة التفعيل</button><button class="reject-btn" onclick="changeRepresentativeStatus(\''+id+'\',\'rejected\')">رفض</button>';
    }else if(status==='rejected'){
@@ -1240,7 +1254,7 @@ db.auth.getSession().then(async({data})=>{
   window.renderRepresentatives();
  };
 
- window.renewRepresentativeSubscription=async function(profileId){
+ window.rpZEAWYtiB6bJ16NuLbGCc6CZ6jJdKfb63=async function(profileId){
   const row=(managedRepresentatives||[]).find(function(item){
    return item.profile_id===profileId;
   });
@@ -1270,7 +1284,7 @@ db.auth.getSession().then(async({data})=>{
 })();
 
 </script>
- 
+
 <script>
 /* ==========================================
    إدارة المراكز الطبية - إضافة إلى admin.html
