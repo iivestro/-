@@ -30,8 +30,9 @@ button:hover{filter:brightness(.96);transform:translateY(-1px)}
 button:disabled{opacity:.55;cursor:not-allowed;transform:none}
 .logout,.reject{background:linear-gradient(135deg,#f87171,#dc5555)}
 .complete{background:linear-gradient(135deg,#38bdf8,#0284c7)}
+.secondary{background:#e8f7ff;color:#0369a1;border:1px solid #c8eafa}
 #login{max-width:570px;margin:35px auto}
-input[type=email],input[type=password],input[type=time]{width:100%;padding:13px;margin:8px 0 14px;border:1px solid #c6e8f8;border-radius:10px;background:#fbfeff;font:inherit;color:var(--ink)}
+input[type=email],input[type=password],input[type=time],input[type=date],input[type=number],textarea,select{width:100%;padding:13px;margin:8px 0 14px;border:1px solid #c6e8f8;border-radius:10px;background:#fbfeff;font:inherit;color:var(--ink)}
 label{display:block;font-weight:bold;color:#31566e;font-size:14px}
 .status{padding:12px 14px;border-radius:11px;background:var(--soft);border:1px solid var(--line);margin-top:12px;color:#28536c;line-height:1.7;overflow-wrap:anywhere}
 #app{display:none}
@@ -57,10 +58,17 @@ label{display:block;font-weight:bold;color:#31566e;font-size:14px}
 .day input[type=checkbox]{accent-color:var(--blue);width:17px;height:17px}
 .day input[type=time]{margin:0}
 #appointmentsList{display:grid;grid-template-columns:1fr;gap:15px;width:100%}
-.appointment{width:100%;border:1px solid var(--line);background:#fbfdff;border-radius:16px;padding:20px;min-width:0;box-shadow:0 5px 18px rgba(2,132,199,.06)}
-.appointment p{line-height:1.8;overflow-wrap:anywhere;margin:10px 0}
+.appointment,.rep-card{width:100%;border:1px solid var(--line);background:#fbfdff;border-radius:16px;padding:20px;min-width:0;box-shadow:0 5px 18px rgba(2,132,199,.06)}
+.appointment p,.rep-card p{line-height:1.8;overflow-wrap:anywhere;margin:10px 0}
 .tag{display:inline-block;background:#e0f5ff;color:var(--deep);padding:7px 13px;border-radius:25px;font-size:12px;font-weight:bold}
 .actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:15px;padding-top:12px;border-top:1px solid #e4f3fb}
+.rep-form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.rep-form-grid>div{min-width:0}
+.rep-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:15px}
+.rep-card h4{margin:0 0 12px;color:var(--deep);font-size:17px}
+.rep-card .tag{margin:4px 0}
+.rep-empty{padding:22px;text-align:center;border:1px dashed #b9e2f5;border-radius:14px;color:var(--muted);grid-column:1/-1}
+.section-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 @media(max-width:750px){
 .header-inner{align-items:flex-start;flex-direction:column}
 .header-actions{width:100%}
@@ -68,6 +76,7 @@ label{display:block;font-weight:bold;color:#31566e;font-size:14px}
 .stats{grid-template-columns:1fr}
 .info-grid{grid-template-columns:1fr}
 .welcome{align-items:flex-start;flex-direction:column}
+.rep-form-grid,.rep-list{grid-template-columns:1fr}
 }
 @media(max-width:520px){
 main{margin:17px auto;padding:0 12px 30px}
@@ -75,7 +84,7 @@ main{margin:17px auto;padding:0 12px 30px}
 .day{grid-template-columns:1fr 1fr}
 .day strong{grid-column:1/-1}
 header h2{font-size:22px}
-.appointment{padding:15px}
+.appointment,.rep-card{padding:15px}
 .actions button{flex:1}
 }
 </style>
@@ -92,6 +101,7 @@ header h2{font-size:22px}
 </div>
 <div class="header-actions" id="headerActions" style="display:none">
 <button onclick="loadAppointments()">تحديث الحجوزات</button>
+<button class="secondary" onclick="loadRepManagement()">تحديث المندوبين</button>
 <button class="logout" onclick="logoutDoctor()">تسجيل الخروج</button>
 </div>
 </div>
@@ -158,6 +168,52 @@ header h2{font-size:22px}
 <div id="scheduleStatus" class="status"></div>
 </section>
 
+<!-- إدارة مواعيد المندوبين -->
+<section class="card">
+<div class="section-heading">
+<h3>إدارة مواعيد استقبال المندوبين</h3>
+<button class="secondary" onclick="loadRepManagement()">تحديث البيانات</button>
+</div>
+<p class="muted">أنشئ موعداً لاستقبال مندوبي المكاتب العلمية أو الشركات. سيظهر الموعد للمندوبين في بوابتهم ليتمكنوا من إرسال طلب زيارة.</p>
+
+<div class="rep-form-grid">
+<div>
+<label for="repSlotDate">تاريخ الزيارة</label>
+<input type="date" id="repSlotDate">
+</div>
+<div>
+<label for="repSlotStart">وقت البداية</label>
+<input type="time" id="repSlotStart" value="09:00">
+</div>
+<div>
+<label for="repSlotEnd">وقت النهاية</label>
+<input type="time" id="repSlotEnd" value="12:00">
+</div>
+<div>
+<label for="repSlotCapacity">عدد المندوبين المسموح</label>
+<input type="number" id="repSlotCapacity" min="1" max="50" value="5">
+</div>
+</div>
+<button id="addRepSlotButton" onclick="addRepVisitSlot()">إضافة موعد استقبال</button>
+<div id="repSlotStatus" class="status">يمكنك إضافة مواعيد استقبال جديدة للمندوبين.</div>
+
+<h3 style="margin-top:25px">مواعيد الاستقبال التي أنشأتها</h3>
+<div id="repSlotsList" class="rep-list">
+<div class="rep-empty">جارٍ تحميل المواعيد...</div>
+</div>
+</section>
+
+<!-- طلبات المندوبين -->
+<section class="card">
+<div class="section-heading">
+<h3>طلبات زيارات المندوبين</h3>
+<button class="secondary" onclick="loadRepBookings()">تحديث الطلبات</button>
+</div>
+<p class="muted">راجع طلبات المندوبين وقم بقبولها أو رفضها، وبعد انتهاء الزيارة سجلها كمكتملة.</p>
+<div id="repBookingsStatus" class="status">جارٍ تحميل طلبات المندوبين...</div>
+<div id="repBookingsList" class="rep-list"></div>
+</section>
+
 <section class="card">
 <h3>حجوزات المراجعين</h3>
 <p class="muted">يتم تحديث قائمة الحجوزات تلقائياً كل دقيقة.</p>
@@ -176,6 +232,7 @@ let currentDoctorId=null;
 let doctorFee=null;
 let appointmentsRefreshTimer=null;
 let appointmentsLoading=false;
+let repManagementLoading=false;
 
 const days=[
 {number:6,name:"السبت"},
@@ -188,7 +245,8 @@ const days=[
 ];
 
 function showMessage(id,message){
-document.getElementById(id).textContent=message;
+const element=document.getElementById(id);
+if(element)element.textContent=message;
 }
 
 function stopDoctorSession(message){
@@ -199,6 +257,7 @@ appointmentsRefreshTimer=null;
 currentDoctorId=null;
 doctorFee=null;
 appointmentsLoading=false;
+repManagementLoading=false;
 
 document.getElementById("app").style.display="none";
 document.getElementById("login").style.display="block";
@@ -223,7 +282,10 @@ if(!isOpen)box.scrollIntoView({behavior:"smooth",block:"start"});
 function startAppointmentsAutoRefresh(){
 if(appointmentsRefreshTimer)clearInterval(appointmentsRefreshTimer);
 appointmentsRefreshTimer=setInterval(()=>{
-if(currentDoctorId)loadAppointments();
+if(currentDoctorId){
+loadAppointments();
+loadRepManagement();
+}
 },60000);
 }
 
@@ -280,13 +342,11 @@ showMessage("loginStatus","تعذر تحميل بيانات الطبيب: "+(doc
 return;
 }
 
-/* التحقق من حالة الطبيب قبل إظهار لوحة التحكم */
 if(doctor.is_active===false){
 await blockInactiveDoctor();
 return;
 }
 
-/* جلب رقم هاتف الطبيب من التخزين الخاص، وليس من profiles */
 const {data:privatePhone,error:phoneError}=await db.rpc("get_my_private_phone");
 
 if(phoneError){
@@ -338,7 +398,16 @@ document.getElementById("login").style.display="none";
 document.getElementById("app").style.display="block";
 document.getElementById("headerActions").style.display="flex";
 
-await Promise.all([loadSchedule(),loadAppointments()]);
+const today=new Date();
+const localDate=new Date(today.getTime()-today.getTimezoneOffset()*60000).toISOString().slice(0,10);
+document.getElementById("repSlotDate").min=localDate;
+document.getElementById("repSlotDate").value=localDate;
+
+await Promise.all([
+loadSchedule(),
+loadAppointments(),
+loadRepManagement()
+]);
 startAppointmentsAutoRefresh();
 }
 
@@ -583,6 +652,332 @@ return;
 
 showMessage("appointmentsStatus","تم تحديث حالة الحجز بنجاح.");
 await loadAppointments();
+}
+
+/* ================================
+   إدارة مواعيد استقبال المندوبين
+================================ */
+
+function formatRepDate(dateValue){
+if(!dateValue)return "غير محدد";
+const d=new Date(dateValue+"T12:00:00");
+return d.toLocaleDateString("ar-IQ",{year:"numeric",month:"long",day:"numeric"});
+}
+
+function formatRepTime(timeValue){
+if(!timeValue)return "غير محدد";
+return timeValue.slice(0,5);
+}
+
+async function addRepVisitSlot(){
+if(!currentDoctorId)return;
+
+const date=document.getElementById("repSlotDate").value;
+const start=document.getElementById("repSlotStart").value;
+const end=document.getElementById("repSlotEnd").value;
+const capacity=Number(document.getElementById("repSlotCapacity").value);
+const button=document.getElementById("addRepSlotButton");
+
+if(!date||!start||!end){
+showMessage("repSlotStatus","يرجى تحديد التاريخ ووقت البداية والنهاية.");
+return;
+}
+if(start>=end){
+showMessage("repSlotStatus","وقت النهاية يجب أن يكون بعد وقت البداية.");
+return;
+}
+if(!Number.isInteger(capacity)||capacity<1||capacity>50){
+showMessage("repSlotStatus","عدد المندوبين يجب أن يكون بين 1 و50.");
+return;
+}
+
+const today=new Date();
+const localToday=new Date(today.getTime()-today.getTimezoneOffset()*60000).toISOString().slice(0,10);
+if(date<localToday){
+showMessage("repSlotStatus","لا يمكن إنشاء موعد بتاريخ سابق.");
+return;
+}
+
+button.disabled=true;
+showMessage("repSlotStatus","جارٍ إضافة موعد الاستقبال...");
+
+try{
+const {error}=await db.from("rep_visit_slots").insert({
+doctor_id:currentDoctorId,
+visit_date:date,
+start_time:start,
+end_time:end,
+capacity:capacity,
+is_open:true
+});
+
+if(error)throw error;
+
+showMessage("repSlotStatus","تمت إضافة موعد استقبال المندوبين بنجاح.");
+await loadRepManagement();
+}catch(error){
+showMessage("repSlotStatus","تعذرت إضافة الموعد: "+error.message);
+}finally{
+button.disabled=false;
+}
+}
+
+async function loadRepManagement(){
+if(!currentDoctorId||repManagementLoading)return;
+repManagementLoading=true;
+
+try{
+await Promise.all([
+loadRepVisitSlots(),
+loadRepBookings()
+]);
+}finally{
+repManagementLoading=false;
+}
+}
+
+async function loadRepVisitSlots(){
+if(!currentDoctorId)return;
+
+const container=document.getElementById("repSlotsList");
+container.innerHTML='<div class="rep-empty">جارٍ تحميل المواعيد...</div>';
+
+const {data:slots,error}=await db.from("rep_visit_slots")
+.select("id,doctor_id,visit_date,start_time,end_time,capacity,is_open,created_at")
+.eq("doctor_id",currentDoctorId)
+.order("visit_date",{ascending:true})
+.order("start_time",{ascending:true});
+
+if(error){
+container.innerHTML="";
+const errorBox=document.createElement("div");
+errorBox.className="rep-empty";
+errorBox.textContent="تعذر تحميل مواعيد المندوبين: "+error.message;
+container.appendChild(errorBox);
+return;
+}
+
+if(!slots||slots.length===0){
+container.innerHTML='<div class="rep-empty">لم تقم بإضافة مواعيد لاستقبال المندوبين حتى الآن.</div>';
+return;
+}
+
+const slotIds=slots.map(s=>s.id);
+const {data:bookings}=await db.from("rep_appointments")
+.select("id,slot_id,status")
+.in("slot_id",slotIds);
+
+const counts={};
+(bookings||[]).forEach(b=>{
+if(b.status!=="rejected"&&b.status!=="cancelled"){
+counts[b.slot_id]=(counts[b.slot_id]||0)+1;
+}
+});
+
+container.innerHTML="";
+
+slots.forEach(slot=>{
+const card=document.createElement("article");
+card.className="rep-card";
+
+const title=document.createElement("h4");
+title.textContent="موعد استقبال المندوبين";
+
+const date=document.createElement("p");
+date.textContent="التاريخ: "+formatRepDate(slot.visit_date);
+
+const time=document.createElement("p");
+time.textContent="الوقت: "+formatRepTime(slot.start_time)+" إلى "+formatRepTime(slot.end_time);
+
+const capacity=document.createElement("p");
+capacity.textContent="عدد الحجوزات: "+(counts[slot.id]||0)+" من "+slot.capacity;
+
+const status=document.createElement("span");
+status.className="tag";
+status.textContent=slot.is_open?"مفتوح للحجز":"مغلق";
+
+const actions=document.createElement("div");
+actions.className="actions";
+
+const toggleButton=makeActionButton(
+slot.is_open?"إغلاق الموعد":"فتح الموعد",
+slot.is_open?"reject":"complete",
+()=>toggleRepSlot(slot.id,!slot.is_open)
+);
+
+actions.appendChild(toggleButton);
+card.append(title,date,time,capacity,status,actions);
+container.appendChild(card);
+});
+}
+
+async function toggleRepSlot(slotId,openState){
+if(!currentDoctorId)return;
+
+const confirmText=openState?
+"هل تريد فتح هذا الموعد لاستقبال طلبات المندوبين؟":
+"هل تريد إغلاق هذا الموعد؟";
+
+if(!confirm(confirmText))return;
+
+showMessage("repSlotStatus","جارٍ تحديث حالة الموعد...");
+
+const {data,error}=await db.from("rep_visit_slots")
+.update({is_open:openState})
+.eq("id",slotId)
+.eq("doctor_id",currentDoctorId)
+.select("id");
+
+if(error){
+showMessage("repSlotStatus","تعذر تحديث الموعد: "+error.message);
+return;
+}
+
+if(!data||data.length===0){
+showMessage("repSlotStatus","لم يتم تعديل الموعد. تحقق من صلاحيات قاعدة البيانات.");
+return;
+}
+
+showMessage("repSlotStatus",openState?"تم فتح الموعد.":"تم إغلاق الموعد.");
+await loadRepVisitSlots();
+}
+
+/* ================================
+   إدارة طلبات زيارات المندوبين
+================================ */
+
+async function loadRepBookings(){
+if(!currentDoctorId)return;
+
+const container=document.getElementById("repBookingsList");
+container.innerHTML="";
+showMessage("repBookingsStatus","جارٍ تحميل طلبات المندوبين...");
+
+const {data:appointments,error}=await db.from("rep_appointments")
+.select("id,slot_id,doctor_id,rep_profile_id,status,notes,created_at,updated_at")
+.eq("doctor_id",currentDoctorId)
+.order("created_at",{ascending:false});
+
+if(error){
+showMessage("repBookingsStatus","تعذر تحميل طلبات المندوبين: "+error.message);
+return;
+}
+
+if(!appointments||appointments.length===0){
+showMessage("repBookingsStatus","لا توجد طلبات زيارات من المندوبين حالياً.");
+container.innerHTML='<div class="rep-empty">ستظهر طلبات المندوبين هنا عند حجزهم موعداً.</div>';
+return;
+}
+
+const profileIds=[...new Set(appointments.map(a=>a.rep_profile_id).filter(Boolean))];
+const slotIds=[...new Set(appointments.map(a=>a.slot_id).filter(Boolean))];
+
+let repMap={};
+let slotMap={};
+
+if(profileIds.length){
+const {data:reps,error:repError}=await db.from("rep_accounts")
+.select("profile_id,employer_type,employer_name,status,profiles!rep_accounts_profile_id_fkey(full_name,governorate)")
+.in("profile_id",profileIds);
+
+if(!repError){
+(reps||[]).forEach(rep=>repMap[rep.profile_id]=rep);
+}
+}
+
+if(slotIds.length){
+const {data:slots}=await db.from("rep_visit_slots")
+.select("id,visit_date,start_time,end_time")
+.in("id",slotIds);
+
+(slot s||[]).forEach(slot=>slotMap[slot.id]=slot);
+}
+
+showMessage("repBookingsStatus","عدد طلبات الزيارات: "+appointments.length);
+
+appointments.forEach(item=>{
+const rep=repMap[item.rep_profile_id]||{};
+const profile=rep.profiles||{};
+const slot=slotMap[item.slot_id]||{};
+
+const card=document.createElement("article");
+card.className="rep-card";
+
+const title=document.createElement("h4");
+title.textContent=profile.full_name||"مندوب غير معروف";
+
+const company=document.createElement("p");
+company.textContent="جهة العمل: "+(rep.employer_name||"غير محددة");
+
+const type=document.createElement("p");
+type.textContent="نوع الجهة: "+(
+rep.employer_type==="scientific_office"?"مكتب علمي":
+rep.employer_type==="company"?"شركة":"غير محدد"
+);
+
+const governorate=document.createElement("p");
+governorate.textContent="المحافظة: "+(profile.governorate||"غير محددة");
+
+const visitDate=document.createElement("p");
+visitDate.textContent="موعد الزيارة: "+formatRepDate(slot.visit_date);
+
+const visitTime=document.createElement("p");
+visitTime.textContent="الوقت: "+formatRepTime(slot.start_time)+" إلى "+formatRepTime(slot.end_time);
+
+const notes=document.createElement("p");
+notes.textContent="ملاحظات المندوب: "+(item.notes||"لا توجد ملاحظات");
+
+const status=document.createElement("span");
+status.className="tag";
+status.textContent=statusArabic(item.status);
+
+const actions=document.createElement("div");
+actions.className="actions";
+
+if(item.status==="pending"){
+actions.appendChild(makeActionButton("قبول الطلب","complete",()=>updateRepAppointment(item.id,"approved")));
+actions.appendChild(makeActionButton("رفض الطلب","reject",()=>updateRepAppointment(item.id,"rejected")));
+}else if(item.status==="approved"||item.status==="confirmed"){
+actions.appendChild(makeActionButton("تسجيل الزيارة مكتملة","complete",()=>updateRepAppointment(item.id,"completed")));
+actions.appendChild(makeActionButton("رفض الطلب","reject",()=>updateRepAppointment(item.id,"rejected")));
+}
+
+card.append(title,company,type,governorate,visitDate,visitTime,notes,status,actions);
+container.appendChild(card);
+});
+}
+
+async function updateRepAppointment(appointmentId,newStatus){
+if(!currentDoctorId)return;
+
+const labels={
+approved:"قبول طلب الزيارة",
+rejected:"رفض طلب الزيارة",
+completed:"تسجيل الزيارة كمكتملة"
+};
+
+if(!labels[newStatus])return;
+if(!confirm("هل تريد "+labels[newStatus]+"؟"))return;
+
+showMessage("repBookingsStatus","جارٍ تحديث حالة الطلب...");
+
+const {data,error}=await db.rpc("doctor_update_rep_appointment",{
+p_appointment_id:appointmentId,
+p_new_status:newStatus
+});
+
+if(error){
+showMessage("repBookingsStatus","تعذر تحديث الطلب: "+error.message);
+return;
+}
+
+if(data===false){
+showMessage("repBookingsStatus","لم يتم تحديث الطلب. قد لا تملك صلاحية تنفيذ هذا الإجراء.");
+return;
+}
+
+showMessage("repBookingsStatus","تم تحديث حالة طلب المندوب بنجاح.");
+await loadRepManagement();
 }
 
 async function logoutDoctor(){
