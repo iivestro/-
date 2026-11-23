@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -68,6 +67,15 @@ canvas{width:100%;height:100%;display:block}
 .photo-help{font-size:12px;color:#668397;margin:2px 0 12px}
 .photo-preview{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .photo-preview img{width:104px;height:104px;object-fit:cover;border-radius:14px;border:1px solid #cceeff;background:#fff}
+.representative-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0}
+.representative-toolbar input{flex:1;min-width:220px;margin:0}
+.rep-actions{display:flex;gap:5px;flex-wrap:wrap}
+.rep-actions button{font-size:12px;padding:8px 10px}
+.rep-status{display:inline-block;padding:6px 10px;border-radius:20px;font-size:12px;white-space:nowrap}
+.rep-status.pending{background:#fff4d6;color:#8a6415}
+.rep-status.approved{background:#e0f7ee;color:#087a53}
+.rep-status.rejected,.rep-status.suspended{background:#ffe8eb;color:#b42335}
+
 @media(max-width:900px){
 .dashboard-layout{grid-template-columns:1fr}
 .sidebar{position:static}
@@ -116,6 +124,7 @@ main{padding:10px}
     <button class="side-link" onclick="showSection('bookingsSection',this)">إدارة الحجوزات</button>
     <button class="side-link" onclick="showSection('doctorsSection',this)">إضافة طبيب</button>
     <button class="side-link" onclick="showSection('manageDoctorsSection',this)">إدارة الأطباء</button>
+    <button class="side-link" onclick="showSection('representativesSection',this)">إدارة المندوبين</button>
    </nav>
   </aside>
 
@@ -187,6 +196,31 @@ main{padding:10px}
        </tr>
       </thead>
       <tbody id="doctorsTable"><tr><td colspan="6">جارٍ تحميل الأطباء...</td></tr></tbody>
+     </table>
+    </div>
+   </section>
+
+   <section id="representativesSection" class="card hidden">
+    <div class="section-title">
+     <div>
+      <h2>إدارة المندوبين</h2>
+      <p class="muted">مراجعة طلبات تسجيل المندوبين والموافقة عليها أو رفضها أو إيقاف الحساب.</p>
+     </div>
+     <button class="btn-light" onclick="loadRepresentatives()">تحديث القائمة</button>
+    </div>
+    <div class="representative-toolbar">
+     <input id="representativeSearch" placeholder="ابحث بالاسم أو الهاتف أو المحافظة أو جهة العمل..." oninput="renderRepresentatives()">
+    </div>
+    <p id="representativesMessage"></p>
+    <p id="representativesError"></p>
+    <div class="table-wrap">
+     <table>
+      <thead>
+       <tr>
+        <th>اسم المندوب</th><th>الهاتف</th><th>المحافظة</th><th>نوع جهة العمل</th><th>اسم الجهة</th><th>تاريخ التسجيل</th><th>الحالة</th><th>الإجراءات</th>
+       </tr>
+      </thead>
+      <tbody id="representativesTable"><tr><td colspan="8" class="empty-state">اضغط تحديث القائمة لتحميل المندوبين.</td></tr></tbody>
      </table>
     </div>
    </section>
@@ -263,6 +297,7 @@ const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let patientList=[];
 let appointmentList=[];
 let managedDoctors=[];
+let managedRepresentatives=[];
 let bookingsRefreshTimer=null;
 let chartData={patients:[],appointments:[],doctors:[]};
 
@@ -349,7 +384,7 @@ async function showDashboard(user){
 }
 
 function showSection(id,button){
- ["homeSection","patientsSection","bookingsSection","doctorsSection","manageDoctorsSection"].forEach(x=>{
+ ["homeSection","patientsSection","bookingsSection","doctorsSection","manageDoctorsSection","representativesSection"].forEach(x=>{
   document.getElementById(x).classList.add("hidden");
  });
  document.getElementById(id).classList.remove("hidden");
@@ -358,6 +393,7 @@ function showSection(id,button){
  if(id==="homeSection")renderCharts();
  if(id==="bookingsSection")loadAppointments();
  if(id==="manageDoctorsSection")loadDoctors();
+ if(id==="representativesSection")loadRepresentatives();
 }
 
 function dateKey(value){
@@ -428,6 +464,7 @@ function renderCharts(){
 async function refreshAll(){
  await Promise.all([refreshDashboard(),loadPatients(),loadAppointments()]);
  if(!document.getElementById("manageDoctorsSection").classList.contains("hidden"))await loadDoctors();
+ if(!document.getElementById("representativesSection").classList.contains("hidden"))await loadRepresentatives();
 }
 
 async function refreshDashboard(){
@@ -1035,6 +1072,119 @@ document.getElementById("doctorForm").addEventListener("submit",async event=>{
   button.disabled=false;
  }
 });
+
+/* إدارة المندوبين داخل لوحة المدير */
+function representativeStatusLabel(status){
+ const labels={pending:"بانتظار الموافقة",approved:"مقبول",rejected:"مرفوض",suspended:"موقوف"};
+ return labels[status]||status||"غير محدد";
+}
+
+function representativeEmployerLabel(type){
+ return type==="scientific_office"?"مكتب علمي":type==="company"?"شركة":type||"غير محدد";
+}
+
+async function loadRepresentatives(){
+ const tbody=document.getElementById("representativesTable");
+ if(!tbody)return;
+ setText("representativesError","");
+ setText("representativesMessage","");
+ tbody.innerHTML="<tr><td colspan='8' class='empty-state'>جارٍ تحميل المندوبين...</td></tr>";
+
+ const {data,error}=await db.from("rep_accounts")
+  .select("profile_id,employer_type,employer_name,status,created_at,profiles!rep_accounts_profile_id_fkey(full_name,governorate,approval_status)")
+  .order("created_at",{ascending:false});
+
+ if(error){
+  managedRepresentatives=[];
+  tbody.innerHTML="<tr><td colspan='8' class='empty-state'>تعذر تحميل المندوبين.</td></tr>";
+  setText("representativesError","تعذر تحميل المندوبين: "+error.message);
+  return;
+ }
+
+ managedRepresentatives=(data||[]).map(row=>({...row,profile:row.profiles||{}}));
+ const ids=managedRepresentatives.map(row=>row.profile_id).filter(Boolean);
+
+ if(ids.length){
+  const phoneResult=await db.rpc("admin_get_profile_phones",{p_profile_ids:ids});
+  if(phoneResult.error){
+   setText("representativesError","تم تحميل المندوبين، لكن تعذر تحميل أرقام الهواتف: "+phoneResult.error.message);
+  }else{
+   const phoneMap=new Map((phoneResult.data||[]).map(item=>[item.profile_id,item.phone]));
+   managedRepresentatives=managedRepresentatives.map(row=>({...row,phone:phoneMap.get(row.profile_id)||""}));
+  }
+ }
+ renderRepresentatives();
+}
+
+function renderRepresentatives(){
+ const tbody=document.getElementById("representativesTable");
+ if(!tbody)return;
+
+ const term=(document.getElementById("representativeSearch")?.value||"").trim().toLowerCase();
+ const rows=managedRepresentatives.filter(row=>{
+  const profile=row.profile||{};
+  return [profile.full_name,row.phone,profile.governorate,row.employer_type,row.employer_name,representativeStatusLabel(row.status)]
+   .filter(Boolean).join(" ").toLowerCase().includes(term);
+ });
+
+ if(!rows.length){
+  tbody.innerHTML="<tr><td colspan='8' class='empty-state'>لا توجد حسابات مندوبين مطابقة.</td></tr>";
+  return;
+ }
+
+ tbody.innerHTML=rows.map(row=>{
+  const status=row.status||"pending";
+  const date=row.created_at?new Date(row.created_at).toLocaleDateString("ar-IQ"):"—";
+  let actions="";
+
+  if(status==="pending"){
+   actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">قبول</button>
+    <button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','rejected')">رفض</button>`;
+  }else if(status==="approved"){
+   actions=`<button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','suspended')">إيقاف الحساب</button>`;
+  }else if(status==="suspended"){
+   actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">إعادة التفعيل</button>
+    <button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','rejected')">رفض</button>`;
+  }else if(status==="rejected"){
+   actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">قبول الحساب</button>`;
+  }
+
+  return `<tr>
+   <td>${escapeHTML(row.profile.full_name||"غير محدد")}</td>
+   <td>${escapeHTML(row.phone||"غير مسجل")}</td>
+   <td>${escapeHTML(row.profile.governorate||"غير محددة")}</td>
+   <td>${escapeHTML(representativeEmployerLabel(row.employer_type))}</td>
+   <td>${escapeHTML(row.employer_name||"غير محددة")}</td>
+   <td>${escapeHTML(date)}</td>
+   <td><span class="rep-status ${escapeHTML(status)}">${escapeHTML(representativeStatusLabel(status))}</span></td>
+   <td><div class="rep-actions">${actions||"—"}</div></td>
+  </tr>`;
+ }).join("");
+}
+
+async function changeRepresentativeStatus(profileId,status){
+ const labels={approved:"قبول المندوب",rejected:"رفض المندوب",suspended:"إيقاف المندوب"};
+ const action=labels[status]||"تغيير حالة المندوب";
+
+ if(!confirm("هل تريد "+action+"؟"))return;
+
+ setText("representativesError","");
+ setText("representativesMessage","جارٍ تحديث حالة المندوب...");
+
+ const {data,error}=await db.rpc("admin_set_representative_status",{
+  p_profile_id:profileId,
+  p_status:status
+ });
+
+ if(error||data!==true){
+  setText("representativesMessage","");
+  setText("representativesError","تعذر تحديث حالة المندوب: "+(error?.message||"لم تؤكد قاعدة البيانات نجاح العملية."));
+  return;
+ }
+
+ setText("representativesMessage","تم تحديث حالة المندوب بنجاح.");
+ await loadRepresentatives();
+}
 
 async function logout(){
  if(bookingsRefreshTimer)clearInterval(bookingsRefreshTimer);
