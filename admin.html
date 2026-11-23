@@ -1469,16 +1469,20 @@ db.auth.getSession().then(async({data})=>{
           <input id="mcDoctorName" required maxlength="180">
         </div>
         <div>
+                  <div>
           <label>رقم الهاتف</label>
           <input id="mcDoctorPhone" maxlength="30" inputmode="tel">
-          <div>
-  <label>البريد الإلكتروني للطبيب *</label>
-  <input id="mcDoctorEmail" type="email" required placeholder="doctor@example.com">
-</div>
-<div>
-  <label>كلمة المرور الأولية *</label>
-  <input id="mcDoctorPassword" type="password" required minlength="10" placeholder="10 أحرف على الأقل">
-</div>
+        </div>
+
+        <div>
+          <label>البريد الإلكتروني للطبيب *</label>
+          <input id="mcDoctorEmail" type="email" required>
+        </div>
+
+        <div>
+          <label>كلمة المرور الأولية *</label>
+          <input id="mcDoctorPassword" type="password" required minlength="10">
+        </div>
         </div>
         <div>
           <label>التخصص *</label>
