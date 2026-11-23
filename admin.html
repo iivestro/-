@@ -1145,6 +1145,130 @@ db.auth.getSession().then(async({data})=>{
  if(await verifyAdmin(user))await showDashboard(user);
  else await db.auth.signOut();
 });
+ 
+(function(){
+ const originalLoadRepresentatives=window.loadRepresentatives;
+ if(typeof originalLoadRepresentatives!=='function'){console.error('loadRepresentatives غير موجودة');return;}
+ const section=document.getElementById('representativesSection');
+ if(!section)return;
+
+ const style=document.createElement('style');
+ style.textContent='.rep-subscription{display:inline-block;padding:6px 10px;border-radius:20px;font-size:12px;white-space:nowrap}.rep-subscription.active{background:#e0f7ee;color:#087a53}.rep-subscription.expired{background:#ffe8eb;color:#b42335}.rep-subscription.trial{background:#eaf8ff;color:#0369a1}.rep-subscription.pending{background:#fff4d6;color:#8a6415}';
+ document.head.appendChild(style);
+
+ const heading=section.querySelector('thead tr');
+ if(heading)heading.innerHTML='<th>اسم المندوب</th><th>الهاتف</th><th>المحافظة</th><th>نوع جهة العمل</th><th>اسم الجهة</th><th>تاريخ التسجيل</th><th>الحالة الإدارية</th><th>الاشتراك</th><th>الإجراءات</th>';
+
+ const description=section.querySelector('.section-title p');
+ if(description)description.textContent='إدارة حسابات المندوبين والاشتراكات. الاشتراك 20,000 دينار عراقي لكل 30 يوماً. المندوبون الحاليون مشمولون بالفترة المجانية المحددة في حساباتهم.';
+
+ window.renderRepresentatives=function(){
+  const tbody=document.getElementById('representativesTable');
+  if(!tbody)return;
+
+  const term=(document.getElementById('representativeSearch')?.value||'').trim().toLowerCase();
+  const rows=(managedRepresentatives||[]).filter(function(row){
+   const profile=row.profile||{};
+   return [profile.full_name,row.phone,profile.governorate,row.employer_type,row.employer_name,representativeStatusLabel(row.status)].filter(Boolean).join(' ').toLowerCase().includes(term);
+  });
+
+  if(!rows.length){
+   tbody.innerHTML='<tr><td colspan="9" class="empty-state">لا توجد حسابات مندوبين مطابقة.</td></tr>';
+   return;
+  }
+
+  tbody.innerHTML=rows.map(function(row){
+   const profile=row.profile||{};
+   const status=row.status||'pending';
+   const id=String(row.profile_id||'').replace(/[^a-f0-9-]/gi,'');
+   const date=row.created_at?new Date(row.created_at).toLocaleDateString('ar-IQ'):'—';
+   const started=row.subscription_started_at?new Date(row.subscription_started_at):null;
+   const expires=row.subscription_expires_at?new Date(row.subscription_expires_at):null;
+   const validStarted=started&&!Number.isNaN(started.getTime());
+   const validExpiry=expires&&!Number.isNaN(expires.getTime());
+   const active=validExpiry&&expires>new Date();
+   const trial=row.subscription_is_trial===true;
+   const subLabel=active?(trial?'تجريبي مجاني':'فعال'):(validExpiry?'منتهي':'غير مفعّل');
+   const subClass=active?(trial?'trial':'active'):(validExpiry?'expired':'pending');
+   const startedLabel=validStarted?started.toLocaleDateString('ar-IQ'):'غير محدد';
+   const expiryLabel=validExpiry?expires.toLocaleDateString('ar-IQ'):'غير محدد';
+
+   let actions='';
+   if(status==='pending'){
+    actions='<button class="approve-btn" onclick="changeRepresentativeStatus(\''+id+'\',\'approved\')">قبول</button><button class="reject-btn" onclick="changeRepresentativeStatus(\''+id+'\',\'rejected\')">رفض</button>';
+   }else if(status==='approved'){
+    actions='<button class="reject-btn" onclick="changeRepresentativeStatus(\''+id+'\',\'suspended\')">إيقاف الحساب</button><button onclick="renewRepresentativeSubscription(\''+id+'\')">تأكيد استلام 20,000 د.ع وتجديد 30 يوماً</button>';
+   }else if(status==='suspended'){
+    actions='<button class="approve-btn" onclick="changeRepresentativeStatus(\''+id+'\',\'approved\')">إعادة التفعيل</button><button class="reject-btn" onclick="changeRepresentativeStatus(\''+id+'\',\'rejected\')">رفض</button>';
+   }else if(status==='rejected'){
+    actions='<button class="approve-btn" onclick="changeRepresentativeStatus(\''+id+'\',\'approved\')">قبول الحساب</button>';
+   }
+
+   return '<tr>'+
+    '<td>'+escapeHTML(profile.full_name||'غير محدد')+'</td>'+
+    '<td>'+escapeHTML(row.phone||'غير مسجل')+'</td>'+
+    '<td>'+escapeHTML(profile.governorate||'غير محددة')+'</td>'+
+    '<td>'+escapeHTML(representativeEmployerLabel(row.employer_type))+'</td>'+
+    '<td>'+escapeHTML(row.employer_name||'غير محددة')+'</td>'+
+    '<td>'+escapeHTML(date)+'</td>'+
+    '<td><span class="rep-status '+escapeHTML(status)+'">'+escapeHTML(representativeStatusLabel(status))+'</span></td>'+
+    '<td><span class="rep-subscription '+subClass+'">'+subLabel+'</span><div class="small">البداية: '+escapeHTML(startedLabel)+'<br>الانتهاء: '+escapeHTML(expiryLabel)+(trial?'<br>فترة مجانية':'')+'</div></td>'+
+    '<td><div class="rep-actions">'+(actions||'—')+'</div></td>'+
+   '</tr>';
+  }).join('');
+ };
+
+ window.loadRepresentatives=async function(){
+  await originalLoadRepresentatives();
+
+  const {data,error}=await db.from('rep_accounts')
+   .select('profile_id,subscription_started_at,subscription_expires_at,subscription_fee,subscription_is_trial');
+
+  if(error){
+   setText('representativesError','تم تحميل بيانات المندوبين، لكن تعذر تحميل الاشتراكات: '+error.message);
+   return;
+  }
+
+  const subscriptionMap=new Map((data||[]).map(function(item){
+   return [item.profile_id,item];
+  }));
+
+  managedRepresentatives=(managedRepresentatives||[]).map(function(row){
+   return Object.assign({},row,subscriptionMap.get(row.profile_id)||{});
+  });
+
+  window.renderRepresentatives();
+ };
+
+ window.renewRepresentativeSubscription=async function(profileId){
+  const row=(managedRepresentatives||[]).find(function(item){
+   return item.profile_id===profileId;
+  });
+  if(!row)return;
+
+  const name=row.profile?.full_name||'المندوب';
+
+  if(!confirm('هل استلمت فعلياً مبلغ 20,000 دينار عراقي من '+name+'؟ سيؤدي التأكيد إلى تسجيل الدفعة وتجديد الاشتراك 30 يوماً. لا تؤكد قبل استلام المبلغ.'))return;
+
+  setText('representativesError','');
+  setText('representativesMessage','جارٍ تسجيل الدفعة وتجديد الاشتراك...');
+
+  const {data,error}=await db.rpc('admin_renew_representative_subscription',{
+   p_profile_id:profileId
+  });
+
+  if(error||!data){
+   setText('representativesMessage','');
+   setText('representativesError','تعذر تجديد الاشتراك: '+(error?.message||'لم تُرجع قاعدة البيانات تاريخ انتهاء الاشتراك.'));
+   return;
+  }
+
+  await window.loadRepresentatives();
+
+  setText('representativesMessage','تم تسجيل استلام 20,000 دينار وتجديد اشتراك '+name+' لمدة 30 يوماً.');
+ };
+})();
+
 </script>
 </body>
 </html>
