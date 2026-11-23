@@ -347,6 +347,8 @@ main{padding:10px}
 const SUPABASE_URL="https://oejkeqlqkwdfropylxsv.supabase.co";
 const SUPABASE_KEY="sb_publishable_Ue8nsJFsLpDLFUgSTB24cw_rckeqWag";
 const CREATE_DOCTOR_URL=SUPABASE_URL+"/functions/v1/admin-create-doctor";
+ const CREATE_CENTER_DOCTOR_URL =
+  SUPABASE_URL + "/functions/v1/admin-create-center-doctor";
 const EMERGENCY_DOCTOR_URL=SUPABASE_URL+"/functions/v1/admin-manage-emergency-doctor";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
@@ -1469,6 +1471,14 @@ db.auth.getSession().then(async({data})=>{
         <div>
           <label>رقم الهاتف</label>
           <input id="mcDoctorPhone" maxlength="30" inputmode="tel">
+          <div>
+  <label>البريد الإلكتروني للطبيب *</label>
+  <input id="mcDoctorEmail" type="email" required placeholder="doctor@example.com">
+</div>
+<div>
+  <label>كلمة المرور الأولية *</label>
+  <input id="mcDoctorPassword" type="password" required minlength="10" placeholder="10 أحرف على الأقل">
+</div>
         </div>
         <div>
           <label>التخصص *</label>
@@ -2005,94 +2015,115 @@ db.auth.getSession().then(async({data})=>{
     }
   }
 
-  async function createCenterDoctor(event) {
-    event.preventDefault();
+ async function createCenterDoctor(event) {
+  event.preventDefault();
 
-    message("mcDoctorError", "");
-    message("mcDoctorMessage", "");
+  message("mcDoctorError", "");
+  message("mcDoctorMessage", "");
 
-    const button = el("mcDoctorCreateButton");
-    button.disabled = true;
+  const button = el("mcDoctorCreateButton");
+  button.disabled = true;
 
-    try {
-      await getAdminSession();
+  try {
+    const session = await getAdminSession();
 
-      const payload = {
-        center_id: el("mcDoctorCenter").value,
-        full_name: el("mcDoctorName").value.trim(),
-        phone: el("mcDoctorPhone").value.trim(),
-        specialty: el("mcDoctorSpecialty").value.trim(),
-        qualification: el("mcDoctorQualification").value.trim(),
-        bio: el("mcDoctorBio").value.trim(),
-        experience_years: Number(el("mcDoctorExperience").value || 0),
-        consultation_fee: Number(el("mcDoctorFee").value || 0),
-        is_active: true
-      };
+    const payload = {
+      center_id: el("mcDoctorCenter").value,
+      full_name: el("mcDoctorName").value.trim(),
+      phone: el("mcDoctorPhone").value.trim(),
+      email: el("mcDoctorEmail").value.trim().toLowerCase(),
+      password: el("mcDoctorPassword").value,
+      specialty: el("mcDoctorSpecialty").value.trim(),
+      qualification: el("mcDoctorQualification").value.trim(),
+      bio: el("mcDoctorBio").value.trim(),
+      experience_years: Number(el("mcDoctorExperience").value || 0),
+      consultation_fee: Number(el("mcDoctorFee").value || 0)
+    };
 
-      if (!payload.center_id) {
-        throw new Error("يرجى اختيار المركز.");
-      }
-
-      if (!payload.full_name || !payload.specialty) {
-        throw new Error("يرجى إدخال اسم الطبيب والتخصص.");
-      }
-
-      if (
-        !Number.isInteger(payload.experience_years) ||
-        payload.experience_years < 0 ||
-        payload.experience_years > 70
-      ) {
-        throw new Error("تحقق من سنوات الخبرة.");
-      }
-
-      if (
-        !Number.isFinite(payload.consultation_fee) ||
-        payload.consultation_fee < 0
-      ) {
-        throw new Error("أجرة الكشف غير صحيحة.");
-      }
-
-      if (!confirm(
-        "هل تريد إضافة الطبيب " + payload.full_name +
-        " إلى المركز المحدد؟"
-      )) return;
-
-      const { data, error } = await db
-        .from("center_doctors")
-        .insert(payload)
-        .select("id")
-        .single();
-
-      if (error) throw error;
-      if (!data?.id) throw new Error("لم يتم تأكيد إنشاء سجل الطبيب.");
-
-      const center = centers.find(c => c.id === payload.center_id);
-
-      el("mcDoctorForm").reset();
-      el("mcDoctorExperience").value = "0";
-      el("mcDoctorFee").value = "0";
-      el("mcDoctorCenter").value = payload.center_id;
-
-      selectedCenterId = payload.center_id;
-      el("mcDoctorsCenter").value = payload.center_id;
-
-      message(
-        "mcDoctorMessage",
-        "تمت إضافة الطبيب إلى مركز " +
-        (center?.name || "") + " بنجاح."
-      );
-
-      await loadMedicalCenters();
-      await loadCenterDoctors();
-
-    } catch (error) {
-      message("mcDoctorMessage", "");
-      message("mcDoctorError", "تعذر إضافة الطبيب: " + error.message);
-    } finally {
-      button.disabled = false;
+    if (!payload.center_id) {
+      throw new Error("يرجى اختيار المركز.");
     }
-  }
 
+    if (!payload.full_name || !payload.specialty) {
+      throw new Error("يرجى إدخال اسم الطبيب والتخصص.");
+    }
+
+    if (!payload.email.includes("@")) {
+      throw new Error("يرجى إدخال بريد إلكتروني صحيح.");
+    }
+
+    if (payload.password.length < 10) {
+      throw new Error("كلمة المرور يجب أن تكون 10 أحرف على الأقل.");
+    }
+
+    if (
+      !Number.isInteger(payload.experience_years) ||
+      payload.experience_years < 0 ||
+      payload.experience_years > 70
+    ) {
+      throw new Error("تحقق من سنوات الخبرة.");
+    }
+
+    if (
+      !Number.isFinite(payload.consultation_fee) ||
+      payload.consultation_fee < 0
+    ) {
+      throw new Error("أجرة الكشف غير صحيحة.");
+    }
+
+    if (!confirm(
+      "سيتم إنشاء حساب دخول للطبيب " +
+      payload.full_name +
+      " وربطه بالمركز المحدد. هل تريد المتابعة؟"
+    )) {
+      return;
+    }
+
+    const response = await fetch(CREATE_CENTER_DOCTOR_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + session.access_token,
+        "apikey": SUPABASE_KEY
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok || !result.success) {
+      throw new Error(
+        result.error || "تعذر إنشاء حساب الطبيب. رمز الخطأ: " + response.status
+      );
+    }
+
+    const center = centers.find(c => c.id === payload.center_id);
+
+    el("mcDoctorForm").reset();
+
+    message(
+      "mcDoctorMessage",
+      "تم إنشاء حساب الطبيب وربطه بمركز " +
+      (center?.name || "") +
+      " بنجاح. معرّف الطبيب: " + result.doctor_id
+    );
+
+    selectedCenterId = payload.center_id;
+    el("mcDoctorsCenter").value = payload.center_id;
+
+    await loadMedicalCenters();
+    await loadCenterDoctors();
+
+  } catch (error) {
+    message("mcDoctorMessage", "");
+    message(
+      "mcDoctorError",
+      "تعذر إنشاء حساب الطبيب: " + error.message
+    );
+  } finally {
+    button.disabled = false;
+  }
+}
   async function loadCenterDoctors() {
     const centerId = el("mcDoctorsCenter").value;
     const tbody = el("mcDoctorsTable");
