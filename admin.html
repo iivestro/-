@@ -1270,5 +1270,627 @@ db.auth.getSession().then(async({data})=>{
 })();
 
 </script>
+ 
+<script>
+/* ==========================================
+   إدارة المراكز الطبية - إضافة إلى admin.html
+   ========================================== */
+(function () {
+  "use strict";
+
+  if (document.getElementById("medicalCentersAdminSection")) return;
+
+  const workspace = document.querySelector(".workspace");
+  const sidebar = document.querySelector(".sidebar-nav");
+
+  if (!workspace || !sidebar) {
+    console.error("تعذر العثور على لوحة الإدارة.");
+    return;
+  }
+
+  let centers = [];
+  let doctors = [];
+
+  const section = document.createElement("section");
+  section.id = "medicalCentersAdminSection";
+  section.className = "card hidden";
+
+  section.innerHTML = `
+    <div class="section-title">
+      <div>
+        <h2>إدارة المراكز الطبية</h2>
+        <p class="muted">
+          إنشاء حسابات المراكز وربط الأطباء المعتمدين بها.
+        </p>
+      </div>
+      <button class="btn-light" id="mcRefresh">تحديث البيانات</button>
+    </div>
+
+    <hr>
+
+    <h3>إضافة مركز طبي جديد</h3>
+
+    <form id="mcCreateForm">
+      <div class="form-grid">
+        <div>
+          <label>اسم المركز *</label>
+          <input id="mcName" required maxlength="180">
+        </div>
+        <div>
+          <label>رقم الهاتف</label>
+          <input id="mcPhone" maxlength="30">
+        </div>
+        <div>
+          <label>المحافظة *</label>
+          <input id="mcCity" required value="النجف" maxlength="100">
+        </div>
+        <div>
+          <label>العنوان</label>
+          <input id="mcAddress" maxlength="500">
+        </div>
+        <div>
+          <label>رابط الموقع على الخريطة</label>
+          <input id="mcMaps" type="url" placeholder="https://...">
+        </div>
+        <div>
+          <label>البريد الإلكتروني للحساب *</label>
+          <input id="mcEmail" type="email" required>
+        </div>
+        <div>
+          <label>كلمة المرور الأولية *</label>
+          <input id="mcPassword" type="password"
+                 required minlength="10" autocomplete="new-password">
+        </div>
+      </div>
+
+      <button id="mcCreateButton" type="submit">
+        إنشاء حساب المركز
+      </button>
+    </form>
+
+    <p id="mcCreateMessage"></p>
+    <p id="mcCreateError" class="error"></p>
+
+    <hr>
+
+    <h3>المراكز المسجلة</h3>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>اسم المركز</th>
+            <th>المحافظة</th>
+            <th>الهاتف</th>
+            <th>الحالة</th>
+            <th>عدد الأطباء</th>
+          </tr>
+        </thead>
+        <tbody id="mcCentersTable">
+          <tr><td colspan="5">اضغط تحديث البيانات.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr>
+
+    <h3>إضافة طبيب إلى مركز</h3>
+
+    <div class="form-grid">
+      <div>
+        <label>اختر المركز</label>
+        <select id="mcSelectCenter">
+          <option value="">اختر المركز</option>
+        </select>
+      </div>
+
+      <div>
+        <label>اختر الطبيب المعتمد</label>
+        <select id="mcSelectDoctor">
+          <option value="">اختر الطبيب</option>
+        </select>
+      </div>
+    </div>
+
+    <button id="mcAssignButton" type="button">
+      ربط الطبيب بالمركز
+    </button>
+
+    <p id="mcAssignMessage"></p>
+    <p id="mcAssignError" class="error"></p>
+
+    <hr>
+
+    <h3>الأطباء المرتبطون بالمركز</h3>
+
+    <div id="mcLinkedDoctors">
+      <div class="empty-state">اختر مركزاً لعرض أطبائه.</div>
+    </div>
+  `;
+
+  workspace.appendChild(section);
+
+  const navButton = document.createElement("button");
+  navButton.className = "side-link";
+  navButton.type = "button";
+  navButton.textContent = "إدارة المراكز الطبية";
+  navButton.addEventListener("click", openSection);
+  sidebar.appendChild(navButton);
+
+  function el(id) {
+    return document.getElementById(id);
+  }
+
+  function message(id, value) {
+    el(id).textContent = value || "";
+  }
+
+  function openSection() {
+    [
+      "homeSection",
+      "patientsSection",
+      "bookingsSection",
+      "doctorsSection",
+      "manageDoctorsSection",
+      "representativesSection",
+      "emergencyDoctorSection",
+      "medicalCentersAdminSection"
+    ].forEach(id => {
+      const item = document.getElementById(id);
+      if (item) item.classList.add("hidden");
+    });
+
+    section.classList.remove("hidden");
+
+    document.querySelectorAll(".side-link").forEach(button => {
+      button.classList.remove("active");
+    });
+
+    navButton.classList.add("active");
+
+    loadMedicalCenters();
+  }
+
+  async function getAdminSession() {
+    const { data, error } = await db.auth.getSession();
+
+    if (error) throw error;
+
+    const session = data.session;
+
+    if (!session?.access_token) {
+      throw new Error("انتهت جلسة الإدارة. سجل الدخول مجدداً.");
+    }
+
+    const { data: userData, error: userError } =
+      await db.auth.getUser();
+
+    if (userError || !userData.user) {
+      throw new Error("تعذر التحقق من حساب المدير.");
+    }
+
+    const { data: profile, error: profileError } =
+      await db.from("profiles")
+        .select("role,approval_status")
+        .eq("id", userData.user.id)
+        .maybeSingle();
+
+    if (
+      profileError ||
+      profile?.role !== "admin" ||
+      profile?.approval_status !== "approved"
+    ) {
+      throw new Error("ليس لديك صلاحية إدارة المراكز.");
+    }
+
+    return session;
+  }
+
+  async function createCenter(event) {
+    event.preventDefault();
+
+    message("mcCreateError", "");
+    message("mcCreateMessage", "");
+
+    const button = el("mcCreateButton");
+    button.disabled = true;
+
+    try {
+      const session = await getAdminSession();
+
+      const payload = {
+        name: el("mcName").value.trim(),
+        phone: el("mcPhone").value.trim(),
+        city: el("mcCity").value.trim(),
+        address: el("mcAddress").value.trim(),
+        maps_url: el("mcMaps").value.trim(),
+        email: el("mcEmail").value.trim(),
+        password: el("mcPassword").value
+      };
+
+      if (!payload.name || !payload.city || !payload.email) {
+        throw new Error("يرجى إكمال الحقول المطلوبة.");
+      }
+
+      if (payload.password.length < 10) {
+        throw new Error("كلمة المرور يجب أن تكون 10 أحرف على الأقل.");
+      }
+
+      if (!confirm(
+        "هل تريد إنشاء حساب دخول مستقل لهذا المركز؟"
+      )) return;
+
+      message("mcCreateMessage", "جارٍ إنشاء حساب المركز...");
+
+      const response = await fetch(
+        SUPABASE_URL + "/functions/v1/admin-create-medical-center",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + session.access_token,
+            "apikey": SUPABASE_KEY
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          result.error ||
+          "تعذر إنشاء المركز. رمز الاستجابة: " + response.status
+        );
+      }
+
+      el("mcCreateForm").reset();
+      el("mcCity").value = "النجف";
+
+      message(
+        "mcCreateMessage",
+        "تم إنشاء حساب المركز الطبي بنجاح."
+      );
+
+      await loadMedicalCenters();
+
+    } catch (error) {
+      message("mcCreateMessage", "");
+      message(
+        "mcCreateError",
+        error.message || "حدث خطأ أثناء إنشاء المركز."
+      );
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function loadMedicalCenters() {
+    message("mcCreateError", "");
+    el("mcCentersTable").innerHTML =
+      '<tr><td colspan="5">جارٍ تحميل المراكز...</td></tr>';
+
+    try {
+      const { data, error } = await db
+        .from("medical_centers")
+        .select("id,profile_id,name,city,address,phone,is_active,created_at")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      centers = data || [];
+
+      const { data: assignments, error: assignmentError } =
+        await db.from("medical_center_doctors")
+          .select("id,center_id,doctor_id");
+
+      if (assignmentError) throw assignmentError;
+
+      const counts = {};
+
+      (assignments || []).forEach(item => {
+        counts[item.center_id] = (counts[item.center_id] || 0) + 1;
+      });
+
+      if (!centers.length) {
+        el("mcCentersTable").innerHTML =
+          '<tr><td colspan="5">لا توجد مراكز مسجلة حتى الآن.</td></tr>';
+      } else {
+        el("mcCentersTable").innerHTML = centers.map(center => `
+          <tr>
+            <td>${escapeHTML(center.name)}</td>
+            <td>${escapeHTML(center.city || "—")}</td>
+            <td>${escapeHTML(center.phone || "—")}</td>
+            <td>
+              ${center.is_active ? "فعال" : "موقوف"}
+            </td>
+            <td>${counts[center.id] || 0}</td>
+          </tr>
+        `).join("");
+      }
+
+      const select = el("mcSelectCenter");
+      const previous = select.value;
+
+      select.innerHTML =
+        '<option value="">اختر المركز</option>' +
+        centers.map(center => `
+          <option value="${center.id}">
+            ${escapeHTML(center.name)}
+          </option>
+        `).join("");
+
+      if (centers.some(c => c.id === previous)) {
+        select.value = previous;
+      }
+
+      await loadAssignableDoctors();
+
+      if (select.value) {
+        await loadLinkedDoctors();
+      }
+
+    } catch (error) {
+      el("mcCentersTable").innerHTML =
+        '<tr><td colspan="5">تعذر تحميل المراكز.</td></tr>';
+
+      message(
+        "mcCreateError",
+        "خطأ تحميل المراكز: " + error.message
+      );
+    }
+  }
+
+  async function loadAssignableDoctors() {
+    const select = el("mcSelectDoctor");
+
+    select.innerHTML =
+      '<option value="">جارٍ تحميل الأطباء...</option>';
+
+    const { data, error } = await db
+      .from("doctors")
+      .select("id,profile_id,specialties(name_ar)")
+      .eq("is_active", true)
+      .eq("admin_is_active", true);
+
+    if (error) {
+      select.innerHTML =
+        '<option value="">تعذر تحميل الأطباء</option>';
+      message("mcAssignError", error.message);
+      return;
+    }
+
+    const rows = data || [];
+    const profileIds = rows.map(d => d.profile_id).filter(Boolean);
+
+    let profiles = [];
+
+    if (profileIds.length) {
+      const result = await db
+        .from("profiles")
+        .select("id,full_name,role,approval_status")
+        .in("id", profileIds);
+
+      if (result.error) {
+        message("mcAssignError", result.error.message);
+        return;
+      }
+
+      profiles = result.data || [];
+    }
+
+    const approvedProfiles = new Map(
+      profiles
+        .filter(p =>
+          p.role === "doctor" &&
+          p.approval_status === "approved"
+        )
+        .map(p => [p.id, p])
+    );
+
+    doctors = rows
+      .filter(d => approvedProfiles.has(d.profile_id))
+      .map(d => ({
+        ...d,
+        profile: approvedProfiles.get(d.profile_id)
+      }));
+
+    select.innerHTML =
+      '<option value="">اختر الطبيب</option>' +
+      doctors.map(doctor => `
+        <option value="${doctor.id}">
+          ${escapeHTML(doctor.profile.full_name)}
+          — ${escapeHTML(doctor.specialties?.name_ar || "اختصاص غير محدد")}
+        </option>
+      `).join("");
+
+    if (!doctors.length) {
+      select.innerHTML =
+        '<option value="">لا يوجد أطباء معتمدون متاحون</option>';
+    }
+  }
+
+  async function assignDoctor() {
+    message("mcAssignError", "");
+    message("mcAssignMessage", "");
+
+    const centerId = el("mcSelectCenter").value;
+    const doctorId = el("mcSelectDoctor").value;
+
+    if (!centerId || !doctorId) {
+      message("mcAssignError", "اختر المركز والطبيب أولاً.");
+      return;
+    }
+
+    const doctor = doctors.find(d => d.id === doctorId);
+    const center = centers.find(c => c.id === centerId);
+
+    if (!doctor || !center) {
+      message("mcAssignError", "تعذر التحقق من بيانات الاختيار.");
+      return;
+    }
+
+    if (!confirm(
+      "هل تريد ربط الطبيب " +
+      doctor.profile.full_name +
+      " بمركز " + center.name + "؟"
+    )) return;
+
+    const button = el("mcAssignButton");
+    button.disabled = true;
+
+    try {
+      const { error } = await db
+        .from("medical_center_doctors")
+        .insert({
+          center_id: centerId,
+          doctor_id: doctorId
+        });
+
+      if (error) {
+        if (error.code === "23505") {
+          throw new Error("هذا الطبيب مرتبط بالمركز مسبقاً.");
+        }
+        throw error;
+      }
+
+      message(
+        "mcAssignMessage",
+        "تم ربط الطبيب بالمركز بنجاح."
+      );
+
+      await loadMedicalCenters();
+      await loadLinkedDoctors();
+
+    } catch (error) {
+      message(
+        "mcAssignError",
+        "تعذر ربط الطبيب: " + error.message
+      );
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function loadLinkedDoctors() {
+    const centerId = el("mcSelectCenter").value;
+    const host = el("mcLinkedDoctors");
+
+    if (!centerId) {
+      host.innerHTML =
+        '<div class="empty-state">اختر مركزاً لعرض أطبائه.</div>';
+      return;
+    }
+
+    host.textContent = "جارٍ تحميل الأطباء...";
+
+    const { data, error } = await db
+      .from("medical_center_doctors")
+      .select("id,doctor_id")
+      .eq("center_id", centerId);
+
+    if (error) {
+      host.textContent = "تعذر تحميل ارتباطات الأطباء: " + error.message;
+      return;
+    }
+
+    const assignments = data || [];
+
+    if (!assignments.length) {
+      host.innerHTML =
+        '<div class="empty-state">لم تتم إضافة أطباء لهذا المركز بعد.</div>';
+      return;
+    }
+
+    const doctorIds = assignments.map(x => x.doctor_id);
+
+    const { data: doctorRows, error: doctorError } = await db
+      .from("doctors")
+      .select("id,profile_id,specialties(name_ar)")
+      .in("id", doctorIds);
+
+    if (doctorError) {
+      host.textContent = doctorError.message;
+      return;
+    }
+
+    const ids = (doctorRows || []).map(x => x.profile_id).filter(Boolean);
+
+    const { data: profileRows, error: profileError } = await db
+      .from("profiles")
+      .select("id,full_name")
+      .in("id", ids);
+
+    if (profileError) {
+      host.textContent = profileError.message;
+      return;
+    }
+
+    const names = new Map(
+      (profileRows || []).map(p => [p.id, p.full_name])
+    );
+
+    host.innerHTML = assignments.map(assignment => {
+      const doctor = (doctorRows || []).find(
+        d => d.id === assignment.doctor_id
+      );
+
+      if (!doctor) return "";
+
+      return `
+        <div class="card">
+          <strong>
+            ${escapeHTML(names.get(doctor.profile_id) || "طبيب")}
+          </strong>
+          <span class="muted">
+            — ${escapeHTML(doctor.specialties?.name_ar || "اختصاص غير محدد")}
+          </span>
+          <button
+            class="reject-btn"
+            type="button"
+            data-remove-center-doctor="${assignment.id}">
+            إلغاء ارتباط الطبيب بالمركز
+          </button>
+        </div>
+      `;
+    }).join("");
+
+    host.querySelectorAll("[data-remove-center-doctor]")
+      .forEach(button => {
+        button.addEventListener("click", async () => {
+          const assignmentId =
+            button.getAttribute("data-remove-center-doctor");
+
+          if (!confirm("هل تريد إلغاء ارتباط هذا الطبيب بالمركز؟")) {
+            return;
+          }
+
+          button.disabled = true;
+
+          const { error } = await db
+            .from("medical_center_doctors")
+            .delete()
+            .eq("id", assignmentId);
+
+          if (error) {
+            button.disabled = false;
+            alert("تعذر إلغاء الارتباط: " + error.message);
+            return;
+          }
+
+          await loadMedicalCenters();
+          await loadLinkedDoctors();
+        });
+      });
+  }
+
+  el("mcCreateForm").addEventListener("submit", createCenter);
+  el("mcRefresh").addEventListener("click", loadMedicalCenters);
+  el("mcAssignButton").addEventListener("click", assignDoctor);
+  el("mcSelectCenter").addEventListener("change", loadLinkedDoctors);
+
+})();
+</script>
+
 </body>
 </html>
