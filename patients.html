@@ -701,7 +701,7 @@ async function loadMyAppointments(){
   const status=document.createElement("p");status.textContent="حالة الطلب: "+appointmentStatus(a.status);
   card.append(title,date,status);
   if(a.rejection_reason){const reason=document.createElement("p");reason.className="status-box status-rejected";reason.textContent="سبب الرفض: "+a.rejection_reason;card.append(reason);}
-  if(["pending","confirmed"].includes(a.status)){
+  if(["pending","approved","confirmed"].includes(a.status)){
    const cancel=document.createElement("button");cancel.type="button";cancel.className="secondary";cancel.textContent="إلغاء الطلب";
    cancel.onclick=()=>cancelCenterAppointment(a.id,cancel);card.append(cancel);
   }
