@@ -478,6 +478,7 @@ async function loadCenterDoctors(centerId){
  if(error){list.textContent="تعذر تحميل أطباء المركز: "+error.message;return;}
  if(!doctors?.length){list.textContent="لا يوجد أطباء نشطون في هذا المركز حالياً.";return;}
  const ids=doctors.map(d=>d.profile_id).filter(Boolean);
+ if(!ids.length){list.textContent="لا يوجد أطباء مرتبطون بحسابات معتمدة في هذا المركز حالياً.";return;}
  const {data:profiles,error:pe}=await db.from("profiles").select("id,role,approval_status").in("id",ids);
  if(pe){list.textContent="تعذر التحقق من اعتماد الأطباء: "+pe.message;return;}
  const approved=new Set((profiles||[]).filter(p=>p.role==="doctor"&&p.approval_status==="approved").map(p=>p.id));
