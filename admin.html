@@ -603,7 +603,7 @@ async function loadPatients(){
 }
 
 function appointmentStatusLabel(status){
- const labels={pending:"بانتظار التأكيد",approved:"تمت الموافقة",completed:"مكتمل",cancelled:"ملغي",rejected:"مرفوض"};
+ const labels={pending:"بانتظار التأكيد",approved:"تمت الموافقة",confirmed:"مؤكد",completed:"مكتمل",cancelled:"ملغي",rejected:"مرفوض"};
  return labels[status]||status||"غير محدد";
 }
 
@@ -675,7 +675,7 @@ function renderAppointments(){
  }
  tbody.innerHTML=filtered.map(a=>{
   const patient=a.patient||{},doctor=a.doctor?.profile||{};
-  const specialty=a.doctor?.specialty?.name_ar||"غير محدد";
+  const specialty=(a.doctor?.specialty?.name_ar||"غير محدد")+(a.center_name?" — "+a.center_name:"");
   const status=a.status||"";
   const statusClass=["pending","approved","confirmed","completed","cancelled","rejected"].includes(status)?status:"";
   return `<tr>
