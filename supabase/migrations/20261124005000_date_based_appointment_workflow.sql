@@ -6,26 +6,9 @@ alter table public.appointments
   add column if not exists rejection_reason text,
   alter column appointment_at drop not null;
 
-update public.appointments
-set requested_date = (appointment_at at time zone 'Asia/Baghdad')::date
-where requested_date is null and appointment_at is not null;
-
 alter table public.doctor_schedules
   add column if not exists unlimited_daily boolean not null default true,
   add column if not exists max_daily_patients integer;
-
-do $constraints$
-begin
- if not exists(select 1 from pg_constraint where conname='doctor_schedules_daily_capacity_check') then
-  alter table public.doctor_schedules add constraint doctor_schedules_daily_capacity_check
-   check (unlimited_daily is true or (max_daily_patients is not null and max_daily_patients>0));
- end if;
- if not exists(select 1 from pg_constraint where conname='center_doctor_schedules_daily_capacity_check') then
-  alter table public.center_doctor_schedules add constraint center_doctor_schedules_daily_capacity_check
-   check (unlimited_daily is true or (max_daily_patients is not null and max_daily_patients>0));
- end if;
-end
-$constraints$;
 
 create index if not exists appointments_doctor_requested_date_status_idx
   on public.appointments (doctor_id, requested_date, status);
@@ -36,9 +19,13 @@ on public.appointments for insert to authenticated
 with check (
   patient_id = auth.uid()
   and status = 'pending'
-  and appointment_at is null
-  and requested_date is not null
-  and requested_date >= (now() at time zone 'Asia/Baghdad')::date
+  and (
+    (appointment_at is null and requested_date is not null
+      and requested_date >= (now() at time zone 'Asia/Baghdad')::date)
+    or
+    (appointment_at is not null and appointment_at > now()
+      and (requested_date is null or requested_date = (appointment_at at time zone 'Asia/Baghdad')::date))
+  )
   and public.is_approved_user()
   and exists (
     select 1 from public.doctors d
