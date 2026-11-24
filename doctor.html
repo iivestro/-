@@ -494,55 +494,41 @@ else revenue.textContent=(completed.length*Number(doctorFee)).toLocaleString("en
 }
 
 async function loadAppointments(){
-if((!currentDoctorId&&!currentCenterDoctorId)||appointmentsLoading)return;
-if(isCenterDoctor){await loadCenterDoctorAppointments();return;}
-appointmentsLoading=true;
-const list=document.getElementById("appointmentsList");
-try{
-list.innerHTML="";
-showMessage("appointmentsStatus","جارٍ تحديث الحجوزات...");
-const {data,error}=await db.rpc("doctor_appointment_patient_details");
-if(error){
-showMessage("appointmentsStatus","تعذر تحميل الحجوزات: "+error.message);
-return;
-}
-const appointments=data||[];
-updateStatistics(appointments);
-if(appointments.length===0){
-showMessage("appointmentsStatus","لا توجد حجوزات حالياً. | آخر تحديث: "+new Date().toLocaleTimeString("ar-IQ"));
-return;
-}
-showMessage("appointmentsStatus","عدد الحجوزات: "+appointments.length+" | آخر تحديث: "+new Date().toLocaleTimeString("ar-IQ"));
-appointments.forEach(item=>{
-const card=document.createElement("div");
-card.className="appointment";
-const title=document.createElement("strong");
-title.textContent="موعد الحجز";
-const date=document.createElement("p");
-const parsedDate=new Date(item.appointment_at);
-date.textContent="التاريخ والوقت: "+(isNaN(parsedDate.getTime())?"غير متوفر":parsedDate.toLocaleString("ar-IQ",{dateStyle:"medium",timeStyle:"short"}));
-const patient=document.createElement("p");
-patient.textContent="اسم المراجع: "+(item.patient_name||"غير متوفر")+" | العمر: "+(item.patient_age??"غير محدد")+" | المحافظة: "+(item.patient_governorate||"غير محددة");
-const notes=document.createElement("p");
-notes.textContent="ملاحظات: "+(item.notes||"لا توجد ملاحظات");
-const status=document.createElement("span");
-status.className="tag";
-status.textContent=statusArabic(item.appointment_status);
-const actions=document.createElement("div");
-actions.className="actions";
-if(item.appointment_status==="pending"){
-actions.appendChild(makeActionButton("قبول الحجز","",()=>updateAppointment(item.id,"approved")));
-actions.appendChild(makeActionButton("رفض الحجز","reject",()=>updateAppointment(item.id,"rejected")));
-}else if(item.status==="approved"||item.status==="confirmed"){
-actions.appendChild(makeActionButton("إكمال الزيارة","complete",()=>updateAppointment(item.id,"completed")));
-actions.appendChild(makeActionButton("رفض الحجز","reject",()=>updateAppointment(item.id,"rejected")));
-}
-card.append(title,date,patient,notes,status,actions);
-list.appendChild(card);
-});
-}finally{
-appointmentsLoading=false;
-}
+ if((!currentDoctorId&&!currentCenterDoctorId)||appointmentsLoading)return;
+ if(isCenterDoctor){await loadCenterDoctorAppointments();return;}
+ appointmentsLoading=true;
+ const list=document.getElementById("appointmentsList");
+ try{
+  list.innerHTML="";
+  showMessage("appointmentsStatus","جارٍ تحديث الحجوزات...");
+  const {data,error}=await db.rpc("independent_doctor_appointment_dashboard_data");
+  if(error)throw error;
+  const appointments=data||[];
+  updateStatistics(appointments.map(x=>({status:x.appointment_status})));
+  if(!appointments.length){showMessage("appointmentsStatus","لا توجد حجوزات حالياً.");return;}
+  showMessage("appointmentsStatus","عدد الحجوزات: "+appointments.length+" | آخر تحديث: "+new Date().toLocaleTimeString("ar-IQ"));
+  appointments.forEach(item=>{
+   const card=document.createElement("div");card.className="appointment";
+   const title=document.createElement("strong");title.textContent="طلب موعد من: "+(item.patient_name||"مراجع");
+   const requested=item.requested_date||(item.appointment_at?new Date(item.appointment_at).toLocaleDateString("en-CA",{timeZone:"Asia/Baghdad"}):"غير محدد");
+   const date=document.createElement("p");date.textContent="اليوم المطلوب: "+requested+(item.appointment_at?" | ساعة الحضور: "+new Date(item.appointment_at).toLocaleTimeString("ar-IQ",{hour:"2-digit",minute:"2-digit"}):" | بانتظار تحديد الساعة");
+   const patient=document.createElement("p");patient.textContent="العمر: "+(item.patient_age??"غير محدد")+" | المحافظة: "+(item.patient_governorate||"غير محددة");
+   const notes=document.createElement("p");notes.textContent="ملاحظات: "+(item.appointment_notes||"لا توجد ملاحظات");
+   const status=document.createElement("span");status.className="tag";status.textContent=statusArabic(item.appointment_status);
+   card.append(title,date,patient,notes,status);
+   if(item.rejection_reason){const reason=document.createElement("p");reason.textContent="سبب الرفض: "+item.rejection_reason;card.append(reason);}
+   const actions=document.createElement("div");actions.className="actions";
+   if(item.appointment_status==="pending"){
+    actions.appendChild(makeActionButton("تأكيد وتحديد الساعة","",()=>updateAppointment(item.appointment_id,"approved")));
+    actions.appendChild(makeActionButton("رفض الحجز","reject",()=>updateAppointment(item.appointment_id,"rejected")));
+   }else if(item.appointment_status==="approved"||item.appointment_status==="confirmed"){
+    actions.appendChild(makeActionButton("تغيير الموعد","secondary",()=>updateAppointment(item.appointment_id,"reschedule")));
+    actions.appendChild(makeActionButton("إكمال الزيارة","complete",()=>updateAppointment(item.appointment_id,"completed")));
+   }
+   card.append(actions);list.appendChild(card);
+  });
+ }catch(error){showMessage("appointmentsStatus","تعذر تحميل الحجوزات: "+error.message);}
+ finally{appointmentsLoading=false;}
 }
 
 async function loadCenterDoctorAppointments(){
@@ -607,22 +593,23 @@ return button;
 }
 
 async function updateAppointment(appointmentId,newStatus){
-if(!currentDoctorId)return;
-const labels={approved:"قبول هذا الحجز",rejected:"رفض هذا الحجز",completed:"تسجيل الزيارة كمكتملة"};
-if(!confirm("هل تريد "+labels[newStatus]+"؟"))return;
-showMessage("appointmentsStatus","جارٍ تحديث حالة الحجز...");
-const {data,error}=await db.from("appointments").update({status:newStatus})
-.eq("id",appointmentId).eq("doctor_id",currentDoctorId).select("id");
-if(error){
-showMessage("appointmentsStatus","تعذر تحديث الحجز: "+error.message);
-return;
-}
-if(!data||data.length===0){
-showMessage("appointmentsStatus","لم يتم تحديث الحجز. تحقق من صلاحيات التعديل.");
-return;
-}
-showMessage("appointmentsStatus","تم تحديث حالة الحجز بنجاح.");
-await loadAppointments();
+ if(!currentDoctorId)return;
+ const action=newStatus==="approved"?"confirm":newStatus==="rejected"?"reject":newStatus==="completed"?"complete":newStatus;
+ let appointmentAt=null,rejectionReason=null;
+ if(action==="confirm"||action==="reschedule"){
+  const date=prompt("تاريخ الموعد (YYYY-MM-DD):");if(!date)return;
+  const time=prompt("ساعة الحضور (HH:MM):","09:00");if(!time)return;
+  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time)){alert("صيغة التاريخ أو الوقت غير صحيحة.");return;}
+  appointmentAt=new Date(date+"T"+time+":00+03:00").toISOString();
+ }else if(action==="reject"){
+  rejectionReason=prompt("سبب رفض الحجز:");if(!rejectionReason||!rejectionReason.trim()){alert("سبب الرفض إلزامي.");return;}
+ }
+ if(!confirm("هل تريد تنفيذ الإجراء؟"))return;
+ showMessage("appointmentsStatus","جارٍ تحديث الحجز...");
+ const {data,error}=await db.rpc("doctor_decide_appointment",{p_appointment_id:appointmentId,p_action:action,p_appointment_at:appointmentAt,p_rejection_reason:rejectionReason});
+ if(error||!data?.success){showMessage("appointmentsStatus","تعذر تحديث الحجز: "+(error?.message||"لم يتم التأكيد"));return;}
+ showMessage("appointmentsStatus","تم تحديث الحجز بنجاح.");
+ await loadAppointments();
 }
 
 /* إدارة مواعيد استقبال المندوبين */
