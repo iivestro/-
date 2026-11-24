@@ -134,8 +134,11 @@ button:disabled{opacity:.5;cursor:not-allowed}
  <section id="centers" class="card hidden">
   <button type="button" class="secondary portal-back" onclick="backToPortals()">← العودة إلى البوابتين</button>
   <h2>المراكز الطبية</h2>
-  <p class="muted">اختر المركز لعرض الأطباء المرتبطين به.</p>
+  <p class="muted">ابحث باسم المركز أو المحافظة أو المنطقة أو رقم الهاتف، ثم اختر المركز لعرض أطبائه.</p>
+  <div class="search-wrap"><input id="centerSearch" type="search" placeholder="ابحث عن مركز طبي..." oninput="filterMedicalCenters()" autocomplete="off"></div>
+  <p id="centerSearchInfo" class="muted" aria-live="polite"></p>
   <div id="centerList" class="msg">جاري تحميل المراكز...</div>
+  <p id="centerSearchEmpty" class="hidden msg">لا توجد مراكز تطابق عبارة البحث.</p>
  </section>
 
  <section id="doctors" class="card hidden">
@@ -168,6 +171,7 @@ let selectedDoctor=null;
 let selectedCenterDoctor=null;
 let selectedSchedules=[];
 let currentCenterId=null;
+let medicalCentersCache=[];
 let previousView="portals";
 let portalRefreshBusy=false;
 
@@ -317,50 +321,78 @@ function backFromDoctors(){
  }
 }
 
-async function loadMedicalCenters(){
- const list=el("centerList");
- list.textContent="جاري تحميل المراكز الطبية...";
+function normalizeCenterSearch(value){
+ return String(value||"").toLocaleLowerCase("ar")
+  .replace(/[\u064B-\u065F\u0670\u0640]/g,"")
+  .replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه")
+  .replace(/\s+/g," ").trim();
+}
 
- const {data:centers,error}=await db.from("medical_centers")
-  .select("id,name,address,phone,city,maps_url")
-  .eq("is_active",true)
-  .order("name",{ascending:true});
+function filterMedicalCenters(){
+ const query=normalizeCenterSearch(el("centerSearch")?.value||"");
+ const filtered=medicalCentersCache.filter(center=>{
+  const searchable=[center.name,center.address,center.city,center.phone]
+   .map(normalizeCenterSearch).join(" ");
+  return !query||searchable.includes(query);
+ });
+ renderMedicalCenters(filtered);
+}
 
- if(error){
-  list.textContent="تعذر تحميل المراكز الطبية: "+error.message;
-  return;
- }
-
- if(!centers||centers.length===0){
-  list.textContent="لا توجد مراكز طبية متاحة حالياً.";
-  return;
- }
-
+function renderMedicalCenters(centers){
+ const list=el("centerList"),empty=el("centerSearchEmpty"),info=el("centerSearchInfo");
  list.innerHTML="";
-
+ if(info)info.textContent=medicalCentersCache.length
+  ? "عدد المراكز المطابقة: "+centers.length+" من "+medicalCentersCache.length
+  : "";
+ if(!centers.length){
+  list.classList.add("hidden");
+  empty?.classList.remove("hidden");
+  return;
+ }
+ list.classList.remove("hidden");
+ empty?.classList.add("hidden");
  centers.forEach(center=>{
   const card=document.createElement("article");
   card.className="center-card";
-
   const title=document.createElement("h3");
   title.textContent=center.name||"مركز طبي";
-
   const address=document.createElement("p");
   address.className="muted";
   address.textContent="العنوان: "+(center.address||center.city||"غير محدد");
-
   const phone=document.createElement("p");
   phone.className="muted";
   phone.textContent="الهاتف: "+(center.phone||"غير محدد");
-
   const button=document.createElement("button");
   button.type="button";
   button.textContent="عرض أطباء المركز";
   button.onclick=()=>openCenterDoctors(center.id,center.name||"المركز الطبي");
-
   card.append(title,address,phone,button);
   list.appendChild(card);
  });
+}
+
+async function loadMedicalCenters(){
+ const list=el("centerList");
+ list.classList.remove("hidden");
+ list.textContent="جاري تحميل المراكز الطبية...";
+ if(el("centerSearch"))el("centerSearch").value="";
+ if(el("centerSearchEmpty"))el("centerSearchEmpty").classList.add("hidden");
+ if(el("centerSearchInfo"))el("centerSearchInfo").textContent="";
+ const {data:centers,error}=await db.from("medical_centers")
+  .select("id,name,address,phone,city,maps_url")
+  .eq("is_active",true)
+  .order("name",{ascending:true});
+ if(error){
+  medicalCentersCache=[];
+  list.textContent="تعذر تحميل المراكز الطبية: "+error.message;
+  return;
+ }
+ medicalCentersCache=centers||[];
+ if(!medicalCentersCache.length){
+  list.textContent="لا توجد مراكز طبية متاحة حالياً.";
+  return;
+ }
+ filterMedicalCenters();
 }
 
 async function openCenterDoctors(centerId,centerName){
