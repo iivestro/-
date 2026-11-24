@@ -906,7 +906,7 @@ async function openAppointmentDateTimePicker(initialDate,initialTime="09:00"){
   overlay.className="appointment-picker-overlay";
   const today=new Date();today.setMinutes(today.getMinutes()-today.getTimezoneOffset());
   const todayText=today.toISOString().slice(0,10);
-  const startDate=initialDate&&/^\\d{4}-\\d{2}-\\d{2}$/.test(initialDate)&&initialDate>=todayText?initialDate:todayText;
+  const startDate=initialDate&&/^\d{4}-\d{2}-\d{2}$/.test(initialDate)&&initialDate>=todayText?initialDate:todayText;
   overlay.innerHTML='<form class="appointment-picker" role="dialog" aria-modal="true" aria-labelledby="appointmentPickerTitle"><div class="appointment-picker-head"><div class="appointment-picker-icon">▦</div><div><h3 id="appointmentPickerTitle">تحديد موعد المراجع</h3><p>اختر اليوم من التقويم ثم حدد ساعة الحضور</p></div></div><label for="appointmentPickerDate">تاريخ الحضور</label><input id="appointmentPickerDate" type="date" required><label for="appointmentPickerTime">ساعة الحضور</label><input id="appointmentPickerTime" type="time" required><p class="appointment-picker-error" aria-live="polite"></p><div class="appointment-picker-actions"><button type="submit">تأكيد الموعد</button><button type="button" class="picker-cancel">إلغاء</button></div></form>';
   const form=overlay.querySelector("form"),dateInput=overlay.querySelector("#appointmentPickerDate"),timeInput=overlay.querySelector("#appointmentPickerTime"),error=overlay.querySelector(".appointment-picker-error");
   dateInput.min=todayText;dateInput.value=startDate;timeInput.value=initialTime||"09:00";
@@ -919,7 +919,7 @@ async function openAppointmentDateTimePicker(initialDate,initialTime="09:00"){
    const check=new Date(parts[0],parts[1]-1,parts[2],12);
    if(check.getFullYear()!==parts[0]||check.getMonth()!==parts[1]-1||check.getDate()!==parts[2]){error.textContent="التاريخ المختار غير صحيح.";return;}
    if(date<todayText){error.textContent="لا يمكن تحديد موعد بتاريخ سابق.";return;}
-   if(!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time)){error.textContent="يرجى اختيار ساعة صحيحة.";return;}
+   if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)){error.textContent="يرجى اختيار ساعة صحيحة.";return;}
    const localDate=new Date(date+"T"+time+":00");
    if(Number.isNaN(localDate.getTime())){error.textContent="تعذر قراءة التاريخ والوقت. أعد الاختيار.";return;}
    close({date,time,iso:localDate.toISOString()});
