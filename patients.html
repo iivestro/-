@@ -165,6 +165,7 @@ const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const el=id=>document.getElementById(id);
 
 let selectedDoctor=null;
+let selectedCenterDoctor=null;
 let selectedSchedules=[];
 let currentCenterId=null;
 let previousView="portals";
@@ -400,155 +401,130 @@ function filterDoctors(){
 }
 
 async function loadDoctors(centerId=null){
+ if(centerId){await loadCenterDoctors(centerId);return;}
  const list=el("doctorList");
  list.textContent="جاري تحميل الأطباء...";
-
  const {data:doctors,error}=await db.from("doctors")
   .select("id,profile_id,qualification,experience_years,consultation_fee,bio,photo_url,specialties(name_ar),clinics(name,address,phone,maps_url)");
-
  if(error){list.textContent="تعذر تحميل الأطباء: "+error.message;return;}
  if(!doctors||doctors.length===0){list.textContent="لا توجد سجلات أطباء حالياً.";return;}
-
- let scopedDoctors=doctors;
-
- if(centerId){
-  const {data:links,error:linksError}=await db.from("medical_center_doctors")
-   .select("doctor_id").eq("center_id",centerId);
-
-  if(linksError){
-   list.textContent="تعذر تحميل أطباء المركز: "+linksError.message;
-   return;
-  }
-
-  const doctorIds=new Set((links||[]).map(x=>x.doctor_id));
-  scopedDoctors=doctors.filter(d=>doctorIds.has(d.id));
-
-  if(scopedDoctors.length===0){
-   list.textContent="لا يوجد أطباء مرتبطون بهذا المركز حالياً.";
-   return;
-  }
- }
-
- const profileIds=scopedDoctors.map(d=>d.profile_id).filter(Boolean);
-
- if(profileIds.length===0){
-  list.textContent="لا توجد حسابات أطباء مرتبطة بالسجلات.";
-  return;
- }
-
+ const profileIds=doctors.map(d=>d.profile_id).filter(Boolean);
  const {data:profiles,error:profileError}=await db.from("profiles")
-  .select("id,full_name,role,approval_status,phone")
-  .in("id",profileIds);
-
+  .select("id,full_name,role,approval_status,phone").in("id",profileIds);
  if(profileError){list.textContent="تعذر تحميل أسماء الأطباء: "+profileError.message;return;}
-
- const approvedProfiles=(profiles||[]).filter(p=>
-  p.role==="doctor"&&p.approval_status==="approved"
- );
-
- const approvedIds=new Set(approvedProfiles.map(p=>p.id));
- const visibleDoctors=scopedDoctors.filter(d=>approvedIds.has(d.profile_id));
-
- if(visibleDoctors.length===0){
-  list.textContent="لا يوجد أطباء معتمدون للعرض حالياً.";
-  return;
- }
-
+ const approved=(profiles||[]).filter(p=>p.role==="doctor"&&p.approval_status==="approved");
+ const ids=new Set(approved.map(p=>p.id));
+ const visible=doctors.filter(d=>ids.has(d.profile_id));
+ if(!visible.length){list.textContent="لا يوجد أطباء معتمدون للعرض حالياً.";return;}
  list.innerHTML="";
-
- visibleDoctors.forEach(d=>{
-  const profile=approvedProfiles.find(p=>p.id===d.profile_id);
-  const item=document.createElement("article");
-  item.className="doctor";
-
+ visible.forEach(d=>{
+  const profile=approved.find(p=>p.id===d.profile_id);
+  const item=document.createElement("article");item.className="doctor";
   item.dataset.name=normalizeSearch(profile.full_name||"");
   item.dataset.specialty=normalizeSearch(d.specialties?.name_ar||"");
-
-  const toggle=document.createElement("button");
-  toggle.type="button";
-  toggle.className="doctor-toggle";
-
-  const photo=document.createElement("img");
-  photo.className="doctor-photo";
-  photo.alt="صورة الطبيب";
-  photo.loading="lazy";
-  photo.src=d.photo_url||DEFAULT_DOCTOR_PHOTO;
-  photo.onerror=()=>{photo.onerror=null;photo.src=DEFAULT_DOCTOR_PHOTO;};
-
-  const nameArea=document.createElement("div");
-  const title=document.createElement("strong");
-  title.className="doctor-name";
-  title.textContent=profile.full_name||"طبيب";
-
-  const specialty=document.createElement("div");
-  specialty.className="doctor-specialty";
-  specialty.textContent=d.specialties?.name_ar||"اختصاص غير محدد";
-
-  nameArea.append(title,specialty);
-  toggle.append(photo,nameArea);
-
-  const details=document.createElement("div");
-  details.className="doctor-details hidden";
-
-  function addInfo(label,value){
-   const box=document.createElement("div");
-   box.className="info";
-   box.textContent=label+": "+(value??"غير محدد");
-   details.appendChild(box);
-  }
-
-  addInfo("اسم الطبيب",profile.full_name);
-  addInfo("الاختصاص",d.specialties?.name_ar);
-  addInfo("العيادة",d.clinics?.name);
-  addInfo("عنوان العيادة",d.clinics?.address);
-  addInfo("هاتف العيادة",d.clinics?.phone);
-  addInfo("المؤهل العلمي",d.qualification);
-  addInfo("سنوات الخبرة",d.experience_years);
-  addInfo("أجور الاستشارة",d.consultation_fee);
-
-  if(d.bio){
-   const bio=document.createElement("p");
-   bio.className="muted";
-   bio.textContent="نبذة عن الطبيب: "+d.bio;
-   details.appendChild(bio);
-  }
-
-  if(d.clinics?.maps_url){
-   try{
-    const url=new URL(d.clinics.maps_url);
-    const valid=url.protocol==="https:"&&
-     (/(^|\.)google\.[^/]+$/i.test(url.hostname)||
-      url.hostname==="maps.app.goo.gl"||
-      url.hostname==="maps.google.com");
-
-    if(valid){
-     const link=document.createElement("a");
-     link.href=url.href;
-     link.target="_blank";
-     link.rel="noopener noreferrer";
-     link.textContent="عرض موقع العيادة على الخريطة";
-     details.appendChild(link);
-    }
-   }catch(e){}
-  }
-
-  const book=document.createElement("button");
-  book.type="button";
-  book.textContent="اختيار الطبيب وحجز موعد";
-  book.onclick=()=>selectDoctor(d,profile.full_name||"طبيب");
-  details.appendChild(book);
-
-  toggle.onclick=()=>{
-   details.classList.toggle("hidden");
-  };
-
-  item.append(toggle,details);
-  list.appendChild(item);
+  const toggle=document.createElement("button");toggle.type="button";toggle.className="doctor-toggle";
+  const photo=document.createElement("img");photo.className="doctor-photo";photo.alt="صورة الطبيب";photo.loading="lazy";photo.src=d.photo_url||DEFAULT_DOCTOR_PHOTO;photo.onerror=()=>{photo.onerror=null;photo.src=DEFAULT_DOCTOR_PHOTO;};
+  const area=document.createElement("div"),title=document.createElement("strong"),specialty=document.createElement("div");
+  title.className="doctor-name";title.textContent=profile.full_name||"طبيب";
+  specialty.className="doctor-specialty";specialty.textContent=d.specialties?.name_ar||"اختصاص غير محدد";
+  area.append(title,specialty);toggle.append(photo,area);
+  const details=document.createElement("div");details.className="doctor-details hidden";
+  const info=(label,value)=>{const p=document.createElement("div");p.className="info";p.textContent=label+": "+(value??"غير محدد");details.append(p);};
+  info("المؤهل العلمي",d.qualification);info("سنوات الخبرة",d.experience_years);info("أجور الاستشارة",d.consultation_fee);info("العيادة",d.clinics?.name);info("العنوان",d.clinics?.address);
+  if(d.bio){const p=document.createElement("p");p.className="muted";p.textContent=d.bio;details.append(p);}
+  const book=document.createElement("button");book.type="button";book.textContent="اختيار الطبيب وحجز موعد";book.onclick=()=>selectDoctor(d,profile.full_name||"طبيب");details.append(book);
+  toggle.onclick=()=>details.classList.toggle("hidden");item.append(toggle,details);list.append(item);
  });
-
  filterDoctors();
 }
 
+async function loadCenterDoctors(centerId){
+ const list=el("doctorList");list.textContent="جاري تحميل أطباء المركز...";
+ const {data:doctors,error}=await db.from("center_doctors")
+  .select("id,center_id,profile_id,full_name,specialty,qualification,experience_years,consultation_fee,bio,photo_url,is_active")
+  .eq("center_id",centerId).eq("is_active",true).order("full_name");
+ if(error){list.textContent="تعذر تحميل أطباء المركز: "+error.message;return;}
+ if(!doctors?.length){list.textContent="لا يوجد أطباء نشطون في هذا المركز حالياً.";return;}
+ const ids=doctors.map(d=>d.profile_id).filter(Boolean);
+ const {data:profiles,error:pe}=await db.from("profiles").select("id,role,approval_status").in("id",ids);
+ if(pe){list.textContent="تعذر التحقق من اعتماد الأطباء: "+pe.message;return;}
+ const approved=new Set((profiles||[]).filter(p=>p.role==="doctor"&&p.approval_status==="approved").map(p=>p.id));
+ const visible=doctors.filter(d=>d.profile_id&&approved.has(d.profile_id));
+ if(!visible.length){list.textContent="لا يوجد أطباء معتمدون للعرض حالياً.";return;}
+ list.innerHTML="";
+ for(const d of visible){
+  const item=document.createElement("article");item.className="doctor";
+  item.dataset.name=normalizeSearch(d.full_name||"");item.dataset.specialty=normalizeSearch(d.specialty||"");
+  const toggle=document.createElement("button");toggle.type="button";toggle.className="doctor-toggle";
+  const photo=document.createElement("img");photo.className="doctor-photo";photo.alt="صورة الطبيب";photo.loading="lazy";photo.src=d.photo_url||DEFAULT_DOCTOR_PHOTO;photo.onerror=()=>{photo.onerror=null;photo.src=DEFAULT_DOCTOR_PHOTO;};
+  const area=document.createElement("div"),title=document.createElement("strong"),specialty=document.createElement("div");
+  title.className="doctor-name";title.textContent=d.full_name||"طبيب";
+  specialty.className="doctor-specialty";specialty.textContent=d.specialty||"اختصاص غير محدد";
+  area.append(title,specialty);toggle.append(photo,area);
+  const details=document.createElement("div");details.className="doctor-details hidden";
+  const info=(label,value)=>{const p=document.createElement("div");p.className="info";p.textContent=label+": "+(value??"غير محدد");details.append(p);};
+  info("المؤهل العلمي",d.qualification);info("سنوات الخبرة",d.experience_years);info("أجور الاستشارة",d.consultation_fee);
+  if(d.bio){const p=document.createElement("p");p.className="muted";p.textContent=d.bio;details.append(p);}
+  const book=document.createElement("button");book.type="button";book.textContent="اختيار الطبيب وطلب موعد";book.onclick=()=>selectCenterDoctor(d);details.append(book);
+  toggle.onclick=()=>details.classList.toggle("hidden");item.append(toggle,details);list.append(item);
+ }
+ filterDoctors();
+}
+
+async function selectCenterDoctor(doctor){
+ selectedCenterDoctor=doctor;selectedDoctor=null;selectedSchedules=[];
+ const old=el("booking");if(old)old.remove();
+ const panel=document.createElement("div");panel.id="booking";
+ const heading=document.createElement("h3");heading.textContent="طلب موعد مع "+(doctor.full_name||"الطبيب");
+ const msg=document.createElement("p");msg.id="scheduleMessage";msg.className="muted";msg.textContent="جاري تحميل أيام الدوام...";
+ const label=document.createElement("label");label.textContent="اختر يوم المراجعة";
+ const date=document.createElement("input");date.type="date";date.id="appointmentDate";
+ const notesLabel=document.createElement("label");notesLabel.textContent="ملاحظات (اختياري)";
+ const notes=document.createElement("textarea");notes.id="appointmentNotes";notes.rows=3;
+ const button=document.createElement("button");button.id="bookButton";button.textContent="إرسال طلب الحجز";
+ const result=document.createElement("p");result.id="bookingMessage";result.className="msg";
+ panel.append(heading,msg,label,date,notesLabel,notes,button,result);el("doctorList").prepend(panel);
+ const now=new Date(),today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");
+ date.min=today;date.value=today;
+ const {data,error}=await db.from("center_doctor_schedules")
+  .select("day_of_week,start_time,end_time,is_available,unlimited_daily,max_daily_patients")
+  .eq("center_doctor_id",doctor.id).eq("is_available",true);
+ if(error){msg.textContent="تعذر تحميل الدوام: "+error.message;button.disabled=true;return;}
+ selectedSchedules=data||[];
+ if(!selectedSchedules.length){msg.textContent="لم يحدد الطبيب أيام دوام متاحة حالياً.";button.disabled=true;return;}
+ date.addEventListener("change",checkCenterSelectedDay);
+ button.addEventListener("click",bookCenterAppointment);
+ checkCenterSelectedDay();
+}
+
+function checkCenterSelectedDay(){
+ const date=el("appointmentDate")?.value;if(!date)return;
+ const day=new Date(date+"T12:00:00").getDay();
+ const schedule=selectedSchedules.find(s=>Number(s.day_of_week)===day);
+ if(!schedule){el("scheduleMessage").textContent="لا يوجد دوام متاح في هذا اليوم.";el("bookButton").disabled=true;return;}
+ const cap=schedule.unlimited_daily?"العدد اليومي غير محدد":("الحد اليومي: "+schedule.max_daily_patients+" مراجع");
+ el("scheduleMessage").textContent="دوام الطبيب من "+schedule.start_time.slice(0,5)+" إلى "+schedule.end_time.slice(0,5)+" — "+cap+". سيحدد الطبيب ساعة الحضور عند الموافقة.";
+ el("bookButton").disabled=false;
+}
+
+async function bookCenterAppointment(){
+ if(!selectedCenterDoctor)return;
+ const date=el("appointmentDate").value,notes=el("appointmentNotes").value.trim();
+ if(!date){el("bookingMessage").textContent="اختر يوم المراجعة.";return;}
+ const day=new Date(date+"T12:00:00").getDay();
+ if(!selectedSchedules.some(s=>Number(s.day_of_week)===day)){el("bookingMessage").textContent="لا يوجد دوام في اليوم المحدد.";return;}
+ const {data:{user},error:authError}=await db.auth.getUser();
+ if(authError||!user){el("bookingMessage").textContent="انتهت جلسة الدخول. سجل الدخول مجدداً.";return;}
+ const button=el("bookButton");button.disabled=true;el("bookingMessage").textContent="جارٍ إرسال طلب الحجز...";
+ const {error}=await db.from("center_appointments").insert({
+  patient_id:user.id,center_id:selectedCenterDoctor.center_id,center_doctor_id:selectedCenterDoctor.id,
+  requested_date:date,appointment_at:null,status:"pending",notes:notes||null
+ });
+ button.disabled=false;
+ if(error){el("bookingMessage").textContent="تعذر إرسال الطلب: "+error.message;return;}
+ el("bookingMessage").textContent="تم إرسال طلبك. سيحدد الطبيب أو المركز ساعة الحضور عند الموافقة.";
+ await loadMyAppointments();
+}
 async function selectDoctor(doctor,name){
  selectedDoctor=doctor;
  selectedSchedules=[];
