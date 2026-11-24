@@ -190,9 +190,9 @@ label{display:block;margin:10px 0 5px;color:#355568;font-weight:700;font-size:13
 
  <section id="portalChoices" class="card hidden">
   <h2>اختر البوابة التي تريد الدخول إليها</h2>
-  <p class="muted">يمكنك استعراض الأطباء مباشرة أو اختيار مركز طبي ثم مشاهدة الأطباء المرتبطين به.</p>
+  <p class="muted">اختر إحدى البوابات الأربع للوصول إلى الرعاية الصحية المناسبة لك.</p>
   <div class="portal-grid">
-<button type="button" class="portal-card" onclick="location.href='home-services.html?kind=male'"><strong>التمريض المنزلي</strong><span>طلب زيارة ممرض أو ممرضة.</span></button><button type="button" class="portal-card" onclick="location.href='home-services.html?kind=laboratory'"><strong>المختبرات المنزلية</strong><span>طلب سحب عينات من المنزل.</span></button>
+
    <button type="button" class="portal-card" onclick="openDoctorsPortal()">
     <strong>🩺 بوابة الأطباء</strong>
     <span>عرض جميع الأطباء المعتمدين والبحث حسب الاسم والاختصاص.</span>
@@ -201,6 +201,8 @@ label{display:block;margin:10px 0 5px;color:#355568;font-weight:700;font-size:13
     <strong>🏥 بوابة المراكز الطبية</strong>
     <span>استعراض المراكز الطبية واختيار الأطباء الموجودين في كل مركز.</span>
    </button>
+   <button type="button" class="portal-card" onclick="location.href='home-services.html?kind=laboratory'"><strong>🔬 بوابة المختبرات الطبية</strong><span>اختيار المختبر وطلب سحب العينات من المنزل واستلام النتائج.</span></button>
+   <button type="button" class="portal-card" onclick="location.href='home-services.html?kind=male'"><strong>💙 بوابة التمريض</strong><span>اختيار ممرض أو ممرضة وطلب الرعاية التمريضية المنزلية.</span></button>
   </div>
  </section>
 
