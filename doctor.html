@@ -523,10 +523,10 @@ const notes=document.createElement("p");
 notes.textContent="ملاحظات: "+(item.notes||"لا توجد ملاحظات");
 const status=document.createElement("span");
 status.className="tag";
-status.textContent=statusArabic(item.status);
+status.textContent=statusArabic(item.appointment_status);
 const actions=document.createElement("div");
 actions.className="actions";
-if(item.status==="pending"){
+if(item.appointment_status==="pending"){
 actions.appendChild(makeActionButton("قبول الحجز","",()=>updateAppointment(item.id,"approved")));
 actions.appendChild(makeActionButton("رفض الحجز","reject",()=>updateAppointment(item.id,"rejected")));
 }else if(item.status==="approved"||item.status==="confirmed"){
@@ -547,36 +547,28 @@ async function loadCenterDoctorAppointments(){
  const list=document.getElementById("appointmentsList");
  try{
   showMessage("appointmentsStatus","جارٍ تحميل حجوزات المركز...");
-  const {data:rows,error}=await db.from("center_appointments")
-   .select("id,patient_id,requested_date,appointment_at,status,notes,rejection_reason,created_at")
-   .eq("center_doctor_id",currentCenterDoctorId).order("requested_date",{ascending:true});
+  const {data:rows,error}=await db.rpc("center_appointment_dashboard_data");
   if(error)throw error;
-  const ids=[...new Set((rows||[]).map(x=>x.patient_id))];
-  let profiles=[];
-  if(ids.length){
-   const p=await db.from("profiles").select("id,full_name,age,governorate").in("id",ids);
-   if(p.error)throw p.error;profiles=p.data||[];
-  }
+  const mine=(rows||[]).filter(x=>x.center_doctor_id===currentCenterDoctorId);
   updateStatistics([]);
   list.innerHTML="";
-  if(!rows?.length){showMessage("appointmentsStatus","لا توجد طلبات حجز لهذا الطبيب.");return;}
-  showMessage("appointmentsStatus","عدد الطلبات: "+rows.length+" | آخر تحديث: "+new Date().toLocaleTimeString("ar-IQ"));
-  rows.forEach(item=>{
-   const p=profiles.find(x=>x.id===item.patient_id)||{};
+  if(!mine.length){showMessage("appointmentsStatus","لا توجد طلبات حجز لهذا الطبيب.");return;}
+  showMessage("appointmentsStatus","عدد الطلبات: "+mine.length+" | آخر تحديث: "+new Date().toLocaleTimeString("ar-IQ"));
+  mine.forEach(item=>{
    const card=document.createElement("div");card.className="appointment";
-   const title=document.createElement("strong");title.textContent="طلب مراجعة من: "+(p.full_name||"مراجع");
+   const title=document.createElement("strong");title.textContent="طلب مراجعة من: "+(item.patient_name||"مراجع");
    const date=document.createElement("p");date.textContent="اليوم المطلوب: "+item.requested_date+(item.appointment_at?" | ساعة الحضور: "+new Date(item.appointment_at).toLocaleString("ar-IQ",{dateStyle:"medium",timeStyle:"short"}):" | لم تحدد الساعة بعد");
-   const patient=document.createElement("p");patient.textContent="العمر: "+(p.age??"غير محدد")+" | المحافظة: "+(p.governorate||"غير محددة");
+   const patient=document.createElement("p");patient.textContent="العمر: "+(item.patient_age??"غير محدد")+" | المحافظة: "+(item.patient_governorate||"غير محددة");
    const notes=document.createElement("p");notes.textContent="ملاحظات: "+(item.notes||"لا توجد");
    const status=document.createElement("span");status.className="tag";status.textContent=statusArabic(item.status);
    card.append(title,date,patient,notes,status);
    if(item.rejection_reason){const reason=document.createElement("p");reason.textContent="سبب الرفض: "+item.rejection_reason;card.append(reason);}
    const actions=document.createElement("div");actions.className="actions";
    if(item.status==="pending"){
-    actions.appendChild(makeActionButton("تأكيد وتحديد الساعة","",()=>decideCenterDoctorAppointment(item,"confirm")));
-    actions.appendChild(makeActionButton("رفض الطلب","reject",()=>decideCenterDoctorAppointment(item,"reject")));
-   }else if(item.status==="confirmed"){
-    actions.appendChild(makeActionButton("تغيير الموعد","secondary",()=>decideCenterDoctorAppointment(item,"reschedule")));
+    actions.appendChild(makeActionButton("تأكيد وتحديد الساعة","",()=>decideCenterDoctorAppointment({...item,id:item.appointment_id},"confirm")));
+    actions.appendChild(makeActionButton("رفض الطلب","reject",()=>decideCenterDoctorAppointment({...item,id:item.appointment_id},"reject")));
+   }else if(item.appointment_status==="confirmed"){
+    actions.appendChild(makeActionButton("تغيير الموعد","secondary",()=>decideCenterDoctorAppointment({...item,id:item.appointment_id},"reschedule")));
    }
    card.append(actions);list.append(card);
   });
