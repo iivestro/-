@@ -378,7 +378,11 @@
         flex: 1;
       }
     }
-  </style>
+  .schedule-row{display:grid;grid-template-columns:90px 24px minmax(90px,1fr) minmax(90px,1fr) 24px minmax(90px,1fr);gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid #e5f2f8}
+.schedule-row input[type=time],.schedule-row input[type=number]{width:100%;min-width:0;margin:0;padding:9px}
+.schedule-row input[type=checkbox]{width:18px;height:18px;accent-color:#0284c7}
+@media(max-width:650px){.schedule-row{grid-template-columns:1fr 1fr 1fr;gap:7px}.schedule-row strong{grid-column:1/-1}}
+</style>
 </head>
 
 <body>
