@@ -619,34 +619,40 @@ async function loadAppointments(){
  if(!tbody)return;
  setText("appointmentsError","");
  if(!appointmentList.length)tbody.innerHTML="<tr><td colspan='6' class='empty-state'>جارٍ تحميل الحجوزات...</td></tr>";
-
- const {data,error}=await db.from("appointments")
- .select(`
-  id,patient_id,doctor_id,appointment_at,status,created_at,
-  patient:profiles!appointments_patient_id_fkey(full_name),
-  doctor:doctors!appointments_doctor_id_fkey(
-   profile:profiles!doctors_profile_id_fkey(full_name),
-   specialty:specialties!doctors_specialty_id_fkey(name_ar)
-  )
- `)
- .order("appointment_at",{ascending:false});
-
- if(error){
-  setText("appointmentsError","تعذر تحميل الحجوزات: "+error.message);
-  if(!appointmentList.length)tbody.innerHTML="<tr><td colspan='6' class='empty-state'>تعذر تحميل الحجوزات.</td></tr>";
-  return;
- }
-
- appointmentList=data||[];
- const ids=[...new Set(appointmentList.map(a=>a.patient_id).filter(Boolean))];
-
+ const [independent,center]=await Promise.all([
+  db.from("appointments").select(`
+   id,patient_id,doctor_id,requested_date,appointment_at,status,created_at,rejection_reason,
+   patient:profiles!appointments_patient_id_fkey(full_name),
+   doctor:doctors!appointments_doctor_id_fkey(
+    profile:profiles!doctors_profile_id_fkey(full_name),
+    specialty:specialties!doctors_specialty_id_fkey(name_ar)
+   )
+  `).order("created_at",{ascending:false}),
+  db.from("center_appointments").select("id,patient_id,center_id,center_doctor_id,requested_date,appointment_at,status,created_at,rejection_reason,center_doctors(full_name,specialty),medical_centers(name)").order("created_at",{ascending:false})
+ ]);
+ if(independent.error){setText("appointmentsError","تعذر تحميل حجوزات الأطباء المستقلين: "+independent.error.message);return;}
+ if(center.error){setText("appointmentsError","تعذر تحميل حجوزات المراكز: "+center.error.message);return;}
+ const centerRows=center.data||[];
+ const ids=[...new Set(centerRows.map(a=>a.patient_id).filter(Boolean))];
+ let patientMap=new Map();
  if(ids.length){
-  const result=await db.rpc("admin_get_profile_phones",{p_profile_ids:ids});
-  if(result.error){
-   setText("appointmentsError","تعذر تحميل أرقام هواتف المراجعين: "+result.error.message);
-  }else{
+  const p=await db.from("profiles").select("id,full_name").in("id",ids);
+  if(p.error){setText("appointmentsError","تعذر تحميل أسماء مراجعي المراكز: "+p.error.message);return;}
+  patientMap=new Map((p.data||[]).map(x=>[x.id,x.full_name]));
+ }
+ const mappedCenter=centerRows.map(a=>({
+  ...a,is_center:true,center_name:a.medical_centers?.name||"",
+  patient:{full_name:patientMap.get(a.patient_id)||""},
+  doctor:{profile:{full_name:a.center_doctors?.full_name||""},specialty:{name_ar:a.center_doctors?.specialty||""}}
+ }));
+ appointmentList=[...(independent.data||[]),...mappedCenter];
+ const allIds=[...new Set(appointmentList.map(a=>a.patient_id).filter(Boolean))];
+ if(allIds.length){
+  const result=await db.rpc("admin_get_profile_phones",{p_profile_ids:allIds});
+  if(result.error){setText("appointmentsError","تعذر تحميل أرقام هواتف المراجعين: "+result.error.message);}
+  else{
    const phones=new Map((result.data||[]).map(x=>[x.profile_id,x.phone]));
-   appointmentList=appointmentList.map(a=>({...a,patient:{...(a.patient||{}),phone:phones.get(a.patient_id)||""}}));
+   appointmentList=appointmentList.map(a=>({...a,patient:{...(a.patient||{}),phone:phones.get(a.patient_id)||a.patient?.phone||""}}));
   }
  }
  renderAppointments();
@@ -660,7 +666,7 @@ function renderAppointments(){
   const patient=a.patient||{},doctor=a.doctor?.profile||{};
   const specialty=a.doctor?.specialty?.name_ar||"";
   const status=appointmentStatusLabel(a.status);
-  return [patient.full_name,patient.phone,doctor.full_name,specialty,status,a.status].filter(Boolean).join(" ").toLowerCase().includes(term);
+  return [patient.full_name,patient.phone,doctor.full_name,specialty,a.center_name,status,a.status].filter(Boolean).join(" ").toLowerCase().includes(term);
  });
  setText("bookingCount",filtered.length+" حجز");
  if(!filtered.length){
@@ -671,13 +677,13 @@ function renderAppointments(){
   const patient=a.patient||{},doctor=a.doctor?.profile||{};
   const specialty=a.doctor?.specialty?.name_ar||"غير محدد";
   const status=a.status||"";
-  const statusClass=["pending","approved","completed","cancelled","rejected"].includes(status)?status:"";
+  const statusClass=["pending","approved","confirmed","completed","cancelled","rejected"].includes(status)?status:"";
   return `<tr>
    <td>${escapeHTML(patient.full_name||"غير محدد")}</td>
    <td>${escapeHTML(patient.phone||"غير مسجل")}</td>
    <td>${escapeHTML(doctor.full_name||"غير محدد")}</td>
    <td>${escapeHTML(specialty)}</td>
-   <td>${escapeHTML(appointmentDateLabel(a.appointment_at))}</td>
+   <td>${escapeHTML(a.requested_date?(a.appointment_at?appointmentDateLabel(a.appointment_at):a.requested_date+" — بانتظار تحديد الساعة"):appointmentDateLabel(a.appointment_at))}</td>
    <td><span class="booking-status ${statusClass}">${escapeHTML(appointmentStatusLabel(status))}</span></td>
   </tr>`;
  }).join("");
