@@ -1098,10 +1098,9 @@ function representativeCard(row){
  const expires=representativeDate(row.subscription_expires_at);
  let actions="";
  if(status==="pending")actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">موافقة وتفعيل الحساب</button><button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','rejected')">رفض الطلب</button>`;
- else if(status==="approved")actions=`<button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','suspended')">إيقاف الحساب</button>`;
- else if(status==="suspended")actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">إعادة التفعيل</button><button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','rejected')">رفض الحساب</button>`;
+ else if(status==="approved")actions=`<button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','suspended')">إيقاف الحساب</button><button type="button" onclick="rpZEAWYtiB6bJ16NuLbGCc6CZ6jJdKfb63('${row.profile_id}')">تأكيد استلام 20,000 د.ع وتجديد 30 يوماً</button>`; else if(status==="suspended")actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">إعادة التفعيل</button><button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','rejected')">رفض الحساب</button>`;
  else if(status==="rejected")actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">قبول الحساب</button>`;
- else if(status==="approved")actions=\`<button class="reject-btn" onclick="changeRepresentativeStatus('\${row.profile_id}','suspended')">إيقاف الحساب</button><button type="button" onclick="rpZEAWYtiB6bJ16NuLbGCc6CZ6jJdKfb63('\${row.profile_id}')">تأكيد استلام 20,000 د.ع وتجديد 30 يوماً</button>\`;
+ else if(status==="approved")actions=`<button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','suspended')">إيقاف الحساب</button><button type="button" onclick="rpZEAWYtiB6bJ16NuLbGCc6CZ6jJdKfb63('${row.profile_id}')">تأكيد استلام 20,000 د.ع وتجديد 30 يوماً</button>`;
  const subscription=representativeSubscriptionLabel(row);
  return `<article class="admin-record-card representative-record">
   <div class="admin-record-head"><div class="admin-avatar"><span>${escapeHTML(name.trim().slice(0,1)||"م")}</span></div><div class="admin-record-title"><strong>${escapeHTML(name)}</strong><span>${escapeHTML(representativeEmployerLabel(row.employer_type))}</span></div><span class="rep-status ${escapeHTML(status)}">${escapeHTML(representativeStatusLabel(status))}</span></div>
@@ -1783,26 +1782,26 @@ db.auth.getSession().then(async({data})=>{
       const expiryLabel=subscription.expiry?formatDate(subscription.expiry):"غير محدد";
       const initials=String(center.name||"م").trim().slice(0,1);
       const image=center.image_url?'<img src="'+escapeHTML(center.image_url)+'" alt="صورة '+escapeHTML(center.name||"المركز")+'" loading="lazy">':'<span>'+escapeHTML(initials)+'</span>';
-      return \`
+      return `
         <article class="mc-center-card">
           <div class="mc-center-card-top"><div class="mc-center-identity">
-            <div class="mc-center-avatar">\${image}</div>
-            <div class="mc-center-name"><h4>\${escapeHTML(center.name||"مركز طبي")}</h4><p><span>⌖</span> \${escapeHTML(center.city||"المحافظة غير محددة")}</p></div>
-          </div><span class="mc-state-pill \${active?"is-active":"is-paused"}">\${active?"فعال":"موقوف"}</span></div>
+            <div class="mc-center-avatar">${image}</div>
+            <div class="mc-center-name"><h4>${escapeHTML(center.name||"مركز طبي")}</h4><p><span>⌖</span> ${escapeHTML(center.city||"المحافظة غير محددة")}</p></div>
+          </div><span class="mc-state-pill ${active?"is-active":"is-paused"}">${active?"فعال":"موقوف"}</span></div>
           <div class="mc-center-facts">
-            <div><small>رقم الهاتف</small><strong dir="ltr">\${escapeHTML(center.phone||"غير مسجل")}</strong></div>
-            <div><small>عدد الأطباء</small><strong>\${doctorCount} طبيب</strong></div>
-            <div><small>بداية الاشتراك</small><strong>\${escapeHTML(startLabel)}</strong></div>
-            <div><small>نهاية الاشتراك</small><strong>\${escapeHTML(expiryLabel)}</strong></div>
+            <div><small>رقم الهاتف</small><strong dir="ltr">${escapeHTML(center.phone||"غير مسجل")}</strong></div>
+            <div><small>عدد الأطباء</small><strong>${doctorCount} طبيب</strong></div>
+            <div><small>بداية الاشتراك</small><strong>${escapeHTML(startLabel)}</strong></div>
+            <div><small>نهاية الاشتراك</small><strong>${escapeHTML(expiryLabel)}</strong></div>
           </div>
-          <div class="mc-subscription-strip \${overdue?"is-overdue":"is-current"}"><span>\${subscriptionLabel}</span><span>\${overdue?"يحتاج تجديد":"اشتراك 30 يوماً"}</span></div>
-          \${center.address?'<p class="mc-center-address">'+escapeHTML(center.address)+'</p>':''}
+          <div class="mc-subscription-strip ${overdue?"is-overdue":"is-current"}"><span>${subscriptionLabel}</span><span>${overdue?"يحتاج تجديد":"اشتراك 30 يوماً"}</span></div>
+          ${center.address?'<p class="mc-center-address">'+escapeHTML(center.address)+'</p>':''}
           <div class="mc-center-actions">
-            <button type="button" class="mc-primary-action" onclick="mcChooseCenter('\${center.id}')">إدارة الأطباء</button>
-            <button type="button" onclick="mcRenewCenter('\${center.id}')">تجديد الاشتراك</button>
-            <button type="button" class="\${active?"mc-danger-action":"mc-enable-action"}" onclick="mcToggleCenter('\${center.id}')">\${active?"إيقاف المركز":"إعادة التفعيل"}</button>
+            <button type="button" class="mc-primary-action" onclick="mcChooseCenter('${center.id}')">إدارة الأطباء</button>
+            <button type="button" onclick="mcRenewCenter('${center.id}')">تجديد الاشتراك</button>
+            <button type="button" class="${active?"mc-danger-action":"mc-enable-action"}" onclick="mcToggleCenter('${center.id}')">${active?"إيقاف المركز":"إعادة التفعيل"}</button>
           </div>
-        </article>\`;
+        </article>`;
     }).join("");
   }
 
