@@ -327,7 +327,7 @@ showMessage("loginStatus","تعذر تحميل رقم الهاتف الخاص: "
 return;
 }
 
-currentDoctorId=doctor.id;
+if(!isCenterDoctor)currentDoctorId=doctor.id;
 doctorFee=doctor.consultation_fee;
 
 const fullName=profile.full_name||"دكتور";
@@ -422,7 +422,7 @@ container.appendChild(row);
 }
 
 async function loadSchedule(){
-if(!currentDoctorId)return;
+if(!currentDoctorId&&!currentCenterDoctorId)return;
 showMessage("scheduleStatus","جارٍ تحميل الدوام...");
 const {data,error}=isCenterDoctor
  ?await db.from("center_doctor_schedules").select("id,center_doctor_id,day_of_week,start_time,end_time,is_available,unlimited_daily,max_daily_patients").eq("center_doctor_id",currentCenterDoctorId)
