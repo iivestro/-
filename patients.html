@@ -551,13 +551,6 @@ async function selectDoctor(doctor,name){
  dateInput.type="date";
  dateInput.id="appointmentDate";
 
- const timeLabel=document.createElement("label");
- timeLabel.textContent="وقت الموعد";
-
- const timeInput=document.createElement("input");
- timeInput.type="time";
- timeInput.id="appointmentTime";
-
  const notesLabel=document.createElement("label");
  notesLabel.textContent="ملاحظات (اختياري)";
 
@@ -574,7 +567,7 @@ async function selectDoctor(doctor,name){
  result.id="bookingMessage";
  result.className="msg";
 
- panel.append(heading,scheduleMessage,dateLabel,dateInput,timeLabel,timeInput,notesLabel,notes,book,result);
+ panel.append(heading,scheduleMessage,dateLabel,dateInput,notesLabel,notes,book,result);
  el("doctorList").prepend(panel);
 
  const today=new Date();
@@ -586,7 +579,7 @@ async function selectDoctor(doctor,name){
  book.addEventListener("click",bookAppointment);
 
  const {data,error}=await db.from("doctor_schedules")
-  .select("day_of_week,start_time,end_time,is_available")
+  .select("day_of_week,start_time,end_time,is_available,unlimited_daily,max_daily_patients")
   .eq("doctor_id",doctor.id)
   .eq("is_available",true);
 
@@ -619,72 +612,27 @@ function checkSelectedDay(){
   return;
  }
 
- el("scheduleMessage").textContent="دوام الطبيب من "+schedule.start_time.slice(0,5)+" إلى "+schedule.end_time.slice(0,5);
+ const cap=schedule.unlimited_daily===false?("الحد اليومي: "+schedule.max_daily_patients+" مراجع"):"العدد اليومي غير محدد";
+ el("scheduleMessage").textContent="دوام الطبيب من "+schedule.start_time.slice(0,5)+" إلى "+schedule.end_time.slice(0,5)+" — "+cap+". سيحدد الطبيب ساعة الحضور عند الموافقة.";
  el("bookButton").disabled=false;
 }
 
 async function bookAppointment(){
  if(!selectedDoctor)return;
-
  const date=el("appointmentDate").value;
- const time=el("appointmentTime").value;
  const notes=el("appointmentNotes").value.trim();
-
- if(!date||!time){
-  el("bookingMessage").textContent="اختر تاريخ ووقت الموعد.";
-  return;
- }
-
+ if(!date){el("bookingMessage").textContent="اختر يوم المراجعة.";return;}
  const day=new Date(date+"T12:00:00").getDay();
- const schedule=selectedSchedules.find(s=>Number(s.day_of_week)===day);
-
- if(!schedule){
-  el("bookingMessage").textContent="لا يوجد دوام للطبيب في هذا اليوم.";
-  return;
- }
-
- if(time<schedule.start_time.slice(0,5)||time>=schedule.end_time.slice(0,5)){
-  el("bookingMessage").textContent="الوقت المختار خارج ساعات دوام الطبيب.";
-  return;
- }
-
- const appointmentDate=new Date(date+"T"+time+":00");
-
- if(appointmentDate<=new Date()){
-  el("bookingMessage").textContent="اختر موعداً في المستقبل.";
-  return;
- }
-
+ if(!selectedSchedules.some(s=>Number(s.day_of_week)===day)){el("bookingMessage").textContent="لا يوجد دوام للطبيب في هذا اليوم.";return;}
  const {data:{user},error:authError}=await db.auth.getUser();
-
- if(authError||!user){
-  el("bookingMessage").textContent="انتهت جلسة الدخول. سجل الدخول مجدداً.";
-  return;
- }
-
- const button=el("bookButton");
- button.disabled=true;
- el("bookingMessage").textContent="جارٍ إرسال طلب الحجز...";
-
- const {error}=await db.from("appointments").insert({
-  patient_id:user.id,
-  doctor_id:selectedDoctor.id,
-  appointment_at:appointmentDate.toISOString(),
-  status:"pending",
-  notes:notes||null
- });
-
+ if(authError||!user){el("bookingMessage").textContent="انتهت جلسة الدخول. سجل الدخول مجدداً.";return;}
+ const button=el("bookButton");button.disabled=true;el("bookingMessage").textContent="جارٍ إرسال طلب الحجز...";
+ const {data,error}=await db.rpc("patient_request_doctor_appointment",{p_doctor_id:selectedDoctor.id,p_requested_date:date,p_notes:notes||null});
  button.disabled=false;
-
- if(error){
-  el("bookingMessage").textContent="تعذر إرسال الحجز: "+error.message;
-  return;
- }
-
- el("bookingMessage").textContent="تم إرسال طلب الحجز بنجاح.";
+ if(error||!data?.success){el("bookingMessage").textContent="تعذر إرسال طلب الحجز: "+(error?.message||"تعذر التحقق من السعة اليومية");return;}
+ el("bookingMessage").textContent="تم إرسال طلبك. سيحدد الطبيب ساعة الحضور عند الموافقة.";
  await loadMyAppointments();
 }
-
 async function loadMyAppointments(){
  const {data:{user}}=await db.auth.getUser();if(!user)return;
  const list=el("myAppointmentsList");list.textContent="جاري تحميل الحجوزات...";
