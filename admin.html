@@ -167,6 +167,58 @@ tbody tr:hover{background:#f5fbfa}
  .representative-record .admin-card-actions button{flex:1 1 100%;min-width:0}
 }
 
+
+/* Exclusive medical-centers admin workspace */
+#medicalCentersAdminSection{--mc-ink:#12344a;--mc-muted:#718695;--mc-teal:#087f83}
+#medicalCentersAdminSection>.section-title{padding:22px 24px;border-radius:22px;background:radial-gradient(circle at 8% 0%,rgba(88,207,197,.20),transparent 34%),linear-gradient(125deg,#102f46,#14566a);color:#fff;box-shadow:0 16px 38px rgba(15,55,76,.14)}
+#medicalCentersAdminSection>.section-title h2{color:#fff;font-size:23px}
+#medicalCentersAdminSection>.section-title p{color:#d2e7eb}
+#medicalCentersAdminSection>.section-title .btn-light{background:#fff;color:#155568;border:0}
+#medicalCentersAdminSection>.grid{gap:13px}
+#medicalCentersAdminSection>.grid .stat{border:1px solid #e0ecef;border-radius:18px;background:linear-gradient(145deg,#fff,#f4fafb);box-shadow:0 8px 24px rgba(19,57,75,.055);padding:18px}
+#medicalCentersAdminSection>.grid .stat strong{color:#087f83;font-size:26px}
+#medicalCentersAdminSection>hr{border:0;border-top:1px solid #e6eef0;margin:27px 0}
+#medicalCentersAdminSection h3{color:var(--mc-ink);font-size:17px}
+#medicalCentersAdminSection form#mcCreateForm,#medicalCentersAdminSection form#mcDoctorForm{padding:22px;border:1px solid #e0ebed;border-radius:20px;background:linear-gradient(150deg,#fff,#f8fbfc);box-shadow:0 10px 28px rgba(18,52,74,.045)}
+#medicalCentersAdminSection input,#medicalCentersAdminSection select,#medicalCentersAdminSection textarea{border-radius:12px;border-color:#d8e5e8;min-height:45px}
+#medicalCentersAdminSection button{border-radius:11px;min-height:42px}
+#medicalCentersAdminSection .mc-center-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:18px 0}
+#medicalCentersAdminSection .mc-center-search{display:flex;align-items:center;gap:9px;flex:1 1 280px;min-height:46px;padding:0 14px;border:1px solid #dce8eb;border-radius:13px;background:#fff}
+#medicalCentersAdminSection .mc-center-search span{font-size:24px;color:#0b8888}
+#medicalCentersAdminSection .mc-center-search input{border:0;outline:0;box-shadow:none;min-height:42px;width:100%;padding:0}
+#medicalCentersAdminSection #mcCenterFilter{min-width:175px;background:#fff}
+#medicalCentersAdminSection .mc-center-results{color:#6d8490;font-size:12px;font-weight:700}
+#medicalCentersAdminSection .mc-center-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+#medicalCentersAdminSection .mc-center-card{min-width:0;padding:18px;border:1px solid #dce9eb;border-radius:20px;background:linear-gradient(150deg,#fff,#f8fbfc);box-shadow:0 10px 28px rgba(16,52,72,.06);transition:transform .18s ease,box-shadow .18s ease}
+#medicalCentersAdminSection .mc-center-card:hover{transform:translateY(-2px);box-shadow:0 15px 34px rgba(16,52,72,.10)}
+#medicalCentersAdminSection .mc-center-card-top,#medicalCentersAdminSection .mc-center-identity{display:flex;align-items:center;gap:12px}
+#medicalCentersAdminSection .mc-center-card-top{justify-content:space-between;padding-bottom:15px;border-bottom:1px solid #e7eff1}
+#medicalCentersAdminSection .mc-center-avatar{width:54px;height:54px;flex:0 0 54px;display:grid;place-items:center;overflow:hidden;border-radius:16px;background:linear-gradient(145deg,#d9f4ef,#dceefa);color:#087f83;font-size:23px;font-weight:900}
+#medicalCentersAdminSection .mc-center-avatar img{width:100%;height:100%;object-fit:cover}
+#medicalCentersAdminSection .mc-center-name{min-width:0}
+#medicalCentersAdminSection .mc-center-name h4{margin:0;color:#143c50;font-size:16px;line-height:1.5;overflow-wrap:anywhere}
+#medicalCentersAdminSection .mc-center-name p{margin:4px 0 0;color:#718895;font-size:12px}
+#medicalCentersAdminSection .mc-state-pill{padding:7px 11px;border-radius:30px;font-size:11px;font-weight:800;white-space:nowrap}
+#medicalCentersAdminSection .mc-state-pill.is-active{background:#e5f7ef;color:#087a55}
+#medicalCentersAdminSection .mc-state-pill.is-paused{background:#fff0ed;color:#b44c3d}
+#medicalCentersAdminSection .mc-center-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:15px 0}
+#medicalCentersAdminSection .mc-center-facts>div{min-width:0;padding:11px 12px;border:1px solid #e7eef0;border-radius:12px;background:#fff;display:flex;flex-direction:column;gap:5px}
+#medicalCentersAdminSection .mc-center-facts small{color:#81929b;font-size:10px}
+#medicalCentersAdminSection .mc-center-facts strong{color:#24495a;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+#medicalCentersAdminSection .mc-subscription-strip{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:11px 13px;border-radius:12px;font-size:12px;font-weight:800}
+#medicalCentersAdminSection .mc-subscription-strip.is-current{background:#eaf7f4;color:#087d70}
+#medicalCentersAdminSection .mc-subscription-strip.is-overdue{background:#fff1ed;color:#b34d3c}
+#medicalCentersAdminSection .mc-center-address{margin:12px 2px 0;color:#6b818d;font-size:12px;line-height:1.8}
+#medicalCentersAdminSection .mc-center-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px;padding-top:14px;border-top:1px solid #e7eff1}
+#medicalCentersAdminSection .mc-center-actions button{flex:1 1 105px;padding:9px 10px;border:1px solid #dce7e9;background:#fff;color:#365767;font-size:11px;font-weight:800}
+#medicalCentersAdminSection .mc-center-actions .mc-primary-action{background:#087f83;border-color:#087f83;color:#fff}
+#medicalCentersAdminSection .mc-center-actions .mc-danger-action{background:#fff4f1;border-color:#f2d7d1;color:#ad4c3e}
+#medicalCentersAdminSection .mc-center-actions .mc-enable-action{background:#eaf7f0;border-color:#ccebdd;color:#087a55}
+#medicalCentersAdminSection .mc-center-empty{grid-column:1/-1;padding:30px}
+#medicalCentersAdminSection .photo-preview,#medicalCentersAdminSection .admin-photo-preview{padding:16px;border:1px dashed #c9dcdf;border-radius:16px;background:#f8fbfc}
+@media(max-width:760px){#medicalCentersAdminSection .mc-center-grid{grid-template-columns:1fr}#medicalCentersAdminSection>.section-title{padding:18px}#medicalCentersAdminSection .mc-center-card{padding:15px}}
+@media(max-width:430px){#medicalCentersAdminSection .mc-center-facts{grid-template-columns:1fr 1fr}#medicalCentersAdminSection .mc-center-actions button{flex-basis:100%}}
+
 </style>
 </head>
 <body>
@@ -1046,9 +1098,9 @@ function representativeCard(row){
  const expires=representativeDate(row.subscription_expires_at);
  let actions="";
  if(status==="pending")actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">موافقة وتفعيل الحساب</button><button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','rejected')">رفض الطلب</button>`;
- else if(status==="approved")actions=`<button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','suspended')">إيقاف الحساب</button>`;
- else if(status==="suspended")actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">إعادة التفعيل</button><button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','rejected')">رفض الحساب</button>`;
+ else if(status==="approved")actions=`<button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','suspended')">إيقاف الحساب</button><button type="button" onclick="rpZEAWYtiB6bJ16NuLbGCc6CZ6jJdKfb63('${row.profile_id}')">تأكيد استلام 20,000 د.ع وتجديد 30 يوماً</button>`; else if(status==="suspended")actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">إعادة التفعيل</button><button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','rejected')">رفض الحساب</button>`;
  else if(status==="rejected")actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">قبول الحساب</button>`;
+ else if(status==="approved")actions=`<button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','suspended')">إيقاف الحساب</button><button type="button" onclick="rpZEAWYtiB6bJ16NuLbGCc6CZ6jJdKfb63('${row.profile_id}')">تأكيد استلام 20,000 د.ع وتجديد 30 يوماً</button>`;
  const subscription=representativeSubscriptionLabel(row);
  return `<article class="admin-record-card representative-record">
   <div class="admin-record-head"><div class="admin-avatar"><span>${escapeHTML(name.trim().slice(0,1)||"م")}</span></div><div class="admin-record-title"><strong>${escapeHTML(name)}</strong><span>${escapeHTML(representativeEmployerLabel(row.employer_type))}</span></div><span class="rep-status ${escapeHTML(status)}">${escapeHTML(representativeStatusLabel(status))}</span></div>
@@ -1241,6 +1293,8 @@ db.auth.getSession().then(async({data})=>{
  const originalLoadRepresentatives=window.loadRepresentatives;
  if(typeof originalLoadRepresentatives!=='function'){console.error('loadRepresentatives غير موجودة');return;}
  const section=document.getElementById('representativesSection');
+ const renderRepresentativeCards=window.renderRepresentatives;
+ if(typeof renderRepresentativeCards!=='function'){console.error('representative card renderer unavailable');return;}
  if(!section)return;
 
  const style=document.createElement('style');
@@ -1254,59 +1308,7 @@ db.auth.getSession().then(async({data})=>{
  if(description)description.textContent='إدارة حسابات المندوبين والاشتراكات. الاشتراك 20,000 دينار عراقي لكل 30 يوماً. المندوبون الحاليون مشمولون بالفترة المجانية المحددة في حساباتهم.';
 
  window.renderRepresentatives=function(){
-  const tbody=document.getElementById('representativesTable');
-  if(!tbody)return;
-
-  const term=(document.getElementById('representativeSearch')?.value||'').trim().toLowerCase();
-  const rows=(managedRepresentatives||[]).filter(function(row){
-   const profile=row.profile||{};
-   return [profile.full_name,row.phone,profile.governorate,row.employer_type,row.employer_name,representativeStatusLabel(row.status)].filter(Boolean).join(' ').toLowerCase().includes(term);
-  });
-
-  if(!rows.length){
-   tbody.innerHTML='<tr><td colspan="9" class="empty-state">لا توجد حسابات مندوبين مطابقة.</td></tr>';
-   return;
-  }
-
-  tbody.innerHTML=rows.map(function(row){
-   const profile=row.profile||{};
-   const status=row.status||'pending';
-   const id=String(row.profile_id||'').replace(/[^a-f0-9-]/gi,'');
-   const date=row.created_at?new Date(row.created_at).toLocaleDateString('ar-IQ'):'—';
-   const started=row.subscription_started_at?new Date(row.subscription_started_at):null;
-   const expires=row.subscription_expires_at?new Date(row.subscription_expires_at):null;
-   const validStarted=started&&!Number.isNaN(started.getTime());
-   const validExpiry=expires&&!Number.isNaN(expires.getTime());
-   const active=validExpiry&&expires>new Date();
-   const trial=row.subscription_is_trial===true;
-   const subLabel=active?(trial?'تجريبي مجاني':'فعال'):(validExpiry?'منتهي':'غير مفعّل');
-   const subClass=active?(trial?'trial':'active'):(validExpiry?'expired':'pending');
-   const startedLabel=validStarted?started.toLocaleDateString('ar-IQ'):'غير محدد';
-   const expiryLabel=validExpiry?expires.toLocaleDateString('ar-IQ'):'غير محدد';
-
-   let actions='';
-   if(status==='pending'){
-    actions='<button class="approve-btn" onclick="changeRepresentativeStatus(\''+id+'\',\'approved\')">قبول</button><button class="reject-btn" onclick="changeRepresentativeStatus(\''+id+'\',\'rejected\')">رفض</button>';
-   }else if(status==='approved'){
-    actions='<button class="reject-btn" onclick="changeRepresentativeStatus(\''+id+'\',\'suspended\')">إيقاف الحساب</button><button onclick="rpZEAWYtiB6bJ16NuLbGCc6CZ6jJdKfb63(\''+id+'\')">تأكيد استلام 20,000 د.ع وتجديد 30 يوماً</button>';
-   }else if(status==='suspended'){
-    actions='<button class="approve-btn" onclick="changeRepresentativeStatus(\''+id+'\',\'approved\')">إعادة التفعيل</button><button class="reject-btn" onclick="changeRepresentativeStatus(\''+id+'\',\'rejected\')">رفض</button>';
-   }else if(status==='rejected'){
-    actions='<button class="approve-btn" onclick="changeRepresentativeStatus(\''+id+'\',\'approved\')">قبول الحساب</button>';
-   }
-
-   return '<tr>'+
-    '<td>'+escapeHTML(profile.full_name||'غير محدد')+'</td>'+
-    '<td>'+escapeHTML(row.phone||'غير مسجل')+'</td>'+
-    '<td>'+escapeHTML(profile.governorate||'غير محددة')+'</td>'+
-    '<td>'+escapeHTML(representativeEmployerLabel(row.employer_type))+'</td>'+
-    '<td>'+escapeHTML(row.employer_name||'غير محددة')+'</td>'+
-    '<td>'+escapeHTML(date)+'</td>'+
-    '<td><span class="rep-status '+escapeHTML(status)+'">'+escapeHTML(representativeStatusLabel(status))+'</span></td>'+
-    '<td><span class="rep-subscription '+subClass+'">'+subLabel+'</span><div class="small">البداية: '+escapeHTML(startedLabel)+'<br>الانتهاء: '+escapeHTML(expiryLabel)+(trial?'<br>فترة مجانية':'')+'</div></td>'+
-    '<td><div class="rep-actions">'+(actions||'—')+'</div></td>'+
-   '</tr>';
-  }).join('');
+  renderRepresentativeCards();
  };
 
  window.loadRepresentatives=async function(){
@@ -1478,25 +1480,15 @@ db.auth.getSession().then(async({data})=>{
     <p id="mcPaymentMessage"></p>
     <p id="mcPaymentError" style="color:#c62828"></p>
 
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>اسم المركز</th>
-            <th>المحافظة</th>
-            <th>الهاتف</th>
-            <th>بداية الاشتراك</th>
-            <th>حالة الاشتراك</th>
-            <th>حالة المركز</th>
-            <th>الأطباء</th>
-            <th>الإجراءات</th>
-          </tr>
-        </thead>
-        <tbody id="mcCentersTable">
-          <tr><td colspan="8">جارٍ تحميل المراكز...</td></tr>
-        </tbody>
-      </table>
+    <div class="mc-center-toolbar">
+      <div class="mc-center-search"><span aria-hidden="true">⌕</span><input id="mcCenterSearch" type="search" placeholder="ابحث باسم المركز أو المحافظة أو الهاتف..."></div>
+      <select id="mcCenterFilter" aria-label="تصفية المراكز">
+        <option value="all">كل المراكز</option><option value="active">المراكز الفعالة</option>
+        <option value="inactive">المراكز الموقوفة</option><option value="overdue">اشتراك منتهي</option>
+      </select>
+      <span id="mcCenterResults" class="mc-center-results">قائمة المراكز</span>
     </div>
+    <div id="mcCentersTable" class="mc-center-grid"><div class="admin-empty">جارٍ تحميل المراكز...</div></div>
 
     <hr>
 
@@ -1717,7 +1709,7 @@ db.auth.getSession().then(async({data})=>{
     message("mcPaymentError", "");
 
     el("mcCentersTable").innerHTML =
-      '<tr><td colspan="8">جارٍ تحميل المراكز...</td></tr>';
+      '<div class="admin-empty">جارٍ تحميل المراكز...</div>';
 
     try {
       await getAdminSession();
@@ -1754,7 +1746,7 @@ db.auth.getSession().then(async({data})=>{
 
     } catch (error) {
       el("mcCentersTable").innerHTML =
-        '<tr><td colspan="8">تعذر تحميل المراكز.</td></tr>';
+        '<div class="admin-empty">تعذر تحميل المراكز.</div>';
 
       message("mcCreateError", "خطأ تحميل المراكز: " + error.message);
     }
@@ -1771,73 +1763,45 @@ db.auth.getSession().then(async({data})=>{
   }
 
   function renderCentersTable() {
-    const tbody = el("mcCentersTable");
-
-    if (!centers.length) {
-      tbody.innerHTML =
-        '<tr><td colspan="8">لا توجد مراكز مسجلة حتى الآن.</td></tr>';
-      return;
-    }
-
-    tbody.innerHTML = centers.map(center => {
-      const subscription = getSubscriptionInfo(center);
-      const overdue = subscription.overdue;
-      const active = center.is_active === true;
-      const doctorCount = centerDoctors.filter(
-        d => d.center_id === center.id
-      ).length;
-
-      const subscriptionLabel = overdue
-        ? "منتهي / متأخر"
-        : "متبقي " + subscription.remaining + " يوم";
-
-      const subscriptionClass = overdue ? "rejected" : "approved";
-      const centerLabel = active ? "فعال" : "موقوف";
-      const centerClass = active ? "approved" : "rejected";
-
-      const startLabel = subscription.start
-        ? formatDate(subscription.start)
-        : "غير محدد";
-
+    const container=el("mcCentersTable");
+    const term=(el("mcCenterSearch")?.value||"").trim().toLocaleLowerCase("ar");
+    const filter=el("mcCenterFilter")?.value||"all";
+    const filtered=centers.filter(center=>{
+      const sub=getSubscriptionInfo(center),active=center.is_active===true;
+      const matchesTerm=[center.name,center.city,center.phone,center.address].filter(Boolean).join(" ").toLocaleLowerCase("ar").includes(term);
+      const matchesFilter=filter==="all"||(filter==="active"&&active)||(filter==="inactive"&&!active)||(filter==="overdue"&&sub.overdue);
+      return matchesTerm&&matchesFilter;
+    });
+    el("mcCenterResults").textContent=filtered.length+" من "+centers.length+" مركز";
+    if(!filtered.length){container.innerHTML='<div class="admin-empty mc-center-empty">لا توجد مراكز مطابقة للبحث أو التصفية.</div>';return;}
+    container.innerHTML=filtered.map(center=>{
+      const subscription=getSubscriptionInfo(center),overdue=subscription.overdue,active=center.is_active===true;
+      const doctorCount=centerDoctors.filter(d=>d.center_id===center.id).length;
+      const subscriptionLabel=overdue?"الاشتراك منتهي":"متبقي "+subscription.remaining+" يوم";
+      const startLabel=subscription.start?formatDate(subscription.start):"غير محدد";
+      const expiryLabel=subscription.expiry?formatDate(subscription.expiry):"غير محدد";
+      const initials=String(center.name||"م").trim().slice(0,1);
+      const image=center.image_url?'<img src="'+escapeHTML(center.image_url)+'" alt="صورة '+escapeHTML(center.name||"المركز")+'" loading="lazy">':'<span>'+escapeHTML(initials)+'</span>';
       return `
-        <tr>
-          <td><strong>${escapeHTML(center.name || "مركز")}</strong></td>
-          <td>${escapeHTML(center.city || "—")}</td>
-          <td>${escapeHTML(center.phone || "—")}</td>
-          <td>${escapeHTML(startLabel)}</td>
-          <td>
-            <span class="status ${subscriptionClass}">
-              ${subscriptionLabel}
-            </span>
-            <div class="small">
-              ${subscription.expiry ? "الانتهاء: " + escapeHTML(formatDate(subscription.expiry)) : ""}
-            </div>
-          </td>
-          <td>
-            <span class="status ${centerClass}">${centerLabel}</span>
-          </td>
-          <td>${doctorCount}</td>
-          <td>
-            <div class="patient-actions">
-              <button type="button"
-                onclick="mcRenewCenter('${center.id}')">
-                تسجيل الدفع وتجديد 30 يوماً
-              </button>
-
-              <button type="button"
-                class="${active ? "reject-btn" : "approve-btn"}"
-                onclick="mcToggleCenter('${center.id}')">
-                ${active ? "إيقاف المركز" : "إعادة التفعيل"}
-              </button>
-
-              <button type="button" class="btn-light"
-                onclick="mcChooseCenter('${center.id}')">
-                إدارة الأطباء
-              </button>
-            </div>
-          </td>
-        </tr>
-      `;
+        <article class="mc-center-card">
+          <div class="mc-center-card-top"><div class="mc-center-identity">
+            <div class="mc-center-avatar">${image}</div>
+            <div class="mc-center-name"><h4>${escapeHTML(center.name||"مركز طبي")}</h4><p><span>⌖</span> ${escapeHTML(center.city||"المحافظة غير محددة")}</p></div>
+          </div><span class="mc-state-pill ${active?"is-active":"is-paused"}">${active?"فعال":"موقوف"}</span></div>
+          <div class="mc-center-facts">
+            <div><small>رقم الهاتف</small><strong dir="ltr">${escapeHTML(center.phone||"غير مسجل")}</strong></div>
+            <div><small>عدد الأطباء</small><strong>${doctorCount} طبيب</strong></div>
+            <div><small>بداية الاشتراك</small><strong>${escapeHTML(startLabel)}</strong></div>
+            <div><small>نهاية الاشتراك</small><strong>${escapeHTML(expiryLabel)}</strong></div>
+          </div>
+          <div class="mc-subscription-strip ${overdue?"is-overdue":"is-current"}"><span>${subscriptionLabel}</span><span>${overdue?"يحتاج تجديد":"اشتراك 30 يوماً"}</span></div>
+          ${center.address?'<p class="mc-center-address">'+escapeHTML(center.address)+'</p>':''}
+          <div class="mc-center-actions">
+            <button type="button" class="mc-primary-action" onclick="mcChooseCenter('${center.id}')">إدارة الأطباء</button>
+            <button type="button" onclick="mcRenewCenter('${center.id}')">تجديد الاشتراك</button>
+            <button type="button" class="${active?"mc-danger-action":"mc-enable-action"}" onclick="mcToggleCenter('${center.id}')">${active?"إيقاف المركز":"إعادة التفعيل"}</button>
+          </div>
+        </article>`;
     }).join("");
   }
 
@@ -2522,6 +2486,8 @@ db.auth.getSession().then(async({data})=>{
 
   el("mcCreateForm").addEventListener("submit", createCenter);
   el("mcRefresh").addEventListener("click", loadMedicalCenters);
+  el("mcCenterSearch").addEventListener("input", renderCentersTable);
+  el("mcCenterFilter").addEventListener("change", renderCentersTable);
   el("mcStopOverdue").addEventListener("click", stopOverdueCenters);
   el("mcDoctorForm").addEventListener("submit", createCenterDoctor);
   el("mcDoctorsCenter").addEventListener("change", loadCenterDoctors);
