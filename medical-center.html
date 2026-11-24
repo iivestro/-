@@ -742,25 +742,17 @@ async function loadDashboard() {
       .select("id,center_id,profile_id,full_name,phone,specialty,qualification,experience_years,consultation_fee,is_active")
       .eq("center_id", center.id).order("full_name");
     if (doctorsError) throw doctorsError;
-    const doctorIds = (doctors || []).map(d => d.id);
-    let appointments = [];
-    if (doctorIds.length) {
-      const result = await db.from("center_appointments")
-        .select("id,patient_id,center_id,center_doctor_id,requested_date,appointment_at,status,notes,rejection_reason,created_at")
-        .eq("center_id", center.id).order("requested_date", { ascending: true });
-      if (result.error) throw result.error;
-      appointments = result.data || [];
-    }
-    const patientIds = [...new Set(appointments.map(a => a.patient_id))];
-    let patients = [];
-    if (patientIds.length) {
-      const result = await db.from("profiles").select("id,full_name,age,governorate").in("id", patientIds);
-      if (result.error) throw result.error;
-      patients = result.data || [];
-    }
-    currentCenterData = { center, doctors: doctors || [], appointments, patients };
+    const { data: appointmentRows, error: appointmentsError } = await db.rpc("center_appointment_dashboard_data");
+    if (appointmentsError) throw appointmentsError;
+    const appointments = (appointmentRows || []).filter(a => a.center_id === center.id).map(a => ({
+      id:a.appointment_id,patient_id:a.patient_id,center_id:a.center_id,center_doctor_id:a.center_doctor_id,
+      requested_date:a.requested_date,appointment_at:a.appointment_at,status:a.appointment_status,
+      notes:a.appointment_notes,rejection_reason:a.rejection_reason,created_at:a.created_at,
+      patient_name:a.patient_name,patient_age:a.patient_age,patient_governorate:a.patient_governorate
+    }));
+    currentCenterData = { center, doctors: doctors || [], appointments };
     renderCenter(center);
-    renderCenterManagement(doctors || [], appointments, patients);
+    renderCenterManagement(doctors || [], appointments, appointments);
 
   } catch (error) {
     $("doctorsContainer").innerHTML = "";
@@ -797,9 +789,9 @@ function renderCenterManagement(doctors, appointments, patients) {
   const rows=appointments.filter(a=>a.center_doctor_id===doctor.id);
   if(!rows.length){const empty=document.createElement("p");empty.textContent="لا توجد حجوزات لهذا الطبيب.";card.append(empty);}
   rows.forEach(a=>{
-   const patient=patients.find(p=>p.id===a.patient_id)||{};
+   const patient=a;
    const box=document.createElement("div");box.className="appointment";
-   const who=document.createElement("strong");who.textContent="المراجع: "+(patient.full_name||"غير معروف");
+   const who=document.createElement("strong");who.textContent="المراجع: "+(patient.patient_name||"غير معروف");
    const when=document.createElement("p");when.textContent="اليوم المطلوب: "+a.requested_date+(a.appointment_at?" | وقت الحضور: "+new Date(a.appointment_at).toLocaleString("ar-IQ",{dateStyle:"medium",timeStyle:"short"}):" | لم تحدد الساعة بعد");
    const status=document.createElement("p");status.textContent="الحالة: "+({pending:"قيد الانتظار",confirmed:"مؤكد",rejected:"مرفوض",cancelled:"ملغي"}[a.status]||a.status);
    const notes=document.createElement("p");notes.textContent="ملاحظات: "+(a.notes||"لا توجد");
