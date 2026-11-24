@@ -1,0 +1,3 @@
+# PATIENT release policy
+
+Develop changes on `develop`, review on `staging`, release to `main` only after approval. Branches alone do not isolate databases. Do not run staging writes or load tests against production Supabase. Provision a separate project with synthetic data and separate credentials before enabling staging runtime. Never copy real patient records into staging. Keep service-role keys server-side. Require syntax/type checks, authorization tests, booking regression tests, and rollback plan before release. Monitor errors and latency; do not claim capacity until measured. Production database migrations must be backward compatible and reviewed separately. No paid resources without owner approval.
