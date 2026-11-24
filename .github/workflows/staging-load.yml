@@ -15,11 +15,11 @@ jobs:
       - uses: grafana/setup-k6-action@v1
       - name: Check staging configuration
         env:
-          STAGING_ANON_KEY: ${{ secrets.STAGING_ANON_KEY }}
+          STAGING_ANON_KEY: sb_publishable_CBPPwjIcmVbGK1fr8EHyYg_DlfldbK6
         run: test -n "$STAGING_ANON_KEY"
       - name: Run bounded smoke test
         env:
-          STAGING_ANON_KEY: ${{ secrets.STAGING_ANON_KEY }}
+          STAGING_ANON_KEY: sb_publishable_CBPPwjIcmVbGK1fr8EHyYg_DlfldbK6
         run: k6 run --summary-export=summary.json tests/load/smoke.js
       - uses: actions/upload-artifact@v4
         if: always()
