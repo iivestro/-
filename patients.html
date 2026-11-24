@@ -83,6 +83,47 @@ label{display:block;margin:10px 0 5px;color:#355568;font-weight:700;font-size:13
 #myBookingsButton{background:linear-gradient(135deg,#123b55,#0e9f9a);border:2px solid white;box-shadow:0 12px 28px rgba(16,47,70,.24)}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important}}
 
+
+/* Provider directory refresh */
+#centerList,#doctorList{align-items:stretch;gap:18px}
+.center-card,.doctor{position:relative;overflow:hidden;padding:0;border:1px solid #dce9eb;border-radius:22px;background:#fff;box-shadow:0 12px 30px rgba(16,47,70,.07);transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
+.center-card:hover,.doctor:hover{transform:translateY(-3px);border-color:#a8d9d5;box-shadow:0 18px 38px rgba(16,47,70,.11)}
+.center-card{display:flex;flex-direction:column;min-height:100%}
+.center-cover{height:150px;position:relative;background:linear-gradient(135deg,#10394f,#147e82 65%,#27b5a8);overflow:hidden}
+.center-cover:after{content:"✚";position:absolute;left:22px;top:10px;font-size:100px;line-height:1;color:#ffffff18;font-weight:900}
+.center-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.center-cover-fallback{height:100%;display:grid;place-items:center;color:#fff;font-size:48px;font-weight:800}
+.center-content{padding:18px 19px 19px;display:flex;flex-direction:column;flex:1}
+.center-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}
+.center-heading h3{font-size:18px;line-height:1.5;margin:0;color:#123b55}
+.provider-kind{white-space:nowrap;background:#e9f7f5;color:#087c78;border:1px solid #d5eeea;border-radius:30px;padding:4px 9px;font-size:11px;font-weight:800}
+.center-meta{display:grid;gap:8px;margin:0 0 16px}
+.center-meta-row{display:flex;align-items:flex-start;gap:9px;color:#617b89;font-size:13px;line-height:1.7}
+.center-meta-row b{color:#294c5d;font-weight:700}
+.center-card>button,.center-content>button{width:100%;margin-top:auto}
+.doctor{padding:17px}
+.doctor-toggle{display:grid;grid-template-columns:82px minmax(0,1fr) 24px;align-items:center;gap:14px;width:100%;min-height:82px;padding:0;background:transparent!important;color:inherit!important;box-shadow:none!important;text-align:right}
+.doctor-toggle:after{content:"⌄";font-size:23px;color:#0e9f9a;align-self:center;transition:transform .2s}
+.doctor-toggle[aria-expanded="true"]:after{transform:rotate(180deg)}
+.doctor-photo{width:82px;height:82px;object-fit:cover;border-radius:19px;border:1px solid #d9e9e9;background:#eef7f6;box-shadow:0 5px 14px #123b5510}
+.doctor-summary{min-width:0;display:grid;gap:5px}
+.doctor-name{font-size:16px;line-height:1.5;font-weight:800;color:#123b55;overflow-wrap:anywhere}
+.doctor-specialty{display:inline-flex;align-items:center;width:fit-content;max-width:100%;padding:3px 10px;border-radius:30px;background:#eaf7f5;color:#087c78;font-size:12px;font-weight:700}
+.doctor-subline{font-size:12px;color:#718795}
+.doctor-details{border-top:1px solid #e6eeee;margin-top:16px;padding-top:15px;display:grid;gap:8px}
+.doctor-details .info{margin:0;padding:10px 12px;background:#f5f9f9;border:1px solid #e7efef;border-radius:12px;color:#38586a}
+.doctor-details .muted{line-height:1.9;margin:3px 0}
+.doctor-details button{width:100%;margin-top:7px}
+#centerSearchInfo{padding:0 4px}
+@media(max-width:600px){
+ #centerList,#doctorList{grid-template-columns:1fr}
+ .center-cover{height:132px}
+ .doctor{padding:14px}
+ .doctor-toggle{grid-template-columns:70px minmax(0,1fr) 20px;gap:11px}
+ .doctor-photo{width:70px;height:70px;border-radius:16px}
+ .center-content{padding:16px}
+}
+
 </style>
 </head>
 <body>
@@ -385,20 +426,24 @@ function renderMedicalCenters(centers){
  centers.forEach(center=>{
   const card=document.createElement("article");
   card.className="center-card";
-  const title=document.createElement("h3");
-  title.textContent=center.name||"مركز طبي";
-  const address=document.createElement("p");
-  address.className="muted";
-  address.textContent="العنوان: "+(center.address||center.city||"غير محدد");
-  const phone=document.createElement("p");
-  phone.className="muted";
-  phone.textContent="الهاتف: "+(center.phone||"غير محدد");
-  const button=document.createElement("button");
-  button.type="button";
-  button.textContent="عرض أطباء المركز";
+  const cover=document.createElement("div");cover.className="center-cover";
+  if(center.image_url){
+   const image=document.createElement("img");image.src=center.image_url;image.alt="صورة "+(center.name||"المركز الطبي");image.loading="lazy";
+   image.onerror=()=>{image.remove();cover.classList.add("center-cover-fallback");cover.textContent="✚";};
+   cover.append(image);
+  }else{cover.classList.add("center-cover-fallback");cover.textContent="✚";}
+  const content=document.createElement("div");content.className="center-content";
+  const heading=document.createElement("div");heading.className="center-heading";
+  const title=document.createElement("h3");title.textContent=center.name||"مركز طبي";
+  const kind=document.createElement("span");kind.className="provider-kind";kind.textContent="مركز طبي";
+  heading.append(title,kind);
+  const meta=document.createElement("div");meta.className="center-meta";
+  const addMeta=(icon,label,value)=>{const row=document.createElement("div");row.className="center-meta-row";const mark=document.createElement("span");mark.textContent=icon;const text=document.createElement("span");const strong=document.createElement("b");strong.textContent=label+" ";text.append(strong,document.createTextNode(value||"غير محدد"));row.append(mark,text);meta.append(row);};
+  addMeta("⌖","العنوان:",center.address||center.city);
+  addMeta("☎","الهاتف:",center.phone);
+  const button=document.createElement("button");button.type="button";button.textContent="استعراض أطباء المركز ←";
   button.onclick=()=>openCenterDoctors(center.id,center.name||"المركز الطبي");
-  card.append(title,address,phone,button);
-  list.appendChild(card);
+  content.append(heading,meta,button);card.append(cover,content);list.appendChild(card);
  });
 }
 
@@ -410,7 +455,7 @@ async function loadMedicalCenters(){
  if(el("centerSearchEmpty"))el("centerSearchEmpty").classList.add("hidden");
  if(el("centerSearchInfo"))el("centerSearchInfo").textContent="";
  const {data:centers,error}=await db.from("medical_centers")
-  .select("id,name,address,phone,city,maps_url")
+  .select("id,name,address,phone,city,maps_url,image_url")
   .eq("is_active",true)
   .order("name",{ascending:true});
  if(error){
@@ -487,16 +532,18 @@ async function loadDoctors(centerId=null){
   item.dataset.specialty=normalizeSearch(d.specialties?.name_ar||"");
   const toggle=document.createElement("button");toggle.type="button";toggle.className="doctor-toggle";
   const photo=document.createElement("img");photo.className="doctor-photo";photo.alt="صورة الطبيب";photo.loading="lazy";photo.src=d.photo_url||DEFAULT_DOCTOR_PHOTO;photo.onerror=()=>{photo.onerror=null;photo.src=DEFAULT_DOCTOR_PHOTO;};
-  const area=document.createElement("div"),title=document.createElement("strong"),specialty=document.createElement("div");
+  const area=document.createElement("div"),title=document.createElement("strong"),specialty=document.createElement("div"),subline=document.createElement("span");
+  area.className="doctor-summary";
   title.className="doctor-name";title.textContent=profile.full_name||"طبيب";
   specialty.className="doctor-specialty";specialty.textContent=d.specialties?.name_ar||"اختصاص غير محدد";
-  area.append(title,specialty);toggle.append(photo,area);
+  subline.className="doctor-subline";subline.textContent="طبيب معتمد";
+  area.append(title,specialty,subline);toggle.append(photo,area);toggle.setAttribute("aria-expanded","false");
   const details=document.createElement("div");details.className="doctor-details hidden";
   const info=(label,value)=>{const p=document.createElement("div");p.className="info";p.textContent=label+": "+(value??"غير محدد");details.append(p);};
   info("المؤهل العلمي",d.qualification);info("سنوات الخبرة",d.experience_years);info("أجور الاستشارة",d.consultation_fee);info("العيادة",d.clinics?.name);info("العنوان",d.clinics?.address);
   if(d.bio){const p=document.createElement("p");p.className="muted";p.textContent=d.bio;details.append(p);}
   const book=document.createElement("button");book.type="button";book.textContent="اختيار الطبيب وحجز موعد";book.onclick=()=>selectDoctor(d,profile.full_name||"طبيب");details.append(book);
-  toggle.onclick=()=>details.classList.toggle("hidden");item.append(toggle,details);list.append(item);
+  toggle.onclick=()=>{const opening=details.classList.contains("hidden");details.classList.toggle("hidden");toggle.setAttribute("aria-expanded",String(opening));};item.append(toggle,details);list.append(item);
  });
  filterDoctors();
 }
@@ -521,10 +568,12 @@ async function loadCenterDoctors(centerId){
   item.dataset.name=normalizeSearch(d.full_name||"");item.dataset.specialty=normalizeSearch(d.specialty||"");
   const toggle=document.createElement("button");toggle.type="button";toggle.className="doctor-toggle";
   const photo=document.createElement("img");photo.className="doctor-photo";photo.alt="صورة الطبيب";photo.loading="lazy";photo.src=d.photo_url||DEFAULT_DOCTOR_PHOTO;photo.onerror=()=>{photo.onerror=null;photo.src=DEFAULT_DOCTOR_PHOTO;};
-  const area=document.createElement("div"),title=document.createElement("strong"),specialty=document.createElement("div");
+  const area=document.createElement("div"),title=document.createElement("strong"),specialty=document.createElement("div"),subline=document.createElement("span");
+  area.className="doctor-summary";
   title.className="doctor-name";title.textContent=d.full_name||"طبيب";
   specialty.className="doctor-specialty";specialty.textContent=d.specialty||"اختصاص غير محدد";
-  area.append(title,specialty);toggle.append(photo,area);
+  subline.className="doctor-subline";subline.textContent="ضمن كادر المركز";
+  area.append(title,specialty,subline);toggle.append(photo,area);toggle.setAttribute("aria-expanded","false");
   const details=document.createElement("div");details.className="doctor-details hidden";
   const info=(label,value)=>{const p=document.createElement("div");p.className="info";p.textContent=label+": "+(value??"غير محدد");details.append(p);};
   info("المؤهل العلمي",d.qualification);info("سنوات الخبرة",d.experience_years);info("أجور الاستشارة",d.consultation_fee);
