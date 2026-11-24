@@ -388,7 +388,7 @@ days.forEach(day=>{
 const record=records.find(item=>Number(item.day_of_week)===day.number);
 const row=document.createElement("div");
 row.className="day";
-if(isCenterDoctor)row.style.gridTemplateColumns="repeat(6,minmax(0,1fr))";
+row.style.gridTemplateColumns="repeat(6,minmax(0,1fr))";
 const title=document.createElement("strong");
 title.textContent=day.name;
 const label=document.createElement("label");
@@ -426,7 +426,7 @@ if(!currentDoctorId&&!currentCenterDoctorId)return;
 showMessage("scheduleStatus","جارٍ تحميل الدوام...");
 const {data,error}=isCenterDoctor
  ?await db.from("center_doctor_schedules").select("id,center_doctor_id,day_of_week,start_time,end_time,is_available,unlimited_daily,max_daily_patients").eq("center_doctor_id",currentCenterDoctorId)
- :await db.from("doctor_schedules").select("id,doctor_id,day_of_week,start_time,end_time,is_available").eq("doctor_id",currentDoctorId);
+ :await db.from("doctor_schedules").select("id,doctor_id,day_of_week,start_time,end_time,is_available,unlimited_daily,max_daily_patients").eq("doctor_id",currentDoctorId);
 if(error){
 showMessage("scheduleStatus","تعذر تحميل الدوام: "+error.message);
 return;
