@@ -52,6 +52,37 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .status-rejected{background:#fff0f1;color:#a83245}
 .booking-status-label{display:inline-block;padding:4px 12px;border-radius:20px;background:#eaf8ff;font-weight:bold}
 @media(max-width:600px){main{padding:15px 12px 90px}.hero{padding:25px 20px}.card{padding:17px}.portal-grid,.tabs{grid-template-columns:1fr}.topbar-inner{flex-wrap:wrap}.brand{font-size:14px}.top-actions button{font-size:11px;padding:8px}}
+
+/* PATIENT Signature Medical UI */
+:root{--primary:#0e9f9a;--dark:#123b55;--light:#e8f7f5;--page:#f3f8fa;--text:#183447;--muted:#60798a;--border:#d8e7eb;--navy:#102f46;--shadow:0 16px 42px rgba(16,47,70,.08)}
+body{background:radial-gradient(ellipse at 8% 0%,rgba(14,159,154,.10),transparent 34%),radial-gradient(ellipse at 94% 18%,rgba(44,126,180,.08),transparent 30%),var(--page);color:var(--text);font-family:"Segoe UI",Tahoma,Arial,sans-serif}
+.topbar{background:rgba(255,255,255,.88);backdrop-filter:blur(18px);border-bottom:1px solid rgba(216,231,235,.9);box-shadow:0 5px 24px rgba(16,47,70,.04)}
+.brand{display:flex;align-items:center;gap:10px;color:var(--navy);letter-spacing:.2px}
+.brand:before{content:"✚";display:grid;place-items:center;width:36px;height:36px;border-radius:12px;color:white;background:linear-gradient(145deg,#18b9ae,#087c89);box-shadow:0 7px 18px rgba(14,159,154,.25)}
+main{max-width:1320px;padding-top:30px}
+.hero{position:relative;overflow:hidden;isolation:isolate;background:linear-gradient(115deg,#102f46 0%,#125d70 56%,#0e9f9a 100%);border:1px solid rgba(255,255,255,.16);border-radius:30px;padding:clamp(28px,5vw,54px);box-shadow:0 24px 55px rgba(16,47,70,.18)}
+.hero:before,.hero:after{content:"";position:absolute;border:1px solid rgba(255,255,255,.12);border-radius:50%;z-index:-1}
+.hero:before{width:330px;height:330px;inset:-160px auto auto -65px;box-shadow:0 0 0 32px rgba(255,255,255,.025),0 0 0 68px rgba(255,255,255,.02)}
+.hero:after{width:210px;height:210px;inset:auto 7% -145px auto;background:rgba(255,255,255,.045)}
+.hero h1{letter-spacing:-.5px;text-shadow:0 3px 20px rgba(0,0,0,.12)}
+.hero p{max-width:720px;color:rgba(255,255,255,.86)}
+.card,.center-card,.doctor{background:rgba(255,255,255,.96);border:1px solid rgba(216,231,235,.95);border-radius:22px;box-shadow:var(--shadow);padding:clamp(18px,2.4vw,28px)}
+.card h2,.card h3{color:var(--navy);letter-spacing:-.2px}
+button{min-height:44px;border-radius:13px;background:linear-gradient(135deg,#109e9a,#087c89);box-shadow:0 6px 15px rgba(14,159,154,.16);transition:transform .18s ease,box-shadow .18s ease,filter .18s ease}
+button:hover{filter:brightness(1.04);transform:translateY(-1px);box-shadow:0 10px 22px rgba(14,159,154,.2)}
+button.secondary{background:#edf6f7;color:#245468;border:1px solid #d5e7e9;box-shadow:none}
+input,select,textarea{min-height:46px;border:1px solid #d6e4e8;border-radius:12px;background:#fbfdfe;padding:11px 13px;transition:border-color .18s,box-shadow .18s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#109e9a;box-shadow:0 0 0 4px rgba(16,158,154,.12);background:white}
+label{display:block;margin:10px 0 5px;color:#355568;font-weight:700;font-size:13px}
+.portal-card{min-height:150px;text-align:right;border:1px solid #d9e9ec;background:linear-gradient(145deg,#fff,#f1f8f8);color:var(--navy);box-shadow:none;padding:22px}
+.portal-card strong{display:block;font-size:18px;margin-bottom:8px;color:#0d7778}
+.portal-card span{display:block;color:#617b89;font-weight:400;line-height:1.8}
+.portal-card:hover{border-color:#7dcac4;background:#f0fbfa}
+.search-wrap input{box-shadow:0 8px 24px rgba(16,47,70,.06)}
+.info{background:#eff8f8;border:1px solid #e0eeee;border-radius:12px}
+#myBookingsButton{background:linear-gradient(135deg,#123b55,#0e9f9a);border:2px solid white;box-shadow:0 12px 28px rgba(16,47,70,.24)}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important}}
+
 </style>
 </head>
 <body>
