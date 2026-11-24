@@ -727,20 +727,36 @@ async function loadDashboard() {
 
     if (!valid) return;
 
-    const { data, error } = await db.rpc("center_dashboard_data");
-
-    if (error) {
-      throw new Error(error.message || "تعذر تحميل بيانات المركز.");
+    const { data: { user }, error: authError } = await db.auth.getUser();
+    if (authError || !user) throw new Error("انتهت جلسة الدخول.");
+    const { data: center, error: centerError } = await db.from("medical_centers")
+      .select("id,profile_id,name,city,address,phone,maps_url,is_active")
+      .eq("profile_id", user.id).maybeSingle();
+    if (centerError) throw centerError;
+    if (!center) throw new Error("لم يتم العثور على مركز مرتبط بهذا الحساب.");
+    const { data: doctors, error: doctorsError } = await db.from("center_doctors")
+      .select("id,center_id,profile_id,full_name,phone,specialty,qualification,experience_years,consultation_fee,is_active")
+      .eq("center_id", center.id).order("full_name");
+    if (doctorsError) throw doctorsError;
+    const doctorIds = (doctors || []).map(d => d.id);
+    let appointments = [];
+    if (doctorIds.length) {
+      const result = await db.from("center_appointments")
+        .select("id,patient_id,center_id,center_doctor_id,requested_date,appointment_at,status,notes,rejection_reason,created_at")
+        .eq("center_id", center.id).order("requested_date", { ascending: true });
+      if (result.error) throw result.error;
+      appointments = result.data || [];
     }
-
-    if (!data || !data.center) {
-      throw new Error("لم يتم العثور على بيانات المركز.");
+    const patientIds = [...new Set(appointments.map(a => a.patient_id))];
+    let patients = [];
+    if (patientIds.length) {
+      const result = await db.from("profiles").select("id,full_name,age,governorate").in("id", patientIds);
+      if (result.error) throw result.error;
+      patients = result.data || [];
     }
-
-    currentCenterData = data;
-
-    renderCenter(data.center);
-    renderDoctors(data.doctors || [], data.appointments || []);
+    currentCenterData = { center, doctors: doctors || [], appointments, patients };
+    renderCenter(center);
+    renderCenterManagement(doctors || [], appointments, patients);
 
   } catch (error) {
     $("doctorsContainer").innerHTML = "";
@@ -751,6 +767,113 @@ async function loadDashboard() {
       "error"
     );
   }
+}
+
+function renderCenterManagement(doctors, appointments, patients) {
+ const container=$("doctorsContainer");
+ const pending=appointments.filter(a=>a.status==="pending").length;
+ const confirmed=appointments.filter(a=>a.status==="confirmed").length;
+ $("doctorsCount").textContent=doctors.length;
+ $("appointmentsCount").textContent=appointments.length;
+ $("pendingCount").textContent=pending;
+ $("approvedCount").textContent=confirmed;
+ container.innerHTML="";
+ if(!doctors.length){container.textContent="لا يوجد أطباء مسجلون في هذا المركز حالياً.";return;}
+ const dayNames=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+ doctors.forEach(doctor=>{
+  const card=document.createElement("section");card.className="doctor-card";
+  const heading=document.createElement("h3");heading.textContent="د. "+doctor.full_name;
+  const details=document.createElement("p");details.textContent="الاختصاص: "+(doctor.specialty||"غير محدد")+" | المؤهل: "+(doctor.qualification||"غير محدد")+" | الخبرة: "+(doctor.experience_years??"غير محددة")+" | أجرة الكشف: "+(doctor.consultation_fee??"غير محددة")+" د.ع | الحالة: "+(doctor.is_active?"فعال":"موقوف");
+  card.append(heading,details);
+  const scheduleTitle=document.createElement("h4");scheduleTitle.textContent="دوام الطبيب والحد اليومي";card.append(scheduleTitle);
+  const scheduleBox=document.createElement("div");scheduleBox.className="appointment-info";
+  const scheduleStatus=document.createElement("p");scheduleStatus.className="muted";scheduleStatus.textContent="جارٍ تحميل الدوام...";
+  scheduleBox.append(scheduleStatus);card.append(scheduleBox);
+  const appointmentTitle=document.createElement("h4");appointmentTitle.textContent="طلبات وحجوزات المراجعين";card.append(appointmentTitle);
+  const rows=appointments.filter(a=>a.center_doctor_id===doctor.id);
+  if(!rows.length){const empty=document.createElement("p");empty.textContent="لا توجد حجوزات لهذا الطبيب.";card.append(empty);}
+  rows.forEach(a=>{
+   const patient=patients.find(p=>p.id===a.patient_id)||{};
+   const box=document.createElement("div");box.className="appointment";
+   const who=document.createElement("strong");who.textContent="المراجع: "+(patient.full_name||"غير معروف");
+   const when=document.createElement("p");when.textContent="اليوم المطلوب: "+a.requested_date+(a.appointment_at?" | وقت الحضور: "+new Date(a.appointment_at).toLocaleString("ar-IQ",{dateStyle:"medium",timeStyle:"short"}):" | لم تحدد الساعة بعد");
+   const status=document.createElement("p");status.textContent="الحالة: "+({pending:"قيد الانتظار",confirmed:"مؤكد",rejected:"مرفوض",cancelled:"ملغي"}[a.status]||a.status);
+   const notes=document.createElement("p");notes.textContent="ملاحظات: "+(a.notes||"لا توجد");
+   box.append(who,when,status,notes);
+   if(a.rejection_reason){const reason=document.createElement("p");reason.textContent="سبب الرفض: "+a.rejection_reason;box.append(reason);}
+   if(a.status==="pending"||a.status==="confirmed"){
+    const actions=document.createElement("div");actions.className="appointment-actions";
+    const set=document.createElement("button");set.type="button";set.textContent=a.status==="pending"?"موافقة وتحديد الساعة":"تغيير الموعد";set.onclick=()=>decideCenterAppointment(a,a.status==="pending"?"confirm":"reschedule");
+    actions.append(set);
+    if(a.status==="pending"){const reject=document.createElement("button");reject.type="button";reject.className="btn btn-danger";reject.textContent="رفض";reject.onclick=()=>decideCenterAppointment(a,"reject");actions.append(reject);}
+    box.append(actions);
+   }
+   card.append(box);
+  });
+  container.append(card);
+  loadCenterDoctorScheduleEditor(doctor,scheduleBox,scheduleStatus);
+ });
+}
+
+async function loadCenterDoctorScheduleEditor(doctor,box,status){
+ const {data,error}=await db.from("center_doctor_schedules")
+  .select("id,day_of_week,start_time,end_time,is_available,unlimited_daily,max_daily_patients")
+  .eq("center_doctor_id",doctor.id).order("day_of_week");
+ if(error){status.textContent="تعذر تحميل الدوام: "+error.message;return;}
+ box.innerHTML="";
+ const names=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+ for(let day=0;day<7;day++){
+  const record=(data||[]).find(x=>Number(x.day_of_week)===day);
+  const row=document.createElement("div");row.className="schedule-row";
+  const title=document.createElement("strong");title.textContent=names[day];
+  const available=document.createElement("input");available.type="checkbox";available.checked=record?.is_available===true;
+  const start=document.createElement("input");start.type="time";start.value=record?.start_time?.slice(0,5)||"09:00";
+  const end=document.createElement("input");end.type="time";end.value=record?.end_time?.slice(0,5)||"14:00";
+  const unlimited=document.createElement("input");unlimited.type="checkbox";unlimited.checked=record?record.unlimited_daily!==false:true;
+  const limit=document.createElement("input");limit.type="number";limit.min="1";limit.max="500";limit.placeholder="الحد اليومي";limit.value=record?.max_daily_patients??"";limit.disabled=unlimited.checked;
+  unlimited.addEventListener("change",()=>limit.disabled=unlimited.checked);
+  row.append(title,available,start,end,unlimited,limit);box.append(row);
+  row.dataset.day=String(day);row.dataset.recordId=record?.id||"";
+ }
+ const save=document.createElement("button");save.type="button";save.textContent="حفظ دوام "+doctor.full_name;
+ save.onclick=()=>saveCenterDoctorSchedule(doctor.id,box,save);
+ box.append(save);
+}
+
+async function saveCenterDoctorSchedule(doctorId,box,button){
+ button.disabled=true;
+ try{
+  for(const row of [...box.querySelectorAll(".schedule-row")]){
+   const [title,available,start,end,unlimited,limit]=row.children;
+   const day=Number(row.dataset.day);
+   if(available.checked&&(!start.value||!end.value||start.value>=end.value))throw new Error("تحقق من أوقات دوام اليوم "+title.textContent);
+   const max=Number(limit.value);
+   if(available.checked&&!unlimited.checked&&(!Number.isInteger(max)||max<1||max>500))throw new Error("حدد الحد اليومي أو اختر غير محدد ليوم "+title.textContent);
+   const {data:existing,error:findError}=await db.from("center_doctor_schedules").select("id").eq("center_doctor_id",doctorId).eq("day_of_week",day).limit(1).maybeSingle();
+   if(findError)throw findError;
+   const values={center_doctor_id:doctorId,day_of_week:day,start_time:start.value||"09:00",end_time:end.value||"14:00",is_available:available.checked,unlimited_daily:unlimited.checked,max_daily_patients:unlimited.checked?null:max};
+   const result=existing?await db.from("center_doctor_schedules").update(values).eq("id",existing.id):await db.from("center_doctor_schedules").insert(values);
+   if(result.error)throw result.error;
+  }
+  showMessage("dashboardMessage","تم حفظ جدول الدوام والحدود اليومية بنجاح.","success");
+ }catch(error){showMessage("dashboardMessage",error.message,"error");}
+ finally{button.disabled=false;}
+}
+
+async function decideCenterAppointment(item,action){
+ let appointmentAt=null,rejectionReason=null;
+ if(action==="confirm"||action==="reschedule"){
+  const date=prompt("تاريخ الموعد (YYYY-MM-DD):",item.requested_date||"");if(!date)return;
+  const time=prompt("ساعة الحضور (HH:MM):","09:00");if(!time)return;
+  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time)){alert("صيغة التاريخ أو الوقت غير صحيحة.");return;}
+  appointmentAt=new Date(date+"T"+time+":00+03:00").toISOString();
+ }else{
+  rejectionReason=prompt("سبب رفض طلب الحجز:");if(!rejectionReason||!rejectionReason.trim()){alert("سبب الرفض إلزامي.");return;}
+ }
+ const {data,error}=await db.rpc("center_decide_appointment",{p_appointment_id:item.id,p_action:action,p_appointment_at:appointmentAt,p_rejection_reason:rejectionReason});
+ if(error||!data?.success){showMessage("dashboardMessage","تعذر تنفيذ العملية: "+(error?.message||"لم يتم التأكيد"),"error");return;}
+ showMessage("dashboardMessage","تم تحديث طلب الحجز بنجاح.","success");
+ await loadDashboard();
 }
 
 /* معلومات المركز */
