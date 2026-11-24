@@ -559,12 +559,12 @@ async function loadCenterDoctorAppointments(){
    const title=document.createElement("strong");title.textContent="طلب مراجعة من: "+(item.patient_name||"مراجع");
    const date=document.createElement("p");date.textContent="اليوم المطلوب: "+item.requested_date+(item.appointment_at?" | ساعة الحضور: "+new Date(item.appointment_at).toLocaleString("ar-IQ",{dateStyle:"medium",timeStyle:"short"}):" | لم تحدد الساعة بعد");
    const patient=document.createElement("p");patient.textContent="العمر: "+(item.patient_age??"غير محدد")+" | المحافظة: "+(item.patient_governorate||"غير محددة");
-   const notes=document.createElement("p");notes.textContent="ملاحظات: "+(item.notes||"لا توجد");
-   const status=document.createElement("span");status.className="tag";status.textContent=statusArabic(item.status);
+   const notes=document.createElement("p");notes.textContent="ملاحظات: "+(item.appointment_notes||"لا توجد");
+   const status=document.createElement("span");status.className="tag";status.textContent=statusArabic(item.appointment_status);
    card.append(title,date,patient,notes,status);
    if(item.rejection_reason){const reason=document.createElement("p");reason.textContent="سبب الرفض: "+item.rejection_reason;card.append(reason);}
    const actions=document.createElement("div");actions.className="actions";
-   if(item.status==="pending"){
+   if(item.appointment_status==="pending"){
     actions.appendChild(makeActionButton("تأكيد وتحديد الساعة","",()=>decideCenterDoctorAppointment({...item,id:item.appointment_id},"confirm")));
     actions.appendChild(makeActionButton("رفض الطلب","reject",()=>decideCenterDoctorAppointment({...item,id:item.appointment_id},"reject")));
    }else if(item.appointment_status==="confirmed"){
