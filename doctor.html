@@ -259,7 +259,7 @@ if(!isOpen)box.scrollIntoView({behavior:"smooth",block:"start"});
 function startAppointmentsAutoRefresh(){
 if(appointmentsRefreshTimer)clearInterval(appointmentsRefreshTimer);
 appointmentsRefreshTimer=setInterval(()=>{
-if(currentDoctorId){
+if(currentDoctorId||currentCenterDoctorId){
 loadAppointments();
 loadRepManagement();
 }
@@ -490,7 +490,8 @@ else revenue.textContent=(completed.length*Number(doctorFee)).toLocaleString("en
 }
 
 async function loadAppointments(){
-if(!currentDoctorId||appointmentsLoading)return;
+if((!currentDoctorId&&!currentCenterDoctorId)||appointmentsLoading)return;
+if(isCenterDoctor){await loadCenterDoctorAppointments();return;}
 appointmentsLoading=true;
 const list=document.getElementById("appointmentsList");
 try{
@@ -538,6 +539,67 @@ list.appendChild(card);
 }finally{
 appointmentsLoading=false;
 }
+}
+
+async function loadCenterDoctorAppointments(){
+ if(appointmentsLoading)return;
+ appointmentsLoading=true;
+ const list=document.getElementById("appointmentsList");
+ try{
+  showMessage("appointmentsStatus","جارٍ تحميل حجوزات المركز...");
+  const {data:rows,error}=await db.from("center_appointments")
+   .select("id,patient_id,requested_date,appointment_at,status,notes,rejection_reason,created_at")
+   .eq("center_doctor_id",currentCenterDoctorId).order("requested_date",{ascending:true});
+  if(error)throw error;
+  const ids=[...new Set((rows||[]).map(x=>x.patient_id))];
+  let profiles=[];
+  if(ids.length){
+   const p=await db.from("profiles").select("id,full_name,age,governorate").in("id",ids);
+   if(p.error)throw p.error;profiles=p.data||[];
+  }
+  updateStatistics([]);
+  list.innerHTML="";
+  if(!rows?.length){showMessage("appointmentsStatus","لا توجد طلبات حجز لهذا الطبيب.");return;}
+  showMessage("appointmentsStatus","عدد الطلبات: "+rows.length+" | آخر تحديث: "+new Date().toLocaleTimeString("ar-IQ"));
+  rows.forEach(item=>{
+   const p=profiles.find(x=>x.id===item.patient_id)||{};
+   const card=document.createElement("div");card.className="appointment";
+   const title=document.createElement("strong");title.textContent="طلب مراجعة من: "+(p.full_name||"مراجع");
+   const date=document.createElement("p");date.textContent="اليوم المطلوب: "+item.requested_date+(item.appointment_at?" | ساعة الحضور: "+new Date(item.appointment_at).toLocaleString("ar-IQ",{dateStyle:"medium",timeStyle:"short"}):" | لم تحدد الساعة بعد");
+   const patient=document.createElement("p");patient.textContent="العمر: "+(p.age??"غير محدد")+" | المحافظة: "+(p.governorate||"غير محددة");
+   const notes=document.createElement("p");notes.textContent="ملاحظات: "+(item.notes||"لا توجد");
+   const status=document.createElement("span");status.className="tag";status.textContent=statusArabic(item.status);
+   card.append(title,date,patient,notes,status);
+   if(item.rejection_reason){const reason=document.createElement("p");reason.textContent="سبب الرفض: "+item.rejection_reason;card.append(reason);}
+   const actions=document.createElement("div");actions.className="actions";
+   if(item.status==="pending"){
+    actions.appendChild(makeActionButton("تأكيد وتحديد الساعة","",()=>decideCenterDoctorAppointment(item,"confirm")));
+    actions.appendChild(makeActionButton("رفض الطلب","reject",()=>decideCenterDoctorAppointment(item,"reject")));
+   }else if(item.status==="confirmed"){
+    actions.appendChild(makeActionButton("تغيير الموعد","secondary",()=>decideCenterDoctorAppointment(item,"reschedule")));
+   }
+   card.append(actions);list.append(card);
+  });
+ }catch(error){showMessage("appointmentsStatus","تعذر تحميل حجوزات المركز: "+error.message);}
+ finally{appointmentsLoading=false;}
+}
+async function decideCenterDoctorAppointment(item,action){
+ let at=null,reason=null;
+ if(action==="confirm"||action==="reschedule"){
+  const date=prompt("تاريخ الموعد (YYYY-MM-DD):",item.requested_date||"");
+  if(!date)return;
+  const time=prompt("ساعة الحضور (HH:MM):","09:00");
+  if(!time)return;
+  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time)){alert("صيغة التاريخ أو الوقت غير صحيحة.");return;}
+  at=new Date(date+"T"+time+":00+03:00").toISOString();
+ }else{
+  reason=prompt("اكتب سبب رفض الطلب:");
+  if(!reason||!reason.trim()){alert("سبب الرفض إلزامي.");return;}
+ }
+ if(!confirm(action==="reject"?"هل تريد رفض الطلب؟":"هل تريد حفظ الموعد المحدد؟"))return;
+ const {data,error}=await db.rpc("center_decide_appointment",{p_appointment_id:item.id,p_action:action,p_appointment_at:at,p_rejection_reason:reason});
+ if(error||!data?.success){alert("تعذر تنفيذ العملية: "+(error?.message||"لم يتم التأكيد"));return;}
+ await loadAppointments();
 }
 
 function makeActionButton(label,className,callback){
