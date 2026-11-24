@@ -526,6 +526,7 @@ async function bookCenterAppointment(){
  await loadMyAppointments();
 }
 async function selectDoctor(doctor,name){
+ selectedCenterDoctor=null;
  selectedDoctor=doctor;
  selectedSchedules=[];
 
