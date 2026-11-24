@@ -22,7 +22,7 @@ jobs:
           STAGING_ANON_KEY: sb_publishable_CBPPwjIcmVbGK1fr8EHyYg_DlfldbK6
         run: |
           mkdir -p load-results
-          for level in 10 50 100; do
+          for level in 200 500 1000; do
             LOAD_VUS="$level" LOAD_DURATION=1m k6 run --summary-export="load-results/summary-$level.json" tests/load/smoke.js || exit $?
           done
       - uses: actions/upload-artifact@v4
