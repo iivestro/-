@@ -107,6 +107,23 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#109e9a;box-sh
 .actions{border-color:#e3eeee}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important}}
 
+
+/* Modern appointment date and time picker */
+.appointment-picker-overlay{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:18px;background:rgba(10,35,50,.58);backdrop-filter:blur(7px)}
+.appointment-picker{width:min(470px,100%);background:#fff;border:1px solid #d9e9eb;border-radius:24px;padding:24px;box-shadow:0 25px 80px rgba(8,35,50,.28);direction:rtl}
+.appointment-picker-head{display:flex;align-items:center;gap:13px;margin-bottom:20px}
+.appointment-picker-icon{width:48px;height:48px;display:grid;place-items:center;border-radius:15px;background:#e6f7f5;color:#078b86;font-size:23px}
+.appointment-picker h3{margin:0 0 5px;color:#123b55;font-size:20px}
+.appointment-picker p{margin:0;color:#6b8290;font-size:13px;line-height:1.7}
+.appointment-picker label{display:block;margin:15px 0 7px;color:#294e60;font-size:14px;font-weight:700}
+.appointment-picker input{width:100%;min-height:52px;margin:0;padding:12px 14px;border:1px solid #d4e5e8;border-radius:13px;background:#f8fcfc;color:#183447;font:inherit;font-size:16px}
+.appointment-picker input:focus{outline:0;border-color:#109e9a;box-shadow:0 0 0 4px rgba(16,158,154,.12);background:#fff}
+.appointment-picker-actions{display:flex;gap:10px;margin-top:22px}
+.appointment-picker-actions button{flex:1;min-height:48px;margin:0}
+.appointment-picker-actions .picker-cancel{background:#edf4f5;color:#31566b;border:1px solid #d9e7e9;box-shadow:none}
+.appointment-picker-error{min-height:20px;margin-top:9px!important;color:#bd3543!important;font-weight:600}
+@media(max-width:480px){.appointment-picker{padding:19px;border-radius:20px}.appointment-picker-actions{flex-direction:column}}
+
 </style>
 </head>
 <body>
@@ -608,15 +625,43 @@ async function loadCenterDoctorAppointments(){
  }catch(error){showMessage("appointmentsStatus","تعذر تحميل حجوزات المركز: "+error.message);}
  finally{appointmentsLoading=false;}
 }
+
+async function openAppointmentDateTimePicker(initialDate,initialTime="09:00"){
+ return new Promise(resolve=>{
+  const overlay=document.createElement("div");
+  overlay.className="appointment-picker-overlay";
+  const today=new Date();today.setMinutes(today.getMinutes()-today.getTimezoneOffset());
+  const todayText=today.toISOString().slice(0,10);
+  const startDate=initialDate&&/^\\d{4}-\\d{2}-\\d{2}$/.test(initialDate)&&initialDate>=todayText?initialDate:todayText;
+  overlay.innerHTML='<form class="appointment-picker" role="dialog" aria-modal="true" aria-labelledby="appointmentPickerTitle"><div class="appointment-picker-head"><div class="appointment-picker-icon">▦</div><div><h3 id="appointmentPickerTitle">تحديد موعد المراجع</h3><p>اختر اليوم من التقويم ثم حدد ساعة الحضور</p></div></div><label for="appointmentPickerDate">تاريخ الحضور</label><input id="appointmentPickerDate" type="date" required><label for="appointmentPickerTime">ساعة الحضور</label><input id="appointmentPickerTime" type="time" required><p class="appointment-picker-error" aria-live="polite"></p><div class="appointment-picker-actions"><button type="submit">تأكيد الموعد</button><button type="button" class="picker-cancel">إلغاء</button></div></form>';
+  const form=overlay.querySelector("form"),dateInput=overlay.querySelector("#appointmentPickerDate"),timeInput=overlay.querySelector("#appointmentPickerTime"),error=overlay.querySelector(".appointment-picker-error");
+  dateInput.min=todayText;dateInput.value=startDate;timeInput.value=initialTime||"09:00";
+  const close=value=>{overlay.remove();resolve(value);};
+  form.addEventListener("submit",event=>{
+   event.preventDefault();error.textContent="";
+   const date=dateInput.value,time=timeInput.value;
+   if(!date||!time){error.textContent="يرجى اختيار التاريخ والساعة.";return;}
+   const parts=date.split("-").map(Number);
+   const check=new Date(parts[0],parts[1]-1,parts[2],12);
+   if(check.getFullYear()!==parts[0]||check.getMonth()!==parts[1]-1||check.getDate()!==parts[2]){error.textContent="التاريخ المختار غير صحيح.";return;}
+   if(date<todayText){error.textContent="لا يمكن تحديد موعد بتاريخ سابق.";return;}
+   if(!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time)){error.textContent="يرجى اختيار ساعة صحيحة.";return;}
+   const localDate=new Date(date+"T"+time+":00");
+   if(Number.isNaN(localDate.getTime())){error.textContent="تعذر قراءة التاريخ والوقت. أعد الاختيار.";return;}
+   close({date,time,iso:localDate.toISOString()});
+  });
+  form.querySelector(".picker-cancel").addEventListener("click",()=>close(null));
+  overlay.addEventListener("click",event=>{if(event.target===overlay)close(null);});
+  document.body.append(overlay);dateInput.focus();
+ });
+}
+
 async function decideCenterDoctorAppointment(item,action){
  let at=null,reason=null;
  if(action==="confirm"||action==="reschedule"){
-  const date=prompt("تاريخ الموعد (YYYY-MM-DD):",item.requested_date||"");
-  if(!date)return;
-  const time=prompt("ساعة الحضور (HH:MM):","09:00");
-  if(!time)return;
-  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time)){alert("صيغة التاريخ أو الوقت غير صحيحة.");return;}
-  at=new Date(date+"T"+time+":00+03:00").toISOString();
+  const picked=await openAppointmentDateTimePicker(item.requested_date||"",item.appointment_at?new Date(item.appointment_at).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",hour12:false}):"09:00");
+  if(!picked)return;
+  at=picked.iso;
  }else if(action==="reject"){
   reason=prompt("اكتب سبب رفض الطلب:");
   if(!reason||!reason.trim()){alert("سبب الرفض إلزامي.");return;}
@@ -641,12 +686,12 @@ async function updateAppointment(appointmentId,newStatus){
  const action=newStatus==="approved"?"confirm":newStatus==="rejected"?"reject":newStatus==="completed"?"complete":newStatus;
  let appointmentAt=null,rejectionReason=null;
  if(action==="confirm"||action==="reschedule"){
-  const date=prompt("تاريخ الموعد (YYYY-MM-DD):");if(!date)return;
-  const time=prompt("ساعة الحضور (HH:MM):","09:00");if(!time)return;
-  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time)){alert("صيغة التاريخ أو الوقت غير صحيحة.");return;}
-  appointmentAt=new Date(date+"T"+time+":00+03:00").toISOString();
+  const picked=await openAppointmentDateTimePicker("","09:00");
+  if(!picked)return;
+  appointmentAt=picked.iso;
  }else if(action==="reject"){
-  rejectionReason=prompt("سبب رفض الحجز:");if(!rejectionReason||!rejectionReason.trim()){alert("سبب الرفض إلزامي.");return;}
+  rejectionReason=prompt("سبب رفض الحجز:");
+  if(!rejectionReason||!rejectionReason.trim()){alert("سبب الرفض إلزامي.");return;}
  }
  if(!confirm("هل تريد تنفيذ الإجراء؟"))return;
  showMessage("appointmentsStatus","جارٍ تحديث الحجز...");
