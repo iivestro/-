@@ -407,7 +407,7 @@ end.type="time";
 end.id="end_"+day.number;
 end.value=record?.end_time?record.end_time.slice(0,5):"14:00";
 row.append(title,label,start,end);
-if(isCenterDoctor){
+{
  const unlimitedLabel=document.createElement("label");
  const unlimited=document.createElement("input");unlimited.type="checkbox";unlimited.id="unlimited_"+day.number;
  unlimited.checked=record?record.unlimited_daily!==false:true;
@@ -462,7 +462,11 @@ if(isCenterDoctor){
 }else{
  const {data:existing,error:findError}=await db.from("doctor_schedules").select("id").eq("doctor_id",currentDoctorId).eq("day_of_week",day.number).limit(1).maybeSingle();
  if(findError)throw findError;
- const values={doctor_id:currentDoctorId,day_of_week:day.number,start_time:start||"09:00",end_time:end||"14:00",is_available:available};
+ const unlimited=document.getElementById("unlimited_"+day.number).checked;
+ const maxText=document.getElementById("max_"+day.number).value;
+ const max=Number(maxText);
+ if(available&&!unlimited&&(!Number.isInteger(max)||max<1||max>500))throw new Error("حدد حداً يومياً صحيحاً ليوم "+day.name+" أو اختر غير محدد.");
+ const values={doctor_id:currentDoctorId,day_of_week:day.number,start_time:start||"09:00",end_time:end||"14:00",is_available:available,unlimited_daily:unlimited,max_daily_patients:unlimited?null:max};
  const result=existing?await db.from("doctor_schedules").update(values).eq("id",existing.id):await db.from("doctor_schedules").insert(values);
  if(result.error)throw result.error;
 }
