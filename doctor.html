@@ -46,8 +46,8 @@ label{display:block;font-weight:bold;color:#31566e;font-size:14px}
 .info span{display:block;color:var(--muted);font-size:12px;margin-bottom:7px}
 .info strong{color:var(--ink);font-size:15px;line-height:1.7}
 .doctor-photo{width:105px;height:105px;object-fit:cover;border-radius:17px;border:3px solid #dff4ff;margin-bottom:15px}
-#scheduleList{border:1px solid #e4f3fb;border-radius:13px;overflow:hidden}
-.day{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;align-items:center;padding:13px 10px;border-bottom:1px solid #e6f4fb}
+#scheduleList{border:1px solid #e4f3fb;border-radius:13px;overflow:hidden}.day input[type=number]{width:100%;min-width:0;padding:8px;border:1px solid #c6e8f8;border-radius:8px}
+.day{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;align-items:center;padding:13px 10px;border-bottom:1px solid #e6f4fb}
 .day:last-child{border-bottom:0}
 .day strong{color:#24516c}
 .day label{display:flex;align-items:center;gap:7px;font-weight:normal}
@@ -388,7 +388,7 @@ days.forEach(day=>{
 const record=records.find(item=>Number(item.day_of_week)===day.number);
 const row=document.createElement("div");
 row.className="day";
-row.style.gridTemplateColumns="repeat(6,minmax(0,1fr))";
+
 const title=document.createElement("strong");
 title.textContent=day.name;
 const label=document.createElement("label");
