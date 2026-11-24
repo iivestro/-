@@ -6,9 +6,26 @@ alter table public.appointments
   add column if not exists rejection_reason text,
   alter column appointment_at drop not null;
 
+update public.appointments
+set requested_date = (appointment_at at time zone 'Asia/Baghdad')::date
+where requested_date is null and appointment_at is not null;
+
 alter table public.doctor_schedules
   add column if not exists unlimited_daily boolean not null default true,
   add column if not exists max_daily_patients integer;
+
+do $constraints$
+begin
+ if not exists(select 1 from pg_constraint where conname='doctor_schedules_daily_capacity_check') then
+  alter table public.doctor_schedules add constraint doctor_schedules_daily_capacity_check
+   check (unlimited_daily is true or (max_daily_patients is not null and max_daily_patients>0));
+ end if;
+ if not exists(select 1 from pg_constraint where conname='center_doctor_schedules_daily_capacity_check') then
+  alter table public.center_doctor_schedules add constraint center_doctor_schedules_daily_capacity_check
+   check (unlimited_daily is true or (max_daily_patients is not null and max_daily_patients>0));
+ end if;
+end
+$constraints$;
 
 create index if not exists appointments_doctor_requested_date_status_idx
   on public.appointments (doctor_id, requested_date, status);
@@ -307,6 +324,83 @@ as $function$
   order by a.requested_date, a.created_at;
 $function$;
 
+create or replace function public.center_decide_appointment(
+ p_appointment_id uuid,p_action text,
+ p_appointment_at timestamptz default null,
+ p_rejection_reason text default null
+)
+returns jsonb language plpgsql security definer set search_path=''
+as $function$
+declare
+ v_uid uuid:=auth.uid();
+ v_appointment public.center_appointments%rowtype;
+ v_center_owner boolean:=false;
+ v_assigned_doctor boolean:=false;
+ v_schedule public.center_doctor_schedules%rowtype;
+ v_local_date date;
+ v_local_time time;
+ v_confirmed_count integer;
+ v_daily_unlimited boolean;
+ v_daily_limit integer;
+begin
+ if v_uid is null then raise exception 'Authentication required'; end if;
+ select * into v_appointment from public.center_appointments where id=p_appointment_id for update;
+ if not found then raise exception 'Appointment not found'; end if;
+ select exists(select 1 from public.medical_centers mc join public.profiles p on p.id=mc.profile_id
+  where mc.id=v_appointment.center_id and mc.profile_id=v_uid and mc.is_active is true
+   and p.role='medical_center' and p.approval_status='approved') into v_center_owner;
+ select exists(select 1 from public.center_doctors cd join public.profiles p on p.id=cd.profile_id
+  where cd.id=v_appointment.center_doctor_id and cd.center_id=v_appointment.center_id
+   and cd.profile_id=v_uid and cd.is_active is true
+   and p.role='doctor' and p.approval_status='approved') into v_assigned_doctor;
+ if p_action='cancel' then
+  if v_appointment.patient_id<>v_uid then raise exception 'Not authorized to cancel this appointment'; end if;
+  if v_appointment.status not in ('pending','approved','confirmed') then raise exception 'Only pending or confirmed appointments can be cancelled'; end if;
+  update public.center_appointments set status='cancelled' where id=p_appointment_id;
+  return jsonb_build_object('success',true,'status','cancelled');
+ end if;
+ if not(v_center_owner or v_assigned_doctor) then raise exception 'Not authorized to manage this appointment'; end if;
+ if p_action='reject' then
+  if v_appointment.status<>'pending' then raise exception 'Only pending requests can be rejected'; end if;
+  if nullif(btrim(coalesce(p_rejection_reason,'')),'') is null then raise exception 'A rejection reason is required'; end if;
+  update public.center_appointments set status='rejected',rejection_reason=left(btrim(p_rejection_reason),1000),appointment_at=null where id=p_appointment_id;
+  return jsonb_build_object('success',true,'status','rejected');
+ end if;
+ if p_action='complete' then
+  if v_appointment.status not in ('approved','confirmed') or v_appointment.appointment_at is null or v_appointment.appointment_at>now() then
+   raise exception 'Only past confirmed appointments can be completed';
+  end if;
+  update public.center_appointments set status='completed' where id=p_appointment_id;
+  return jsonb_build_object('success',true,'status','completed');
+ end if;
+ if p_action not in ('confirm','reschedule') then raise exception 'Invalid action'; end if;
+ if p_appointment_at is null or p_appointment_at<=now() then raise exception 'A future appointment date and time is required'; end if;
+ if p_action='confirm' and v_appointment.status<>'pending' then raise exception 'Only pending requests can be confirmed'; end if;
+ if p_action='reschedule' and v_appointment.status not in ('approved','confirmed') then raise exception 'Only confirmed appointments can be rescheduled'; end if;
+ v_local_date:=(p_appointment_at at time zone 'Asia/Baghdad')::date;
+ v_local_time:=(p_appointment_at at time zone 'Asia/Baghdad')::time;
+ perform 1 from public.center_doctors cd where cd.id=v_appointment.center_doctor_id and cd.center_id=v_appointment.center_id for update;
+ select * into v_schedule from public.center_doctor_schedules s
+  where s.center_doctor_id=v_appointment.center_doctor_id and s.day_of_week=extract(dow from v_local_date)::smallint
+   and s.is_available is true and s.start_time<=v_local_time and s.end_time>v_local_time
+  order by s.start_time limit 1 for update;
+ if not found then raise exception 'The selected date and time is outside the doctors schedule'; end if;
+ select coalesce(bool_and(s.unlimited_daily),true),min(s.max_daily_patients) filter(where s.unlimited_daily is false)
+  into v_daily_unlimited,v_daily_limit from public.center_doctor_schedules s
+  where s.center_doctor_id=v_appointment.center_doctor_id and s.day_of_week=extract(dow from v_local_date)::smallint and s.is_available is true;
+ if v_daily_unlimited is false then
+  select count(*)::integer into v_confirmed_count from public.center_appointments a
+   where a.center_doctor_id=v_appointment.center_doctor_id and a.requested_date=v_local_date
+    and a.status in ('approved','confirmed','completed') and a.id<>p_appointment_id;
+  if v_confirmed_count>=v_daily_limit then raise exception 'Daily appointment capacity is full'; end if;
+ end if;
+ update public.center_appointments set requested_date=v_local_date,appointment_at=p_appointment_at,status='confirmed',rejection_reason=null where id=p_appointment_id;
+ return jsonb_build_object('success',true,'status','confirmed','requested_date',v_local_date,'appointment_at',p_appointment_at);
+end;
+$function$;
+
+revoke all on function public.center_decide_appointment(uuid, text, timestamptz, text) from public, anon;
+grant execute on function public.center_decide_appointment(uuid, text, timestamptz, text) to authenticated;
 revoke all on function public.patient_request_doctor_appointment(uuid, date, text) from public, anon;
 revoke all on function public.doctor_decide_appointment(uuid, text, timestamptz, text) from public, anon;
 revoke all on function public.independent_doctor_appointment_dashboard_data() from public, anon;
