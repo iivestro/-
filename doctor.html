@@ -143,7 +143,6 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#109e9a;box-sh
 <h2>مرحباً بك دكتور <span id="welcomeName">—</span></h2>
 <p>نتمنى لك يوماً موفقاً. يمكنك متابعة مواعيدك وإحصائيات عيادتك من هنا.</p>
 </div>
-<button onclick="toggleDoctorInfo()">معلوماتي</button>
 </div>
 
 <div class="stats">
@@ -163,28 +162,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#109e9a;box-sh
 <button type="button" class="active" data-panel="appointments" onclick="showDoctorPanel('appointments')">♙ حجوزات المراجعين</button>
 <button type="button" data-panel="reps" onclick="showDoctorPanel('reps')" id="repNavButton">▣ المندوبون</button>
 <button type="button" data-panel="schedule" onclick="showDoctorPanel('schedule')">◷ الدوام والأوقات</button>
-<button type="button" data-panel="profile" onclick="showDoctorPanel('profile')">⚕ ملفي المهني</button>
 </nav>
-
-<section class="workspace-panel" id="panel-profile"><section class="card" id="doctorInfo">
-<h3>ملفي المهني ومعلومات العيادة</h3>
-<p class="muted">هذه البيانات مسجلة من الإدارة، ويمكنك الاطلاع عليها فقط دون تعديلها.</p>
-<div id="doctorPhotoContainer"></div>
-<div class="info-grid">
-<div class="info"><span>اسم الطبيب</span><strong id="infoName">—</strong></div>
-<div class="info"><span>رقم الهاتف</span><strong id="infoPhone">—</strong></div>
-<div class="info"><span>الاختصاص</span><strong id="infoSpecialty">—</strong></div>
-<div class="info"><span>المؤهل العلمي</span><strong id="infoQualification">—</strong></div>
-<div class="info"><span>سنوات الخبرة</span><strong id="infoExperience">—</strong></div>
-<div class="info"><span>أجرة الكشف</span><strong id="infoFee">—</strong></div>
-<div class="info"><span>اسم العيادة</span><strong id="infoClinic">—</strong></div>
-<div class="info"><span>عنوان العيادة</span><strong id="infoAddress">—</strong></div>
-<div class="info"><span>موقع العيادة</span><strong id="infoMap">—</strong></div>
-<div class="info"><span>حالة الحساب</span><strong id="infoApproval">—</strong></div>
-<div class="info" style="grid-column:1/-1"><span>نبذة الطبيب</span><strong id="infoBio">—</strong></div>
-</div>
-<div class="status">هذه المعلومات للعرض فقط. لتعديل أي معلومة يرجى التواصل مع إدارة النظام.</div>
-</section></section>
 
 <section class="workspace-panel" id="panel-schedule"><section class="card">
 <h3>إدارة الدوام الأسبوعي</h3>
@@ -273,7 +251,7 @@ const days=[
 ];
 
 function showDoctorPanel(name){
- const allowed=["appointments","reps","schedule","profile"];
+ const allowed=["appointments","reps","schedule"];
  if(!allowed.includes(name))return;
  document.querySelectorAll(".workspace-panel").forEach(panel=>panel.classList.toggle("active",panel.id==="panel-"+name));
  document.querySelectorAll(".doctor-nav [data-panel]").forEach(button=>button.classList.toggle("active",button.dataset.panel===name));
