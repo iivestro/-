@@ -295,7 +295,7 @@ repManagementLoading=false;
 document.getElementById("app").style.display="none";
 document.getElementById("login").style.display="block";
 document.getElementById("headerActions").style.display="none";
-document.getElementById("doctorInfo").style.display="none";
+
 showMessage("loginStatus",message);
 }
 
@@ -304,11 +304,7 @@ await db.auth.signOut();
 stopDoctorSession("تم إيقاف حسابك من قبل الإدارة. لا يمكنك الدخول أو استقبال الحجوزات حالياً. يرجى مراجعة الإدارة لإعادة تفعيل حسابك.");
 }
 
-function toggleDoctorInfo(){
-showDoctorPanel("profile");
-const box=document.getElementById("doctorInfo");
-box.style.display="block";
-}
+
 
 function startAppointmentsAutoRefresh(){
 if(appointmentsRefreshTimer)clearInterval(appointmentsRefreshTimer);
@@ -386,41 +382,6 @@ doctorFee=doctor.consultation_fee;
 
 const fullName=profile.full_name||"دكتور";
 document.getElementById("welcomeName").textContent=fullName;
-document.getElementById("infoName").textContent=fullName;
-document.getElementById("infoPhone").textContent=privatePhone||"غير مسجل";
-document.getElementById("infoSpecialty").textContent=doctor.specialties?.name_ar||"غير محدد";
-document.getElementById("infoQualification").textContent=doctor.qualification||"غير محدد";
-document.getElementById("infoExperience").textContent=doctor.experience_years==null?"غير محدد":doctor.experience_years+" سنة";
-document.getElementById("infoFee").textContent=doctor.consultation_fee==null?"غير محدد":Number(doctor.consultation_fee).toLocaleString("en-US")+" د.ع";
-document.getElementById("infoClinic").textContent=isCenterDoctor?"طبيب ضمن مركز طبي":(doctor.clinics?.name||"غير محدد");
-document.getElementById("infoAddress").textContent=doctor.clinics?.address||"يظهر عنوان المركز في بوابة المركز";
-document.getElementById("infoApproval").textContent="حساب معتمد";
-document.getElementById("infoBio").textContent=doctor.bio||"لا توجد نبذة مسجلة.";
-
-const mapBox=document.getElementById("infoMap");
-mapBox.textContent="";
-if(doctor.clinics?.maps_url){
-const link=document.createElement("a");
-link.href=doctor.clinics.maps_url;
-link.target="_blank";
-link.rel="noopener";
-link.textContent="فتح موقع العيادة على Google Maps";
-mapBox.appendChild(link);
-}else{
-mapBox.textContent="لم يتم تسجيل الموقع";
-}
-
-const photoBox=document.getElementById("doctorPhotoContainer");
-photoBox.innerHTML="";
-if(doctor.photo_url){
-const photo=document.createElement("img");
-photo.src=doctor.photo_url;
-photo.alt="صورة الطبيب";
-photo.className="doctor-photo";
-photoBox.appendChild(photo);
-}
-
-document.getElementById("doctorInfo").style.display="none";
 document.getElementById("login").style.display="none";
 document.getElementById("app").style.display="block";
 document.getElementById("headerActions").style.display="flex";
