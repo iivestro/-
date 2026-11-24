@@ -95,6 +95,35 @@ main{padding:10px}
 .chart-wrap{height:220px}
 .sidebar-nav{grid-template-columns:1fr 1fr}
 }
+
+/* PATIENT Signature Medical UI */
+:root{--sky:#20b7ad;--blue:#0d8f91;--soft:#edf8f7;--ink:#183447;--line:#d8e7eb}
+body{background:radial-gradient(ellipse at 90% 0%,rgba(32,183,173,.08),transparent 30%),#f3f8fa;color:var(--ink);font-family:"Segoe UI",Tahoma,Arial,sans-serif}
+header{background:rgba(255,255,255,.9);backdrop-filter:blur(16px);border-bottom:1px solid #dce8eb;box-shadow:0 7px 24px rgba(16,47,70,.05)}
+.brand{color:#123b55;letter-spacing:.2px}
+.brand:before{content:"✚";display:inline-grid;place-items:center;width:38px;height:38px;margin-left:9px;border-radius:13px;color:#fff;background:linear-gradient(145deg,#20b7ad,#087c89);box-shadow:0 7px 18px rgba(14,159,154,.2)}
+main{max-width:1680px;margin:auto;padding:24px}
+.card,.chart-card{background:rgba(255,255,255,.97);border:1px solid #dce8eb;border-radius:20px;box-shadow:0 14px 36px rgba(16,47,70,.065);padding:clamp(16px,2vw,25px)}
+.card h2,.card h3,.chart-card h3{color:#123b55;letter-spacing:-.2px}
+.dashboard-layout{gap:22px}
+.sidebar{background:linear-gradient(165deg,#102f46,#125d70 70%,#0e777b);border:1px solid rgba(255,255,255,.12);border-radius:22px;box-shadow:0 16px 38px rgba(16,47,70,.16);padding:18px}
+.sidebar-brand{color:#fff;font-weight:800}
+.side-link{background:rgba(255,255,255,.08);color:rgba(255,255,255,.88);border:1px solid rgba(255,255,255,.08);border-radius:12px;text-align:right;min-height:46px;box-shadow:none}
+.side-link:hover,.side-link.active{background:#fff;color:#0c7779;border-color:#fff;box-shadow:0 7px 18px rgba(0,0,0,.1);transform:translateX(-2px)}
+.stat{background:linear-gradient(145deg,#fff,#f0f8f7);border:1px solid #dcebea;border-radius:17px;box-shadow:0 8px 24px rgba(16,47,70,.045);padding:18px}
+.stat strong{color:#0d8988}
+button{min-height:42px;border-radius:11px;background:linear-gradient(135deg,#109e9a,#087c89);box-shadow:0 5px 13px rgba(14,159,154,.13);transition:transform .18s,box-shadow .18s}
+button:hover{background:linear-gradient(135deg,#0d8e8b,#086d7a);transform:translateY(-1px);box-shadow:0 9px 18px rgba(14,159,154,.18)}
+button.btn-light{background:#edf6f7;color:#245468;border:1px solid #d5e7e9;box-shadow:none}
+input,select,textarea{min-height:43px;border:1px solid #d6e4e8;border-radius:10px;background:#fbfdfe;padding:10px 12px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#109e9a;box-shadow:0 0 0 4px rgba(16,158,154,.11);background:#fff}
+.table-wrap{border:1px solid #e1ebed;border-radius:14px;overflow:auto}
+table{border-collapse:separate;border-spacing:0}
+thead th{background:#edf7f6;color:#244e5b;font-weight:800}
+tbody tr:hover{background:#f5fbfa}
+@media(max-width:900px){.sidebar{border-radius:18px}.sidebar-nav{gap:8px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important}}
+
 </style>
 </head>
 <body>
@@ -603,7 +632,7 @@ async function loadPatients(){
 }
 
 function appointmentStatusLabel(status){
- const labels={pending:"بانتظار التأكيد",approved:"تمت الموافقة",completed:"مكتمل",cancelled:"ملغي",rejected:"مرفوض"};
+ const labels={pending:"بانتظار التأكيد",approved:"تمت الموافقة",confirmed:"مؤكد",completed:"مكتمل",cancelled:"ملغي",rejected:"مرفوض"};
  return labels[status]||status||"غير محدد";
 }
 
@@ -619,34 +648,40 @@ async function loadAppointments(){
  if(!tbody)return;
  setText("appointmentsError","");
  if(!appointmentList.length)tbody.innerHTML="<tr><td colspan='6' class='empty-state'>جارٍ تحميل الحجوزات...</td></tr>";
-
- const {data,error}=await db.from("appointments")
- .select(`
-  id,patient_id,doctor_id,appointment_at,status,created_at,
-  patient:profiles!appointments_patient_id_fkey(full_name),
-  doctor:doctors!appointments_doctor_id_fkey(
-   profile:profiles!doctors_profile_id_fkey(full_name),
-   specialty:specialties!doctors_specialty_id_fkey(name_ar)
-  )
- `)
- .order("appointment_at",{ascending:false});
-
- if(error){
-  setText("appointmentsError","تعذر تحميل الحجوزات: "+error.message);
-  if(!appointmentList.length)tbody.innerHTML="<tr><td colspan='6' class='empty-state'>تعذر تحميل الحجوزات.</td></tr>";
-  return;
- }
-
- appointmentList=data||[];
- const ids=[...new Set(appointmentList.map(a=>a.patient_id).filter(Boolean))];
-
+ const [independent,center]=await Promise.all([
+  db.from("appointments").select(`
+   id,patient_id,doctor_id,requested_date,appointment_at,status,created_at,rejection_reason,
+   patient:profiles!appointments_patient_id_fkey(full_name),
+   doctor:doctors!appointments_doctor_id_fkey(
+    profile:profiles!doctors_profile_id_fkey(full_name),
+    specialty:specialties!doctors_specialty_id_fkey(name_ar)
+   )
+  `).order("created_at",{ascending:false}),
+  db.from("center_appointments").select("id,patient_id,center_id,center_doctor_id,requested_date,appointment_at,status,created_at,rejection_reason,center_doctors(full_name,specialty),medical_centers(name)").order("created_at",{ascending:false})
+ ]);
+ if(independent.error){setText("appointmentsError","تعذر تحميل حجوزات الأطباء المستقلين: "+independent.error.message);return;}
+ if(center.error){setText("appointmentsError","تعذر تحميل حجوزات المراكز: "+center.error.message);return;}
+ const centerRows=center.data||[];
+ const ids=[...new Set(centerRows.map(a=>a.patient_id).filter(Boolean))];
+ let patientMap=new Map();
  if(ids.length){
-  const result=await db.rpc("admin_get_profile_phones",{p_profile_ids:ids});
-  if(result.error){
-   setText("appointmentsError","تعذر تحميل أرقام هواتف المراجعين: "+result.error.message);
-  }else{
+  const p=await db.from("profiles").select("id,full_name").in("id",ids);
+  if(p.error){setText("appointmentsError","تعذر تحميل أسماء مراجعي المراكز: "+p.error.message);return;}
+  patientMap=new Map((p.data||[]).map(x=>[x.id,x.full_name]));
+ }
+ const mappedCenter=centerRows.map(a=>({
+  ...a,is_center:true,center_name:a.medical_centers?.name||"",
+  patient:{full_name:patientMap.get(a.patient_id)||""},
+  doctor:{profile:{full_name:a.center_doctors?.full_name||""},specialty:{name_ar:a.center_doctors?.specialty||""}}
+ }));
+ appointmentList=[...(independent.data||[]),...mappedCenter];
+ const allIds=[...new Set(appointmentList.map(a=>a.patient_id).filter(Boolean))];
+ if(allIds.length){
+  const result=await db.rpc("admin_get_profile_phones",{p_profile_ids:allIds});
+  if(result.error){setText("appointmentsError","تعذر تحميل أرقام هواتف المراجعين: "+result.error.message);}
+  else{
    const phones=new Map((result.data||[]).map(x=>[x.profile_id,x.phone]));
-   appointmentList=appointmentList.map(a=>({...a,patient:{...(a.patient||{}),phone:phones.get(a.patient_id)||""}}));
+   appointmentList=appointmentList.map(a=>({...a,patient:{...(a.patient||{}),phone:phones.get(a.patient_id)||a.patient?.phone||""}}));
   }
  }
  renderAppointments();
@@ -660,7 +695,7 @@ function renderAppointments(){
   const patient=a.patient||{},doctor=a.doctor?.profile||{};
   const specialty=a.doctor?.specialty?.name_ar||"";
   const status=appointmentStatusLabel(a.status);
-  return [patient.full_name,patient.phone,doctor.full_name,specialty,status,a.status].filter(Boolean).join(" ").toLowerCase().includes(term);
+  return [patient.full_name,patient.phone,doctor.full_name,specialty,a.center_name,status,a.status].filter(Boolean).join(" ").toLowerCase().includes(term);
  });
  setText("bookingCount",filtered.length+" حجز");
  if(!filtered.length){
@@ -669,15 +704,15 @@ function renderAppointments(){
  }
  tbody.innerHTML=filtered.map(a=>{
   const patient=a.patient||{},doctor=a.doctor?.profile||{};
-  const specialty=a.doctor?.specialty?.name_ar||"غير محدد";
+  const specialty=(a.doctor?.specialty?.name_ar||"غير محدد")+(a.center_name?" — "+a.center_name:"");
   const status=a.status||"";
-  const statusClass=["pending","approved","completed","cancelled","rejected"].includes(status)?status:"";
+  const statusClass=["pending","approved","confirmed","completed","cancelled","rejected"].includes(status)?status:"";
   return `<tr>
    <td>${escapeHTML(patient.full_name||"غير محدد")}</td>
    <td>${escapeHTML(patient.phone||"غير مسجل")}</td>
    <td>${escapeHTML(doctor.full_name||"غير محدد")}</td>
    <td>${escapeHTML(specialty)}</td>
-   <td>${escapeHTML(appointmentDateLabel(a.appointment_at))}</td>
+   <td>${escapeHTML(a.requested_date?(a.appointment_at?appointmentDateLabel(a.appointment_at):a.requested_date+" — بانتظار تحديد الساعة"):appointmentDateLabel(a.appointment_at))}</td>
    <td><span class="booking-status ${statusClass}">${escapeHTML(appointmentStatusLabel(status))}</span></td>
   </tr>`;
  }).join("");
