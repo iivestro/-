@@ -204,6 +204,8 @@ const SUPABASE_KEY="sb_publishable_Ue8nsJFsLpDLFUgSTB24cw_rckeqWag";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let currentDoctorId=null;
+let currentCenterDoctorId=null;
+let isCenterDoctor=false;
 let doctorFee=null;
 let appointmentsRefreshTimer=null;
 let appointmentsLoading=false;
@@ -225,6 +227,8 @@ if(element)element.textContent=message;
 }
 
 function stopDoctorSession(message){
+currentCenterDoctorId=null;
+isCenterDoctor=false;
 if(appointmentsRefreshTimer){
 clearInterval(appointmentsRefreshTimer);
 appointmentsRefreshTimer=null;
@@ -299,18 +303,22 @@ stopDoctorSession("هذا الحساب غير معتمد كحساب طبيب.");
 return;
 }
 
-const {data:doctor,error:doctorError}=await db.from("doctors")
-.select("id,qualification,experience_years,consultation_fee,bio,photo_url,is_active,specialties(name_ar),clinics(name,address,maps_url)")
+let doctor=null;
+const {data:centerDoctor,error:centerDoctorError}=await db.from("center_doctors")
+.select("id,center_id,full_name,phone,specialty,qualification,experience_years,consultation_fee,bio,photo_url,is_active")
 .eq("profile_id",user.id).maybeSingle();
-
-if(doctorError||!doctor){
-showMessage("loginStatus","تعذر تحميل بيانات الطبيب: "+(doctorError?.message||"لا توجد بيانات"));
-return;
-}
-
-if(doctor.is_active===false){
-await blockInactiveDoctor();
-return;
+if(centerDoctorError){showMessage("loginStatus","تعذر التحقق من ارتباط الطبيب بالمركز: "+centerDoctorError.message);return;}
+if(centerDoctor){
+ if(centerDoctor.is_active===false){await blockInactiveDoctor();return;}
+ isCenterDoctor=true;currentCenterDoctorId=centerDoctor.id;currentDoctorId=null;doctorFee=centerDoctor.consultation_fee;
+ doctor={id:null,qualification:centerDoctor.qualification,experience_years:centerDoctor.experience_years,consultation_fee:centerDoctor.consultation_fee,bio:centerDoctor.bio,photo_url:centerDoctor.photo_url,is_active:centerDoctor.is_active,specialties:{name_ar:centerDoctor.specialty},clinics:null};
+}else{
+ const {data:independentDoctor,error:doctorError}=await db.from("doctors")
+ .select("id,qualification,experience_years,consultation_fee,bio,photo_url,is_active,specialties(name_ar),clinics(name,address,maps_url)")
+ .eq("profile_id",user.id).maybeSingle();
+ if(doctorError||!independentDoctor){showMessage("loginStatus","تعذر تحميل بيانات الطبيب: "+(doctorError?.message||"لا توجد بيانات"));return;}
+ if(independentDoctor.is_active===false){await blockInactiveDoctor();return;}
+ doctor=independentDoctor;isCenterDoctor=false;currentCenterDoctorId=null;currentDoctorId=doctor.id;doctorFee=doctor.consultation_fee;
 }
 
 const {data:privatePhone,error:phoneError}=await db.rpc("get_my_private_phone");
@@ -330,8 +338,8 @@ document.getElementById("infoSpecialty").textContent=doctor.specialties?.name_ar
 document.getElementById("infoQualification").textContent=doctor.qualification||"غير محدد";
 document.getElementById("infoExperience").textContent=doctor.experience_years==null?"غير محدد":doctor.experience_years+" سنة";
 document.getElementById("infoFee").textContent=doctor.consultation_fee==null?"غير محدد":Number(doctor.consultation_fee).toLocaleString("en-US")+" د.ع";
-document.getElementById("infoClinic").textContent=doctor.clinics?.name||"غير محدد";
-document.getElementById("infoAddress").textContent=doctor.clinics?.address||"غير محدد";
+document.getElementById("infoClinic").textContent=isCenterDoctor?"طبيب ضمن مركز طبي":(doctor.clinics?.name||"غير محدد");
+document.getElementById("infoAddress").textContent=doctor.clinics?.address||"يظهر عنوان المركز في بوابة المركز";
 document.getElementById("infoApproval").textContent="حساب معتمد";
 document.getElementById("infoBio").textContent=doctor.bio||"لا توجد نبذة مسجلة.";
 
@@ -368,7 +376,8 @@ const localDate=new Date(today.getTime()-today.getTimezoneOffset()*60000).toISOS
 document.getElementById("repSlotDate").min=localDate;
 document.getElementById("repSlotDate").value=localDate;
 
-await Promise.all([loadSchedule(),loadAppointments(),loadRepManagement()]);
+await Promise.all([loadSchedule(),loadAppointments(),...(isCenterDoctor?[]:[loadRepManagement()])]);
+if(isCenterDoctor){document.querySelectorAll(".card").forEach(card=>{if(card.textContent.includes("إدارة مواعيد استقبال المندوبين")||card.textContent.includes("طلبات زيارات المندوبين"))card.style.display="none";});}
 startAppointmentsAutoRefresh();
 }
 
