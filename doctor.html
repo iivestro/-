@@ -40,7 +40,7 @@ label{display:block;font-weight:bold;color:#31566e;font-size:14px}
 .stat-label{color:var(--muted);font-size:14px}
 .stat-value{font-size:29px;font-weight:bold;color:var(--deep);margin-top:12px}
 .stat-note{font-size:12px;color:var(--muted);margin-top:8px}
-#doctorInfo{display:none}
+#doctorInfo{display:block}
 .info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .info{padding:14px;background:#f5fbff;border:1px solid #e0f3fc;border-radius:12px;min-width:0;overflow-wrap:anywhere}
 .info span{display:block;color:var(--muted);font-size:12px;margin-bottom:7px}
@@ -310,10 +310,9 @@ stopDoctorSession("تم إيقاف حسابك من قبل الإدارة. لا �
 }
 
 function toggleDoctorInfo(){
+showDoctorPanel("profile");
 const box=document.getElementById("doctorInfo");
-const isOpen=box.style.display==="block";
-box.style.display=isOpen?"none":"block";
-if(!isOpen)box.scrollIntoView({behavior:"smooth",block:"start"});
+box.style.display="block";
 }
 
 function startAppointmentsAutoRefresh(){
