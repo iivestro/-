@@ -9,7 +9,7 @@ concurrency:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: grafana/setup-k6-action@v1
@@ -20,9 +20,13 @@ jobs:
       - name: Run bounded smoke test
         env:
           STAGING_ANON_KEY: sb_publishable_CBPPwjIcmVbGK1fr8EHyYg_DlfldbK6
-        run: k6 run --summary-export=summary.json tests/load/smoke.js
+        run: |
+          mkdir -p load-results
+          for level in 10 50 100; do
+            LOAD_VUS="$level" LOAD_DURATION=1m k6 run --summary-export="load-results/summary-$level.json" tests/load/smoke.js || exit $?
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: staging-load-summary
-          path: summary.json
+          path: load-results/
