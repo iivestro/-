@@ -768,7 +768,7 @@ async function loadDashboard() {
 function renderCenterManagement(doctors, appointments, patients) {
  const container=$("doctorsContainer");
  const pending=appointments.filter(a=>a.status==="pending").length;
- const confirmed=appointments.filter(a=>a.status==="confirmed").length;
+ const confirmed=appointments.filter(a=>["approved","confirmed"].includes(a.status)).length;
  $("doctorsCount").textContent=doctors.length;
  $("appointmentsCount").textContent=appointments.length;
  $("pendingCount").textContent=pending;
@@ -793,15 +793,16 @@ function renderCenterManagement(doctors, appointments, patients) {
    const box=document.createElement("div");box.className="appointment";
    const who=document.createElement("strong");who.textContent="المراجع: "+(patient.patient_name||"غير معروف");
    const when=document.createElement("p");when.textContent="اليوم المطلوب: "+a.requested_date+(a.appointment_at?" | وقت الحضور: "+new Date(a.appointment_at).toLocaleString("ar-IQ",{dateStyle:"medium",timeStyle:"short"}):" | لم تحدد الساعة بعد");
-   const status=document.createElement("p");status.textContent="الحالة: "+({pending:"قيد الانتظار",confirmed:"مؤكد",rejected:"مرفوض",cancelled:"ملغي"}[a.status]||a.status);
+   const status=document.createElement("p");status.textContent="الحالة: "+({pending:"قيد الانتظار",approved:"مقبول سابقاً",confirmed:"مؤكد",completed:"مكتمل",rejected:"مرفوض",cancelled:"ملغي"}[a.status]||a.status);
    const notes=document.createElement("p");notes.textContent="ملاحظات: "+(a.notes||"لا توجد");
    box.append(who,when,status,notes);
    if(a.rejection_reason){const reason=document.createElement("p");reason.textContent="سبب الرفض: "+a.rejection_reason;box.append(reason);}
-   if(a.status==="pending"||a.status==="confirmed"){
+   if(a.status==="pending"||a.status==="approved"||a.status==="confirmed"){
     const actions=document.createElement("div");actions.className="appointment-actions";
     const set=document.createElement("button");set.type="button";set.textContent=a.status==="pending"?"موافقة وتحديد الساعة":"تغيير الموعد";set.onclick=()=>decideCenterAppointment(a,a.status==="pending"?"confirm":"reschedule");
     actions.append(set);
     if(a.status==="pending"){const reject=document.createElement("button");reject.type="button";reject.className="btn btn-danger";reject.textContent="رفض";reject.onclick=()=>decideCenterAppointment(a,"reject");actions.append(reject);}
+    if(a.appointment_at&&new Date(a.appointment_at)<=new Date()){const complete=document.createElement("button");complete.type="button";complete.textContent="تسجيل الزيارة مكتملة";complete.onclick=()=>decideCenterAppointment(a,"complete");actions.append(complete);}
     box.append(actions);
    }
    card.append(box);
@@ -863,9 +864,11 @@ async function decideCenterAppointment(item,action){
   const time=prompt("ساعة الحضور (HH:MM):","09:00");if(!time)return;
   if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time)){alert("صيغة التاريخ أو الوقت غير صحيحة.");return;}
   appointmentAt=new Date(date+"T"+time+":00+03:00").toISOString();
- }else{
+ }else if(action==="reject"){
   rejectionReason=prompt("سبب رفض طلب الحجز:");if(!rejectionReason||!rejectionReason.trim()){alert("سبب الرفض إلزامي.");return;}
  }
+ const confirmation=action==="reject"?"هل تريد رفض طلب الحجز؟":action==="complete"?"هل تريد تسجيل الزيارة مكتملة؟":"هل تريد حفظ الموعد المحدد؟";
+ if(!confirm(confirmation))return;
  const {data,error}=await db.rpc("center_decide_appointment",{p_appointment_id:item.id,p_action:action,p_appointment_at:appointmentAt,p_rejection_reason:rejectionReason});
  if(error||!data?.success){showMessage("dashboardMessage","تعذر تنفيذ العملية: "+(error?.message||"لم يتم التأكيد"),"error");return;}
  showMessage("dashboardMessage","تم تحديث طلب الحجز بنجاح.","success");
