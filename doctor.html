@@ -66,6 +66,34 @@ label{display:block;font-weight:bold;color:#31566e;font-size:14px}
 .section-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 @media(max-width:750px){.header-inner{align-items:flex-start;flex-direction:column}.header-actions{width:100%}.header-actions button{flex:1}.stats{grid-template-columns:1fr}.info-grid{grid-template-columns:1fr}.welcome{align-items:flex-start;flex-direction:column}.rep-form-grid,.rep-list{grid-template-columns:1fr}}
 @media(max-width:520px){main{margin:17px auto;padding:0 12px 30px}.card{padding:17px}.day{grid-template-columns:1fr 1fr}.day strong{grid-column:1/-1}header h2{font-size:22px}.appointment,.rep-card{padding:15px}.actions button{flex:1}}
+
+/* PATIENT Signature Medical UI */
+:root{--sky:#20b7ad;--blue:#0d8f91;--deep:#123b55;--ink:#183447;--muted:#60798a;--line:#d8e7eb;--soft:#edf8f7;--shadow:0 16px 42px rgba(16,47,70,.08)}
+body{background:radial-gradient(ellipse at 90% 0%,rgba(32,183,173,.09),transparent 30%),#f3f8fa;color:var(--ink);font-family:"Segoe UI",Tahoma,Arial,sans-serif}
+header{position:relative;overflow:hidden;background:linear-gradient(115deg,#102f46,#125d70 62%,#0e9f9a);color:white;border:0;padding:22px clamp(16px,4vw,55px);box-shadow:0 15px 38px rgba(16,47,70,.15)}
+header:after{content:"";position:absolute;width:260px;height:260px;border:1px solid rgba(255,255,255,.13);border-radius:50%;left:8%;top:-190px;box-shadow:0 0 0 28px rgba(255,255,255,.025),0 0 0 58px rgba(255,255,255,.02);pointer-events:none}
+header h2{color:white}header p{color:rgba(255,255,255,.76)}
+.brand-mark{border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.14);box-shadow:0 8px 20px rgba(0,0,0,.12);backdrop-filter:blur(8px)}
+main{max-width:1450px;padding-top:28px}
+.card,.appointment,.rep-card{background:rgba(255,255,255,.97);border:1px solid #dce8eb;border-radius:21px;box-shadow:var(--shadow)}
+.card{padding:clamp(18px,2.3vw,28px)}
+.card h3,.rep-card h4{color:#123b55;letter-spacing:-.2px}
+.welcome{background:linear-gradient(115deg,#e9f7f6,#fff);border:1px solid #d5eae8;border-radius:22px;padding:24px;box-shadow:0 10px 30px rgba(16,47,70,.05)}
+.welcome h2{color:#123b55}
+.stats .stat{border:1px solid #dcebea;border-radius:18px;background:linear-gradient(145deg,#fff,#f0f8f7);box-shadow:0 9px 25px rgba(16,47,70,.05);padding:20px}
+.stat-value{color:#0d8988}
+.info{background:#f3f9f9;border:1px solid #e0eeee;border-radius:13px}
+.appointment,.rep-card{background:linear-gradient(145deg,#fff,#fbfefe)}
+button{min-height:44px;border-radius:12px;background:linear-gradient(135deg,#109e9a,#087c89);box-shadow:0 6px 15px rgba(14,159,154,.15);transition:transform .18s,box-shadow .18s}
+button:hover{background:linear-gradient(135deg,#0d8e8b,#086d7a);transform:translateY(-1px);box-shadow:0 10px 22px rgba(14,159,154,.2)}
+button.secondary{background:#edf6f7;color:#245468;border:1px solid #d5e7e9;box-shadow:none}
+button.logout{background:#fff1f1;color:#a3313b;border:1px solid #f5d6d8;box-shadow:none}
+input,select,textarea{min-height:45px;border:1px solid #d6e4e8;border-radius:11px;background:#fbfdfe;padding:10px 12px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#109e9a;box-shadow:0 0 0 4px rgba(16,158,154,.12);background:#fff}
+.tag{background:#e7f6f4;color:#087b79;border:1px solid #ccebe7}
+.actions{border-color:#e3eeee}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important}}
+
 </style>
 </head>
 <body>
