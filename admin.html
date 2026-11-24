@@ -124,6 +124,19 @@ tbody tr:hover{background:#f5fbfa}
 @media(max-width:900px){.sidebar{border-radius:18px}.sidebar-nav{gap:8px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important}}
 
+
+/* Admin management cards */
+.admin-toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:18px 0}.admin-toolbar input{flex:1;min-width:230px;margin:0}
+.admin-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:14px;margin-top:16px}
+.admin-record-card{min-width:0;background:linear-gradient(155deg,#fff,#f8fcfc);border:1px solid #dce9eb;border-radius:18px;padding:17px;box-shadow:0 8px 22px rgba(16,47,70,.045);display:flex;flex-direction:column;gap:13px}
+.admin-record-head{display:flex;align-items:center;gap:12px;min-width:0}.admin-avatar{width:58px;height:58px;flex:0 0 58px;border-radius:17px;overflow:hidden;display:grid;place-items:center;background:linear-gradient(145deg,#d9f5f1,#e7f1fa);color:#087c89;font-size:23px;font-weight:800;border:1px solid #d5e9e8}.admin-avatar img{width:100%;height:100%;object-fit:cover}
+.admin-record-title{min-width:0;flex:1}.admin-record-title strong{display:block;font-size:16px;color:#123b55;overflow-wrap:anywhere}.admin-record-title span{display:block;color:#68818d;font-size:12px;margin-top:4px}
+.admin-record-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.admin-detail{min-width:0;padding:10px 11px;background:#f1f8f8;border:1px solid #e2eeee;border-radius:11px}.admin-detail small{display:block;color:#6b8791;font-size:11px;margin-bottom:4px}.admin-detail strong{display:block;color:#24495a;font-size:13px;overflow-wrap:anywhere}
+.admin-record-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding-top:10px;border-top:1px solid #e6eff0}.admin-card-actions{display:flex;gap:7px;flex-wrap:wrap}.admin-card-actions button{font-size:12px;padding:8px 11px;min-height:38px;margin:0}
+.admin-mini-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:16px 0}.admin-mini-stat{padding:13px 15px;background:#f0f8f7;border:1px solid #dcebea;border-radius:14px}.admin-mini-stat span{display:block;color:#66818a;font-size:12px}.admin-mini-stat strong{display:block;color:#0d8988;font-size:23px;margin-top:5px}
+.admin-empty{grid-column:1/-1;text-align:center;padding:30px 18px;background:#f7fbfb;border:1px dashed #cbdfe1;border-radius:15px;color:#68818d}
+.admin-photo-upload{padding:16px;border:1px dashed #9bcfcf;border-radius:15px;background:#f4fbfa;margin:12px 0 18px}.admin-photo-upload label{display:block;font-weight:700;color:#245468}.admin-photo-upload input[type=file]{background:#fff}.admin-photo-preview{display:flex;align-items:center;gap:13px;flex-wrap:wrap;margin-top:10px}.admin-photo-preview img{width:94px;height:94px;object-fit:cover;border-radius:18px;border:1px solid #d7e8e8;background:#fff}.admin-photo-preview span{font-size:12px;color:#68818d}
+@media(max-width:600px){.admin-card-grid{grid-template-columns:1fr}.admin-record-card{padding:14px}.admin-record-details{grid-template-columns:1fr 1fr}.admin-record-foot{align-items:flex-start}.admin-card-actions{width:100%}.admin-card-actions button{flex:1}}
 </style>
 </head>
 <body>
@@ -223,16 +236,7 @@ tbody tr:hover{background:#f5fbfa}
     </div>
     <p id="manageDoctorsMessage"></p>
     <p id="manageDoctorsError"></p>
-    <div class="table-wrap">
-     <table>
-      <thead>
-       <tr>
-        <th>الطبيب</th><th>التخصص</th><th>العيادة</th><th>الحالة</th><th>نفاذ الاشتراك</th><th>الإجراءات</th>
-       </tr>
-      </thead>
-      <tbody id="doctorsTable"><tr><td colspan="6">جارٍ تحميل الأطباء...</td></tr></tbody>
-     </table>
-    </div>
+    <div class="admin-mini-stats" id="doctorsStats"></div><div class="admin-card-grid" id="doctorsTable"><div class="admin-empty">جارٍ تحميل الأطباء...</div></div>
    </section>
 
    <section id="representativesSection" class="card hidden">
@@ -243,21 +247,7 @@ tbody tr:hover{background:#f5fbfa}
      </div>
      <button class="btn-light" onclick="loadRepresentatives()">تحديث القائمة</button>
     </div>
-    <div class="representative-toolbar">
-     <input id="representativeSearch" placeholder="ابحث بالاسم أو الهاتف أو المحافظة أو جهة العمل..." oninput="renderRepresentatives()">
-    </div>
-    <p id="representativesMessage"></p>
-    <p id="representativesError"></p>
-    <div class="table-wrap">
-     <table>
-      <thead>
-       <tr>
-        <th>اسم المندوب</th><th>الهاتف</th><th>المحافظة</th><th>نوع جهة العمل</th><th>اسم الجهة</th><th>تاريخ التسجيل</th><th>الحالة</th><th>الإجراءات</th>
-       </tr>
-      </thead>
-      <tbody id="representativesTable"><tr><td colspan="8" class="empty-state">اضغط تحديث القائمة لتحميل المندوبين.</td></tr></tbody>
-     </table>
-    </div>
+    <div class="admin-toolbar"><input id="representativeSearch" placeholder="ابحث بالاسم أو الهاتف أو المحافظة أو جهة العمل..." oninput="renderRepresentatives()"></div><div class="admin-mini-stats" id="representativesStats"></div><p id="representativesMessage"></p><p id="representativesError"></p><div class="admin-card-grid" id="representativesTable"><div class="admin-empty">اضغط تحديث القائمة لتحميل المندوبين.</div></div>
    </section>
 
    <!-- إدارة طبيب الطوارئ -->
@@ -794,11 +784,11 @@ async function loadDoctors(){
  const tbody=document.getElementById("doctorsTable");
  if(!tbody)return;
  setText("manageDoctorsError","");
- tbody.innerHTML="<tr><td colspan='6'>جارٍ تحميل الأطباء...</td></tr>";
+ tbody.innerHTML='<div class="admin-empty">جارٍ تحميل الأطباء...</div>';
  const {data,error}=await db.from("doctors")
  .select("id,profile_id,specialty_id,clinic_id,qualification,experience_years,consultation_fee,is_active,admin_is_active,subscription_expires_at,subscription_fee,photo_url,bio,specialties(name_ar),clinics(name,address,phone,maps_url)")
  .order("created_at",{ascending:false});
- if(error){setText("manageDoctorsError","تعذر تحميل الأطباء: "+error.message);return;}
+ if(error){setText("manageDoctorsError","تعذر تحميل الأطباء: "+error.message);tbody.innerHTML='<div class="admin-empty">تعذر تحميل الأطباء.</div>';return;}
  managedDoctors=data||[];
  const ids=managedDoctors.map(d=>d.profile_id).filter(Boolean);
  let profiles=[];
@@ -812,29 +802,14 @@ async function loadDoctors(){
   profiles=profiles.map(p=>({...p,phone:phoneMap.get(p.id)||""}));
  }
  managedDoctors=managedDoctors.map(d=>({...d,profile:profiles.find(p=>p.id===d.profile_id)||{}}));
- if(!managedDoctors.length){tbody.innerHTML="<tr><td colspan='6'>لا توجد سجلات أطباء.</td></tr>";return;}
+ if(!managedDoctors.length){tbody.innerHTML='<div class="admin-empty">لا توجد سجلات أطباء حتى الآن.</div>';const stats=document.getElementById("doctorsStats");if(stats)stats.innerHTML="";return;}
+ const activeCount=managedDoctors.filter(d=>d.admin_is_active!==false&&d.subscription_expires_at&&new Date(d.subscription_expires_at)>new Date()).length;
+ const stats=document.getElementById("doctorsStats");if(stats)stats.innerHTML=`<div class="admin-mini-stat"><span>إجمالي الأطباء</span><strong>${managedDoctors.length}</strong></div><div class="admin-mini-stat"><span>اشتراكات فعالة</span><strong>${activeCount}</strong></div><div class="admin-mini-stat"><span>موقوفون / منتهية</span><strong>${managedDoctors.length-activeCount}</strong></div>`;
  tbody.innerHTML=managedDoctors.map(d=>{
-  const adminActive=d.admin_is_active!==false;
-  const subscriptionDate=d.subscription_expires_at?new Date(d.subscription_expires_at):null;
-  const validDate=subscriptionDate&&!Number.isNaN(subscriptionDate.getTime());
-  const expired=!validDate||subscriptionDate<=new Date();
-  let statusLabel="نشط",statusClass="approved";
-  if(!adminActive){statusLabel="موقوف إدارياً";statusClass="rejected";}
-  else if(expired){statusLabel="منتهي الاشتراك";statusClass="rejected";}
-  const expiryLabel=validDate?subscriptionDate.toLocaleDateString("ar-IQ",{year:"numeric",month:"long",day:"numeric"}):"غير محدد";
-  const fee=Number(d.subscription_fee||50000).toLocaleString("en-US");
-  return `<tr>
-   <td>${escapeHTML(d.profile.full_name||"طبيب")}</td>
-   <td>${escapeHTML(d.specialties?.name_ar||"غير محدد")}</td>
-   <td>${escapeHTML(d.clinics?.name||"غير محددة")}</td>
-   <td><span class="status ${statusClass}">${statusLabel}</span></td>
-   <td><strong>${escapeHTML(expiryLabel)}</strong><div class="small">${expired?"انتهى الاشتراك":"الاشتراك فعال"} · ${fee} د.ع</div></td>
-   <td>
-    <button class="btn-light" onclick="editDoctor('${d.id}')">تعديل البيانات</button>
-    <button class="${adminActive?"reject-btn":"approve-btn"}" onclick="toggleDoctorActive('${d.id}',${adminActive})">${adminActive?"إيقاف إدارياً":"رفع الإيقاف الإداري"}</button>
-    <button onclick="renewDoctorSubscription('${d.id}')">تجديد 30 يوماً</button>
-   </td>
-  </tr>`;
+  const adminActive=d.admin_is_active!==false,subscriptionDate=d.subscription_expires_at?new Date(d.subscription_expires_at):null,validDate=subscriptionDate&&!Number.isNaN(subscriptionDate.getTime()),expired=!validDate||subscriptionDate<=new Date();
+  let statusLabel="نشط",statusClass="approved";if(!adminActive){statusLabel="موقوف إدارياً";statusClass="rejected";}else if(expired){statusLabel="منتهي الاشتراك";statusClass="rejected";}
+  const expiryLabel=validDate?subscriptionDate.toLocaleDateString("ar-IQ",{year:"numeric",month:"long",day:"numeric"}):"غير محدد",fee=Number(d.subscription_fee||50000).toLocaleString("en-US"),name=d.profile.full_name||"طبيب";
+  return `<article class="admin-record-card"><div class="admin-record-head"><div class="admin-avatar">${d.photo_url?`<img src="${escapeHTML(d.photo_url)}" alt="">`:`<span>${escapeHTML(name.trim().slice(0,1)||"ط")}</span>`}</div><div class="admin-record-title"><strong>${escapeHTML(name)}</strong><span>${escapeHTML(d.specialties?.name_ar||"تخصص غير محدد")}</span></div></div><div class="admin-record-details"><div class="admin-detail"><small>العيادة</small><strong>${escapeHTML(d.clinics?.name||"غير محددة")}</strong></div><div class="admin-detail"><small>حالة الحساب</small><strong><span class="status ${statusClass}">${statusLabel}</span></strong></div><div class="admin-detail"><small>انتهاء الاشتراك</small><strong>${escapeHTML(expiryLabel)}</strong></div><div class="admin-detail"><small>قيمة الاشتراك</small><strong>${fee} د.ع</strong></div></div><div class="admin-record-foot"><span class="small">${expired?"يحتاج إلى تجديد":"الاشتراك فعال"}</span><div class="admin-card-actions"><button class="btn-light" onclick="editDoctor('${d.id}')">تعديل البيانات</button><button class="${adminActive?"reject-btn":"approve-btn"}" onclick="toggleDoctorActive('${d.id}',${adminActive})">${adminActive?"إيقاف إدارياً":"رفع الإيقاف"}</button><button onclick="renewDoctorSubscription('${d.id}')">تجديد 30 يوماً</button></div></div></article>`;
  }).join("");
 }
 
@@ -993,13 +968,13 @@ async function loadRepresentatives(){
  const tbody=document.getElementById("representativesTable");
  if(!tbody)return;
  setText("representativesError","");setText("representativesMessage","");
- tbody.innerHTML="<tr><td colspan='8' class='empty-state'>جارٍ تحميل المندوبين...</td></tr>";
+ tbody.innerHTML='<div class="admin-empty">جارٍ تحميل المندوبين...</div>';
  const {data,error}=await db.from("rep_accounts")
   .select("profile_id,employer_type,employer_name,status,created_at,profiles!rep_accounts_profile_id_fkey(full_name,governorate,approval_status)")
   .order("created_at",{ascending:false});
  if(error){
   managedRepresentatives=[];
-  tbody.innerHTML="<tr><td colspan='8' class='empty-state'>تعذر تحميل المندوبين.</td></tr>";
+  tbody.innerHTML='<div class="admin-empty">تعذر تحميل المندوبين.</div>';
   setText("representativesError","تعذر تحميل المندوبين: "+error.message);return;
  }
  managedRepresentatives=(data||[]).map(row=>({...row,profile:row.profiles||{}}));
@@ -1022,30 +997,16 @@ function renderRepresentatives(){
   const profile=row.profile||{};
   return [profile.full_name,row.phone,profile.governorate,row.employer_type,row.employer_name,representativeStatusLabel(row.status)].filter(Boolean).join(" ").toLowerCase().includes(term);
  });
- if(!rows.length){tbody.innerHTML="<tr><td colspan='8' class='empty-state'>لا توجد حسابات مندوبين مطابقة.</td></tr>";return;}
+ const stats=document.getElementById("representativesStats");if(stats){const count=value=>managedRepresentatives.filter(row=>(row.status||"pending")===value).length;stats.innerHTML=`<div class="admin-mini-stat"><span>إجمالي المندوبين</span><strong>${managedRepresentatives.length}</strong></div><div class="admin-mini-stat"><span>بانتظار الموافقة</span><strong>${count("pending")}</strong></div><div class="admin-mini-stat"><span>مقبولون</span><strong>${count("approved")}</strong></div><div class="admin-mini-stat"><span>موقوفون / مرفوضون</span><strong>${count("suspended")+count("rejected")}</strong></div>`;}
+ if(!rows.length){tbody.innerHTML='<div class="admin-empty">لا توجد حسابات مندوبين مطابقة للبحث.</div>';return;}
  tbody.innerHTML=rows.map(row=>{
-  const status=row.status||"pending";
-  const date=row.created_at?new Date(row.created_at).toLocaleDateString("ar-IQ"):"—";
+  const status=row.status||"pending",date=row.created_at?new Date(row.created_at).toLocaleDateString("ar-IQ"):"—",name=row.profile.full_name||"غير محدد";
   let actions="";
-  if(status==="pending"){
-   actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">قبول</button><button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','rejected')">رفض</button>`;
-  }else if(status==="approved"){
-   actions=`<button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','suspended')">إيقاف الحساب</button>`;
-  }else if(status==="suspended"){
-   actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">إعادة التفعيل</button><button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','rejected')">رفض</button>`;
-  }else if(status==="rejected"){
-   actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">قبول الحساب</button>`;
-  }
-  return `<tr>
-   <td>${escapeHTML(row.profile.full_name||"غير محدد")}</td>
-   <td>${escapeHTML(row.phone||"غير مسجل")}</td>
-   <td>${escapeHTML(row.profile.governorate||"غير محددة")}</td>
-   <td>${escapeHTML(representativeEmployerLabel(row.employer_type))}</td>
-   <td>${escapeHTML(row.employer_name||"غير محددة")}</td>
-   <td>${escapeHTML(date)}</td>
-   <td><span class="rep-status ${escapeHTML(status)}">${escapeHTML(representativeStatusLabel(status))}</span></td>
-   <td><div class="rep-actions">${actions||"—"}</div></td>
-  </tr>`;
+  if(status==="pending")actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">قبول المندوب</button><button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','rejected')">رفض الطلب</button>`;
+  else if(status==="approved")actions=`<button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','suspended')">إيقاف الحساب</button>`;
+  else if(status==="suspended")actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">إعادة التفعيل</button><button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','rejected')">رفض الحساب</button>`;
+  else if(status==="rejected")actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">قبول الحساب</button>`;
+  return `<article class="admin-record-card"><div class="admin-record-head"><div class="admin-avatar"><span>${escapeHTML(name.trim().slice(0,1)||"م")}</span></div><div class="admin-record-title"><strong>${escapeHTML(name)}</strong><span>${escapeHTML(representativeEmployerLabel(row.employer_type))}</span></div></div><div class="admin-record-details"><div class="admin-detail"><small>رقم الهاتف</small><strong>${escapeHTML(row.phone||"غير مسجل")}</strong></div><div class="admin-detail"><small>المحافظة</small><strong>${escapeHTML(row.profile.governorate||"غير محددة")}</strong></div><div class="admin-detail"><small>جهة العمل</small><strong>${escapeHTML(row.employer_name||"غير محددة")}</strong></div><div class="admin-detail"><small>تاريخ التسجيل</small><strong>${escapeHTML(date)}</strong></div></div><div class="admin-record-foot"><span class="rep-status ${escapeHTML(status)}">${escapeHTML(representativeStatusLabel(status))}</span><div class="admin-card-actions">${actions||"—"}</div></div></article>`;
  }).join("");
 }
 async function changeRepresentativeStatus(profileId,status){
@@ -1537,6 +1498,7 @@ db.auth.getSession().then(async({data})=>{
       </div>
       <label>نبذة عن الطبيب</label>
       <textarea id="mcDoctorBio" maxlength="2000"></textarea>
+      <div class="admin-photo-upload"><label for="mcDoctorPhoto">صورة الطبيب (اختياري)</label><input id="mcDoctorPhoto" type="file" accept="image/jpeg,image/png,image/webp"><p class="photo-help">JPG أو PNG أو WebP — الحد الأقصى 5 ميغابايت.</p><div class="admin-photo-preview"><img id="mcDoctorPhotoPreview" alt="معاينة صورة الطبيب" src="data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect width='120' height='120' rx='18' fill='%23e7f5f3'/%3E%3Ccircle cx='60' cy='43' r='20' fill='%2394cce5'/%3E%3Cpath d='M22 108c3-24 17-36 38-36s35 12 38 36' fill='%2394cce5'/%3E%3C/svg%3E"><span id="mcDoctorPhotoInfo">ستظهر معاينة الصورة المختارة هنا.</span></div></div>
       <button id="mcDoctorCreateButton" type="submit">إضافة الطبيب إلى المركز</button>
     </form>
 
@@ -1557,23 +1519,7 @@ db.auth.getSession().then(async({data})=>{
       <option value="">اختر المركز</option>
     </select>
 
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>اسم الطبيب</th>
-            <th>الهاتف</th>
-            <th>التخصص</th>
-            <th>المؤهل</th>
-            <th>الحالة</th>
-            <th>الإجراءات</th>
-          </tr>
-        </thead>
-        <tbody id="mcDoctorsTable">
-          <tr><td colspan="6">اختر مركزاً لعرض الأطباء.</td></tr>
-        </tbody>
-      </table>
-    </div>
+    <div class="admin-card-grid" id="mcDoctorsTable"><div class="admin-empty">اختر مركزاً لعرض الأطباء.</div></div>
   `;
 
   workspace.appendChild(section);
@@ -1588,6 +1534,17 @@ db.auth.getSession().then(async({data})=>{
   function el(id) {
     return document.getElementById(id);
   }
+  let selectedCenterDoctorPhoto=null,centerDoctorPhotoPreviewUrl=null;
+  const centerDoctorPhotoPlaceholder=el("mcDoctorPhotoPreview").src;
+  function resetCenterDoctorPhoto(){selectedCenterDoctorPhoto=null;if(centerDoctorPhotoPreviewUrl){URL.revokeObjectURL(centerDoctorPhotoPreviewUrl);centerDoctorPhotoPreviewUrl=null;}el("mcDoctorPhoto").value="";el("mcDoctorPhotoPreview").src=centerDoctorPhotoPlaceholder;el("mcDoctorPhotoInfo").textContent="ستظهر معاينة الصورة المختارة هنا.";}
+  el("mcDoctorPhoto").addEventListener("change",event=>{
+    const file=event.target.files?.[0]||null;selectedCenterDoctorPhoto=null;
+    if(centerDoctorPhotoPreviewUrl){URL.revokeObjectURL(centerDoctorPhotoPreviewUrl);centerDoctorPhotoPreviewUrl=null;}
+    if(!file){el("mcDoctorPhotoPreview").src=centerDoctorPhotoPlaceholder;el("mcDoctorPhotoInfo").textContent="ستظهر معاينة الصورة المختارة هنا.";return;}
+    if(!["image/jpeg","image/png","image/webp"].includes(file.type)){event.target.value="";el("mcDoctorPhotoInfo").textContent="الصيغة غير مدعومة. اختر JPG أو PNG أو WebP.";return;}
+    if(file.size>5*1024*1024){event.target.value="";el("mcDoctorPhotoInfo").textContent="حجم الصورة يجب ألا يتجاوز 5 ميغابايت.";return;}
+    selectedCenterDoctorPhoto=file;centerDoctorPhotoPreviewUrl=URL.createObjectURL(file);el("mcDoctorPhotoPreview").src=centerDoctorPhotoPreviewUrl;el("mcDoctorPhotoInfo").textContent=file.name+" — "+(file.size/1024/1024).toFixed(2)+" MB";
+  });
 
   function message(id, value) {
     const node = el(id);
@@ -1697,7 +1654,7 @@ db.auth.getSession().then(async({data})=>{
 
       const { data: doctorRows, error: doctorError } = await db
         .from("center_doctors")
-        .select("id,center_id,full_name,phone,specialty,qualification,bio,experience_years,consultation_fee,is_active,created_at");
+        .select("id,center_id,full_name,phone,specialty,qualification,bio,experience_years,consultation_fee,photo_url,is_active,created_at");
 
       if (doctorError) throw doctorError;
 
@@ -2065,6 +2022,7 @@ db.auth.getSession().then(async({data})=>{
   try {
     const session = await getAdminSession();
 
+    const doctorPhotoFile=selectedCenterDoctorPhoto;
     const payload = {
       center_id: el("mcDoctorCenter").value,
       full_name: el("mcDoctorName").value.trim(),
@@ -2135,16 +2093,25 @@ db.auth.getSession().then(async({data})=>{
       );
     }
 
-    const center = centers.find(c => c.id === payload.center_id);
-
-    el("mcDoctorForm").reset();
-
-    message(
-      "mcDoctorMessage",
-      "تم إنشاء حساب الطبيب وربطه بمركز " +
-      (center?.name || "") +
-      " بنجاح. معرّف الطبيب: " + result.doctor_id
-    );
+    const center=centers.find(c=>c.id===payload.center_id);
+    let photoNote="";
+    if(doctorPhotoFile){
+      try{
+        const {data:createdDoctors,error:lookupError}=await db.from("center_doctors").select("id").eq("center_id",payload.center_id).eq("full_name",payload.full_name).order("created_at",{ascending:false}).limit(1);
+        if(lookupError)throw lookupError;
+        const createdDoctor=createdDoctors?.[0];if(!createdDoctor?.id)throw new Error("تعذر العثور على سجل الطبيب بعد إنشائه.");
+        const extension=doctorPhotoFile.type==="image/png"?"png":doctorPhotoFile.type==="image/webp"?"webp":"jpg";
+        const photoPath="center-doctors/"+createdDoctor.id+"/"+Date.now()+"."+extension;
+        const {error:uploadError}=await db.storage.from("doctor-photos").upload(photoPath,doctorPhotoFile,{upsert:false,contentType:doctorPhotoFile.type,cacheControl:"3600"});
+        if(uploadError)throw uploadError;
+        const {data:publicData}=db.storage.from("doctor-photos").getPublicUrl(photoPath),photoUrl=publicData?.publicUrl;
+        if(!photoUrl){await db.storage.from("doctor-photos").remove([photoPath]);throw new Error("تعذر استخراج رابط الصورة.");}
+        const {error:photoUpdateError}=await db.from("center_doctors").update({photo_url:photoUrl,updated_at:new Date().toISOString()}).eq("id",createdDoctor.id);
+        if(photoUpdateError){await db.storage.from("doctor-photos").remove([photoPath]);throw photoUpdateError;}
+      }catch(photoError){photoNote=" لكن تعذر رفع الصورة: "+photoError.message;}
+    }
+    el("mcDoctorForm").reset();resetCenterDoctorPhoto();
+    message("mcDoctorMessage","تم إنشاء حساب الطبيب وربطه بمركز "+(center?.name||"")+" بنجاح."+photoNote);
 
     selectedCenterId = payload.center_id;
     el("mcDoctorsCenter").value = payload.center_id;
@@ -2169,20 +2136,18 @@ db.auth.getSession().then(async({data})=>{
     selectedCenterId = centerId || "";
 
     if (!centerId) {
-      tbody.innerHTML =
-        '<tr><td colspan="6">اختر مركزاً لعرض الأطباء.</td></tr>';
+      tbody.innerHTML='<div class="admin-empty">اختر مركزاً لعرض الأطباء.</div>';
       return;
     }
 
-    tbody.innerHTML =
-      '<tr><td colspan="6">جارٍ تحميل الأطباء...</td></tr>';
+    tbody.innerHTML='<div class="admin-empty">جارٍ تحميل أطباء المركز...</div>';
 
     try {
       await getAdminSession();
 
       const { data, error } = await db
         .from("center_doctors")
-        .select("id,center_id,full_name,phone,specialty,qualification,bio,experience_years,consultation_fee,is_active,created_at")
+        .select("id,center_id,full_name,phone,specialty,qualification,bio,experience_years,consultation_fee,photo_url,is_active,created_at")
         .eq("center_id", centerId)
         .order("created_at", { ascending: false });
 
@@ -2192,55 +2157,22 @@ db.auth.getSession().then(async({data})=>{
       centerDoctors = centerDoctors.filter(d => d.center_id !== centerId).concat(rows);
 
       if (!rows.length) {
-        tbody.innerHTML =
-          '<tr><td colspan="6">لا يوجد أطباء مسجلون في هذا المركز.</td></tr>';
+        tbody.innerHTML='<div class="admin-empty">لا يوجد أطباء مسجلون في هذا المركز حتى الآن.</div>';
         renderCenterStats();
         renderCentersTable();
         return;
       }
 
-      tbody.innerHTML = rows.map(doctor => {
-        const active = doctor.is_active === true;
-
-        return `
-          <tr>
-            <td><strong>${escapeHTML(doctor.full_name || "طبيب")}</strong></td>
-            <td>${escapeHTML(doctor.phone || "—")}</td>
-            <td>${escapeHTML(doctor.specialty || "—")}</td>
-            <td>${escapeHTML(doctor.qualification || "—")}</td>
-            <td>
-              <span class="status ${active ? "approved" : "rejected"}">
-                ${active ? "فعال" : "موقوف"}
-              </span>
-            </td>
-            <td>
-              <div class="patient-actions">
-                <button type="button" class="btn-light"
-                  onclick="mcEditCenterDoctor('${doctor.id}')">
-                  تعديل
-                </button>
-                <button type="button"
-                  class="${active ? "reject-btn" : "approve-btn"}"
-                  onclick="mcToggleCenterDoctor('${doctor.id}')">
-                  ${active ? "إيقاف الطبيب" : "تفعيل الطبيب"}
-                </button>
-                <button type="button" class="reject-btn"
-                  onclick="mcDeleteCenterDoctor('${doctor.id}')">
-                  حذف السجل
-                </button>
-              </div>
-            </td>
-          </tr>
-        `;
+      tbody.innerHTML=rows.map(doctor=>{
+        const active=doctor.is_active===true,doctorName=doctor.full_name||"طبيب";
+        return `<article class="admin-record-card"><div class="admin-record-head"><div class="admin-avatar">${doctor.photo_url?`<img src="${escapeHTML(doctor.photo_url)}" alt="">`:`<span>${escapeHTML(doctorName.trim().slice(0,1)||"ط")}</span>`}</div><div class="admin-record-title"><strong>${escapeHTML(doctorName)}</strong><span>${escapeHTML(doctor.specialty||"تخصص غير محدد")}</span></div></div><div class="admin-record-details"><div class="admin-detail"><small>رقم الهاتف</small><strong>${escapeHTML(doctor.phone||"غير مسجل")}</strong></div><div class="admin-detail"><small>المؤهل العلمي</small><strong>${escapeHTML(doctor.qualification||"غير محدد")}</strong></div><div class="admin-detail"><small>سنوات الخبرة</small><strong>${escapeHTML(doctor.experience_years??"—")}</strong></div><div class="admin-detail"><small>أجرة الكشف</small><strong>${Number(doctor.consultation_fee||0).toLocaleString("en-US")} د.ع</strong></div></div><div class="admin-record-foot"><span class="status ${active?"approved":"rejected"}">${active?"فعال":"موقوف"}</span><div class="admin-card-actions"><button type="button" class="btn-light" onclick="mcEditCenterDoctor('${doctor.id}')">تعديل البيانات</button><button type="button" class="${active?"reject-btn":"approve-btn"}" onclick="mcToggleCenterDoctor('${doctor.id}')">${active?"إيقاف الطبيب":"تفعيل الطبيب"}</button><button type="button" class="reject-btn" onclick="mcDeleteCenterDoctor('${doctor.id}')">حذف السجل</button></div></div></article>`;
       }).join("");
 
       renderCenterStats();
       renderCentersTable();
 
     } catch (error) {
-      tbody.innerHTML =
-        '<tr><td colspan="6">تعذر تحميل الأطباء: ' +
-        escapeHTML(error.message) + '</td></tr>';
+      tbody.innerHTML='<div class="admin-empty">تعذر تحميل الأطباء: '+escapeHTML(error.message)+'</div>';
     }
   }
 
