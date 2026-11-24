@@ -388,6 +388,7 @@ days.forEach(day=>{
 const record=records.find(item=>Number(item.day_of_week)===day.number);
 const row=document.createElement("div");
 row.className="day";
+if(isCenterDoctor)row.style.gridTemplateColumns="repeat(6,minmax(0,1fr))";
 const title=document.createElement("strong");
 title.textContent=day.name;
 const label=document.createElement("label");
@@ -406,6 +407,16 @@ end.type="time";
 end.id="end_"+day.number;
 end.value=record?.end_time?record.end_time.slice(0,5):"14:00";
 row.append(title,label,start,end);
+if(isCenterDoctor){
+ const unlimitedLabel=document.createElement("label");
+ const unlimited=document.createElement("input");unlimited.type="checkbox";unlimited.id="unlimited_"+day.number;
+ unlimited.checked=record?record.unlimited_daily!==false:true;
+ unlimitedLabel.append(unlimited,document.createTextNode(" غير محدد"));
+ const max=document.createElement("input");max.type="number";max.min="1";max.max="500";max.id="max_"+day.number;
+ max.placeholder="الحد اليومي";max.value=record?.max_daily_patients??"";max.disabled=unlimited.checked;
+ unlimited.addEventListener("change",()=>{max.disabled=unlimited.checked;});
+ row.append(unlimitedLabel,max);
+}
 container.appendChild(row);
 });
 }
@@ -413,9 +424,9 @@ container.appendChild(row);
 async function loadSchedule(){
 if(!currentDoctorId)return;
 showMessage("scheduleStatus","جارٍ تحميل الدوام...");
-const {data,error}=await db.from("doctor_schedules")
-.select("id,doctor_id,day_of_week,start_time,end_time,is_available")
-.eq("doctor_id",currentDoctorId);
+const {data,error}=isCenterDoctor
+ ?await db.from("center_doctor_schedules").select("id,center_doctor_id,day_of_week,start_time,end_time,is_available,unlimited_daily,max_daily_patients").eq("center_doctor_id",currentCenterDoctorId)
+ :await db.from("doctor_schedules").select("id,doctor_id,day_of_week,start_time,end_time,is_available").eq("doctor_id",currentDoctorId);
 if(error){
 showMessage("scheduleStatus","تعذر تحميل الدوام: "+error.message);
 return;
@@ -425,7 +436,7 @@ showMessage("scheduleStatus","تم تحميل الدوام الأسبوعي.");
 }
 
 async function saveSchedule(){
-if(!currentDoctorId)return;
+if(!currentDoctorId&&!currentCenterDoctorId)return;
 const button=document.getElementById("saveScheduleButton");
 button.disabled=true;
 showMessage("scheduleStatus","جارٍ حفظ الدوام...");
@@ -438,15 +449,23 @@ if(available&&(!start||!end||start>=end)){
 showMessage("scheduleStatus","تحقق من وقت بداية ونهاية دوام يوم "+day.name);
 return;
 }
-const {data:existing,error:findError}=await db.from("doctor_schedules")
-.select("id").eq("doctor_id",currentDoctorId)
-.eq("day_of_week",day.number).limit(1).maybeSingle();
-if(findError)throw findError;
-const values={doctor_id:currentDoctorId,day_of_week:day.number,start_time:start||"09:00",end_time:end||"14:00",is_available:available};
-let result;
-if(existing)result=await db.from("doctor_schedules").update(values).eq("id",existing.id);
-else result=await db.from("doctor_schedules").insert(values);
-if(result.error)throw result.error;
+if(isCenterDoctor){
+ const unlimited=document.getElementById("unlimited_"+day.number).checked;
+ const maxText=document.getElementById("max_"+day.number).value;
+ const max=Number(maxText);
+ if(available&&!unlimited&&(!Number.isInteger(max)||max<1||max>500))throw new Error("حدد حداً يومياً صحيحاً ليوم "+day.name+" أو اختر غير محدد.");
+ const {data:existing,error:findError}=await db.from("center_doctor_schedules").select("id").eq("center_doctor_id",currentCenterDoctorId).eq("day_of_week",day.number).limit(1).maybeSingle();
+ if(findError)throw findError;
+ const values={center_doctor_id:currentCenterDoctorId,day_of_week:day.number,start_time:start||"09:00",end_time:end||"14:00",is_available:available,unlimited_daily:unlimited,max_daily_patients:unlimited?null:max};
+ const result=existing?await db.from("center_doctor_schedules").update(values).eq("id",existing.id):await db.from("center_doctor_schedules").insert(values);
+ if(result.error)throw result.error;
+}else{
+ const {data:existing,error:findError}=await db.from("doctor_schedules").select("id").eq("doctor_id",currentDoctorId).eq("day_of_week",day.number).limit(1).maybeSingle();
+ if(findError)throw findError;
+ const values={doctor_id:currentDoctorId,day_of_week:day.number,start_time:start||"09:00",end_time:end||"14:00",is_available:available};
+ const result=existing?await db.from("doctor_schedules").update(values).eq("id",existing.id):await db.from("doctor_schedules").insert(values);
+ if(result.error)throw result.error;
+}
 }
 showMessage("scheduleStatus","تم حفظ الدوام الأسبوعي بنجاح.");
 await loadSchedule();
