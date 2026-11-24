@@ -1,6 +1,9 @@
 name: Staging functional HTTP
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/staging-functional.yml']
 permissions:
   contents: read
 concurrency:
@@ -9,13 +12,19 @@ concurrency:
 jobs:
   functional:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: grafana/setup-k6-action@v1
-      - run: k6 run --summary-export=functional-summary.json tests/load/functional.js
+      - name: Progressive load
+        run: |
+          mkdir -p functional-results
+          for level in 10 25 50 100; do
+            echo "Testing $level virtual users"
+            LOAD_VUS=$level k6 run --summary-export=functional-results/summary-$level.json tests/load/functional.js || exit 1
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: functional-summary
-          path: functional-summary.json
+          path: functional-results/
