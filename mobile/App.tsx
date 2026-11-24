@@ -1,5 +1,6 @@
 import React,{useState} from 'react';
 import {SafeAreaView,ScrollView,Text,TextInput,View,Pressable,StyleSheet,StatusBar} from 'react-native';
+const normalizeDigits=(v:string)=>v.replace(/[٠-٩۰-۹]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.includes(d)?'٠١٢٣٤٥٦٧٨٩'.indexOf(d):'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
 const portals=['المراجع','الطبيب','المراكز الطبية','المندوب'];
 const provinces=['بغداد','النجف','كربلاء','بابل','البصرة','ذي قار','ميسان','المثنى','القادسية','واسط','ديالى','الأنبار','صلاح الدين','نينوى','كركوك','أربيل','دهوك','السليمانية','حلبجة'];
 const samples=['تم تأكيد حجز تجريبي','تم تحديث موعد تجريبي','تذكير بموعد تجريبي'];
@@ -10,7 +11,7 @@ export default function App(){
  const send=()=>{if(name.trim().length<3||!/^\d{1,3}$/.test(age)||Number(age)<1||Number(age)>120||!province||!/^7\d{9}$/.test(phone)){E('أكمل الاسم والعمر والمحافظة ورقم الهاتف بصيغة 7XXXXXXXXX');return;}E('');O('');S('otp')};
  const verify=()=>{if(otp!=='123456'){E('الرمز التجريبي غير صحيح');return;}E('');O('');S('home')};
  const btn=(label:string,action:()=>void)=><Pressable accessibilityRole="button" style={s.button} onPress={action}><Text style={s.white}>{label}</Text></Pressable>;
- const field=(label:string,value:string,set:(v:string)=>void,numeric=false,maxLength=100)=><View style={{gap:6}}><Text style={s.label}>{label}</Text><TextInput accessibilityLabel={label} style={s.input} value={value} onChangeText={set} keyboardType={numeric?'number-pad':'default'} maxLength={maxLength}/></View>;
+ const field=(label:string,value:string,set:(v:string)=>void,numeric=false,maxLength=100)=><View style={{gap:6}}><Text style={s.label}>{label}</Text><TextInput accessibilityLabel={label} style={s.input} value={value} onChangeText={v=>set(numeric?normalizeDigits(v):v)} keyboardType={numeric?'number-pad':'default'} maxLength={maxLength}/></View>;
  return <SafeAreaView style={s.root}><StatusBar barStyle="dark-content"/><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.body}>
  <View style={s.hero}><Text style={s.brand}>PATIENT</Text><Text style={s.white}>بيشنت — النسخة التجريبية</Text></View>
  <Text style={s.notice}>للاختبار فقط: استخدم بيانات وهمية. لا يتم إرسال واتساب أو حفظ بيانات على الخادم.</Text>
