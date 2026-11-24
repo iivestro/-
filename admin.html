@@ -137,6 +137,7 @@ tbody tr:hover{background:#f5fbfa}
 .admin-empty{grid-column:1/-1;text-align:center;padding:30px 18px;background:#f7fbfb;border:1px dashed #cbdfe1;border-radius:15px;color:#68818d}
 .admin-photo-upload{padding:16px;border:1px dashed #9bcfcf;border-radius:15px;background:#f4fbfa;margin:12px 0 18px}.admin-photo-upload label{display:block;font-weight:700;color:#245468}.admin-photo-upload input[type=file]{background:#fff}.admin-photo-preview{display:flex;align-items:center;gap:13px;flex-wrap:wrap;margin-top:10px}.admin-photo-preview img{width:94px;height:94px;object-fit:cover;border-radius:18px;border:1px solid #d7e8e8;background:#fff}.admin-photo-preview span{font-size:12px;color:#68818d}
 @media(max-width:600px){.admin-card-grid{grid-template-columns:1fr}.admin-record-card{padding:14px}.admin-record-details{grid-template-columns:1fr 1fr}.admin-record-foot{align-items:flex-start}.admin-card-actions{width:100%}.admin-card-actions button{flex:1}}
+.representative-group{margin-top:24px;padding-top:20px;border-top:1px solid #e2eeee}.representative-group-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}.representative-group-head h3{margin:0;color:#123b55}.representative-group-head p{margin:4px 0 0;font-size:12px}.representative-pending-count{padding:7px 13px;border-radius:30px;background:#fff4d6;color:#8a6415;font-size:12px;font-weight:800}.representative-record{gap:15px}.representative-record .admin-record-head{align-items:flex-start}.representative-record .rep-status{margin-right:auto}.representative-info-block{padding:13px;background:#f8fbfb;border:1px solid #e5eeee;border-radius:14px}.representative-info-block h4{margin:0 0 10px;color:#0d8988;font-size:13px}.representative-info-block .admin-record-details{grid-template-columns:repeat(2,minmax(0,1fr))}.representative-record .admin-record-foot{justify-content:flex-start}.representative-record .admin-card-actions{width:100%}.representative-record .admin-card-actions button{flex:1;min-width:130px}@media(max-width:600px){.representative-info-block .admin-record-details{grid-template-columns:1fr}.representative-record .admin-record-head{flex-wrap:wrap}.representative-record .rep-status{margin-right:0}}
 </style>
 </head>
 <body>
@@ -247,7 +248,17 @@ tbody tr:hover{background:#f5fbfa}
      </div>
      <button class="btn-light" onclick="loadRepresentatives()">تحديث القائمة</button>
     </div>
-    <div class="admin-toolbar"><input id="representativeSearch" placeholder="ابحث بالاسم أو الهاتف أو المحافظة أو جهة العمل..." oninput="renderRepresentatives()"></div><div class="admin-mini-stats" id="representativesStats"></div><p id="representativesMessage"></p><p id="representativesError"></p><div class="admin-card-grid" id="representativesTable"><div class="admin-empty">اضغط تحديث القائمة لتحميل المندوبين.</div></div>
+    <div class="admin-toolbar"><input id="representativeSearch" placeholder="ابحث بالاسم أو الهاتف أو المحافظة أو جهة العمل..." oninput="renderRepresentatives()"></div>
+    <div class="admin-mini-stats" id="representativesStats"></div>
+    <p id="representativesMessage"></p><p id="representativesError"></p>
+    <div class="representative-group">
+     <div class="representative-group-head"><div><h3>طلبات تسجيل جديدة</h3><p class="muted">الحسابات التي تنتظر مراجعتك وموافقتك قبل تفعيلها.</p></div><span class="representative-pending-count" id="representativePendingCount">0 طلب</span></div>
+     <div class="admin-card-grid" id="representativePendingTable"><div class="admin-empty">اضغط تحديث القائمة لتحميل الطلبات.</div></div>
+    </div>
+    <div class="representative-group">
+     <div class="representative-group-head"><div><h3>الحسابات الأخرى</h3><p class="muted">المندوبون المقبولون والمرفوضون والموقوفون.</p></div></div>
+     <div class="admin-card-grid" id="representativesTable"><div class="admin-empty">لا توجد حسابات بعد.</div></div>
+    </div>
    </section>
 
    <!-- إدارة طبيب الطوارئ -->
@@ -970,7 +981,7 @@ async function loadRepresentatives(){
  setText("representativesError","");setText("representativesMessage","");
  tbody.innerHTML='<div class="admin-empty">جارٍ تحميل المندوبين...</div>';
  const {data,error}=await db.from("rep_accounts")
-  .select("profile_id,employer_type,employer_name,status,created_at,profiles!rep_accounts_profile_id_fkey(full_name,governorate,approval_status)")
+  .select("profile_id,employer_type,employer_name,status,created_at,subscription_started_at,subscription_expires_at,subscription_fee,subscription_is_trial,profiles!rep_accounts_profile_id_fkey(full_name,governorate,approval_status,created_at)")
   .order("created_at",{ascending:false});
  if(error){
   managedRepresentatives=[];
@@ -989,25 +1000,64 @@ async function loadRepresentatives(){
  }
  renderRepresentatives();
 }
+function representativeDate(value){
+ if(!value)return "غير محدد";
+ const date=new Date(value);
+ return Number.isNaN(date.getTime())?"غير محدد":date.toLocaleDateString("ar-IQ",{year:"numeric",month:"long",day:"numeric",timeZone:"Asia/Baghdad"});
+}
+function representativeSubscriptionLabel(row){
+ if(row.subscription_is_trial)return "تجريبي مجاني";
+ const fee=Number(row.subscription_fee||0);
+ return fee>0?"اشتراك مدفوع — "+fee.toLocaleString("ar-IQ")+" د.ع":"اشتراك غير محدد";
+}
+function representativeCard(row){
+ const status=row.status||"pending",name=row.profile?.full_name||"غير محدد";
+ const registered=representativeDate(row.created_at||row.profile?.created_at);
+ const started=representativeDate(row.subscription_started_at);
+ const expires=representativeDate(row.subscription_expires_at);
+ let actions="";
+ if(status==="pending")actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">موافقة وتفعيل الحساب</button><button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','rejected')">رفض الطلب</button>`;
+ else if(status==="approved")actions=`<button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','suspended')">إيقاف الحساب</button>`;
+ else if(status==="suspended")actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">إعادة التفعيل</button><button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','rejected')">رفض الحساب</button>`;
+ else if(status==="rejected")actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">قبول الحساب</button>`;
+ const subscription=representativeSubscriptionLabel(row);
+ return `<article class="admin-record-card representative-record">
+  <div class="admin-record-head"><div class="admin-avatar"><span>${escapeHTML(name.trim().slice(0,1)||"م")}</span></div><div class="admin-record-title"><strong>${escapeHTML(name)}</strong><span>${escapeHTML(representativeEmployerLabel(row.employer_type))}</span></div><span class="rep-status ${escapeHTML(status)}">${escapeHTML(representativeStatusLabel(status))}</span></div>
+  <div class="representative-info-block"><h4>المعلومات الشخصية</h4><div class="admin-record-details">
+   <div class="admin-detail"><small>رقم الهاتف</small><strong dir="ltr">${escapeHTML(row.phone||"غير مسجل")}</strong></div>
+   <div class="admin-detail"><small>المحافظة</small><strong>${escapeHTML(row.profile?.governorate||"غير محددة")}</strong></div>
+   <div class="admin-detail"><small>نوع جهة العمل</small><strong>${escapeHTML(representativeEmployerLabel(row.employer_type))}</strong></div>
+   <div class="admin-detail"><small>اسم المكتب / الشركة</small><strong>${escapeHTML(row.employer_name||"غير محدد")}</strong></div>
+   <div class="admin-detail"><small>تاريخ تقديم الطلب</small><strong>${escapeHTML(registered)}</strong></div>
+  </div></div>
+  <div class="representative-info-block"><h4>الاشتراك</h4><div class="admin-record-details">
+   <div class="admin-detail"><small>نوع الاشتراك</small><strong>${escapeHTML(subscription)}</strong></div>
+   <div class="admin-detail"><small>بداية الاشتراك</small><strong>${escapeHTML(started)}</strong></div>
+   <div class="admin-detail"><small>نهاية الاشتراك</small><strong>${escapeHTML(expires)}</strong></div>
+  </div></div>
+  <div class="admin-record-foot"><div class="admin-card-actions">${actions||"—"}</div></div>
+ </article>`;
+}
 function renderRepresentatives(){
- const tbody=document.getElementById("representativesTable");
- if(!tbody)return;
+ const pendingBox=document.getElementById("representativePendingTable");
+ const otherBox=document.getElementById("representativesTable");
+ if(!pendingBox||!otherBox)return;
  const term=(document.getElementById("representativeSearch")?.value||"").trim().toLowerCase();
- const rows=managedRepresentatives.filter(row=>{
+ const matches=managedRepresentatives.filter(row=>{
   const profile=row.profile||{};
-  return [profile.full_name,row.phone,profile.governorate,row.employer_type,row.employer_name,representativeStatusLabel(row.status)].filter(Boolean).join(" ").toLowerCase().includes(term);
+  return [profile.full_name,row.phone,profile.governorate,row.employer_type,row.employer_name,representativeStatusLabel(row.status),representativeSubscriptionLabel(row),representativeDate(row.subscription_started_at),representativeDate(row.subscription_expires_at)].join(" ").toLowerCase().includes(term);
  });
- const stats=document.getElementById("representativesStats");if(stats){const count=value=>managedRepresentatives.filter(row=>(row.status||"pending")===value).length;stats.innerHTML=`<div class="admin-mini-stat"><span>إجمالي المندوبين</span><strong>${managedRepresentatives.length}</strong></div><div class="admin-mini-stat"><span>بانتظار الموافقة</span><strong>${count("pending")}</strong></div><div class="admin-mini-stat"><span>مقبولون</span><strong>${count("approved")}</strong></div><div class="admin-mini-stat"><span>موقوفون / مرفوضون</span><strong>${count("suspended")+count("rejected")}</strong></div>`;}
- if(!rows.length){tbody.innerHTML='<div class="admin-empty">لا توجد حسابات مندوبين مطابقة للبحث.</div>';return;}
- tbody.innerHTML=rows.map(row=>{
-  const status=row.status||"pending",date=row.created_at?new Date(row.created_at).toLocaleDateString("ar-IQ"):"—",name=row.profile.full_name||"غير محدد";
-  let actions="";
-  if(status==="pending")actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">قبول المندوب</button><button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','rejected')">رفض الطلب</button>`;
-  else if(status==="approved")actions=`<button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','suspended')">إيقاف الحساب</button>`;
-  else if(status==="suspended")actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">إعادة التفعيل</button><button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','rejected')">رفض الحساب</button>`;
-  else if(status==="rejected")actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">قبول الحساب</button>`;
-  return `<article class="admin-record-card"><div class="admin-record-head"><div class="admin-avatar"><span>${escapeHTML(name.trim().slice(0,1)||"م")}</span></div><div class="admin-record-title"><strong>${escapeHTML(name)}</strong><span>${escapeHTML(representativeEmployerLabel(row.employer_type))}</span></div></div><div class="admin-record-details"><div class="admin-detail"><small>رقم الهاتف</small><strong>${escapeHTML(row.phone||"غير مسجل")}</strong></div><div class="admin-detail"><small>المحافظة</small><strong>${escapeHTML(row.profile.governorate||"غير محددة")}</strong></div><div class="admin-detail"><small>جهة العمل</small><strong>${escapeHTML(row.employer_name||"غير محددة")}</strong></div><div class="admin-detail"><small>تاريخ التسجيل</small><strong>${escapeHTML(date)}</strong></div></div><div class="admin-record-foot"><span class="rep-status ${escapeHTML(status)}">${escapeHTML(representativeStatusLabel(status))}</span><div class="admin-card-actions">${actions||"—"}</div></div></article>`;
- }).join("");
+ const pending=matches.filter(row=>(row.status||"pending")==="pending");
+ const others=matches.filter(row=>(row.status||"pending")!=="pending");
+ const stats=document.getElementById("representativesStats");
+ if(stats){
+  const count=value=>managedRepresentatives.filter(row=>(row.status||"pending")===value).length;
+  stats.innerHTML=`<div class="admin-mini-stat"><span>إجمالي الحسابات</span><strong>${managedRepresentatives.length}</strong></div><div class="admin-mini-stat"><span>طلبات تنتظر موافقتك</span><strong>${count("pending")}</strong></div><div class="admin-mini-stat"><span>حسابات مفعّلة</span><strong>${count("approved")}</strong></div><div class="admin-mini-stat"><span>موقوفة أو مرفوضة</span><strong>${count("suspended")+count("rejected")}</strong></div>`;
+ }
+ const pendingCount=document.getElementById("representativePendingCount");
+ if(pendingCount)pendingCount.textContent=pending.length.toLocaleString("ar-IQ")+" طلب";
+ pendingBox.innerHTML=pending.length?pending.map(representativeCard).join(""):'<div class="admin-empty">لا توجد طلبات جديدة بانتظار الموافقة حالياً.</div>';
+ otherBox.innerHTML=others.length?others.map(representativeCard).join(""):'<div class="admin-empty">لا توجد حسابات أخرى مطابقة للبحث.</div>';
 }
 async function changeRepresentativeStatus(profileId,status){
  const labels={approved:"قبول المندوب",rejected:"رفض المندوب",suspended:"إيقاف المندوب"};
