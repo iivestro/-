@@ -1,0 +1,3 @@
+# Isolated database benchmark
+
+2026-11-25: PATIENT-STAGING, synthetic load_test.appointments only. 1,000,000 rows, 100,000 distinct patient identifiers, 5,000 doctor identifiers, total relation size 149168128 bytes. Composite index (patient_id, created_at DESC, id). EXPLAIN ANALYZE of 10,000 sequential correlated indexed lookups (limit 25, count only) completed in 171.179 ms, planning 14.610 ms. This is not concurrent HTTP load, real authentication, or a production capacity guarantee. No production data copied. Next: schema-only migration baseline, authenticated API tests, controlled concurrent load with resource monitoring and stop thresholds.
