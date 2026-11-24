@@ -557,8 +557,9 @@ async function loadCenterDoctorAppointments(){
    if(item.appointment_status==="pending"){
     actions.appendChild(makeActionButton("تأكيد وتحديد الساعة","",()=>decideCenterDoctorAppointment({...item,id:item.appointment_id},"confirm")));
     actions.appendChild(makeActionButton("رفض الطلب","reject",()=>decideCenterDoctorAppointment({...item,id:item.appointment_id},"reject")));
-   }else if(item.appointment_status==="confirmed"){
+   }else if(["approved","confirmed"].includes(item.appointment_status)){
     actions.appendChild(makeActionButton("تغيير الموعد","secondary",()=>decideCenterDoctorAppointment({...item,id:item.appointment_id},"reschedule")));
+    if(item.appointment_at&&new Date(item.appointment_at)<=new Date())actions.appendChild(makeActionButton("تسجيل الزيارة مكتملة","",()=>decideCenterDoctorAppointment({...item,id:item.appointment_id},"complete")));
    }
    card.append(actions);list.append(card);
   });
@@ -574,11 +575,12 @@ async function decideCenterDoctorAppointment(item,action){
   if(!time)return;
   if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time)){alert("صيغة التاريخ أو الوقت غير صحيحة.");return;}
   at=new Date(date+"T"+time+":00+03:00").toISOString();
- }else{
+ }else if(action==="reject"){
   reason=prompt("اكتب سبب رفض الطلب:");
   if(!reason||!reason.trim()){alert("سبب الرفض إلزامي.");return;}
  }
- if(!confirm(action==="reject"?"هل تريد رفض الطلب؟":"هل تريد حفظ الموعد المحدد؟"))return;
+ const confirmation=action==="reject"?"هل تريد رفض الطلب؟":action==="complete"?"هل تريد تسجيل الزيارة مكتملة؟":"هل تريد حفظ الموعد المحدد؟";
+ if(!confirm(confirmation))return;
  const {data,error}=await db.rpc("center_decide_appointment",{p_appointment_id:item.id,p_action:action,p_appointment_at:at,p_rejection_reason:reason});
  if(error||!data?.success){alert("تعذر تنفيذ العملية: "+(error?.message||"لم يتم التأكيد"));return;}
  await loadAppointments();
