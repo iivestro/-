@@ -948,13 +948,11 @@ async function toggleDoctorActive(id,currentAdminActive){
 async function renewDoctorSubscription(id){
  const d=managedDoctors.find(x=>x.id===id);
  if(!d)return;
- const fee=Number(d.subscription_fee||50000);
- if(!confirm("تأكيد استلام مبلغ "+fee.toLocaleString("en-US")+" دينار عراقي من الطبيب "+(d.profile.full_name||"")+" وتجديد اشتراكه 30 يوماً؟"))return;
- const now=new Date();
- const current=d.subscription_expires_at?new Date(d.subscription_expires_at):now;
- const start=(!Number.isNaN(current.getTime())&&current>now)?current:now;
- const next=new Date(start);next.setDate(next.getDate()+30);
- const {error}=await db.from("doctors").update({subscription_expires_at:next.toISOString()}).eq("id",id);
+ const {data:price,error:priceError}=await db.from("service_subscription_prices").select("monthly_fee,duration_days").eq("service","doctor").single();
+ if(priceError){setText("manageDoctorsError",priceError.message);return;}
+ if(!confirm("تأكيد استلام "+price.monthly_fee+" دينار وتجديد الاشتراك؟"))return;
+ const {data:expiry,error}=await db.rpc("admin_renew_clinical_subscription",{p_kind:"doctor",p_id:id});
+ const next=new Date(expiry);
  if(error){setText("manageDoctorsError","تعذر تجديد الاشتراك: "+error.message);return;}
  setText("manageDoctorsMessage","تم تمديد الاشتراك 30 يوماً حتى "+next.toLocaleDateString("ar-IQ")+". إذا كان الطبيب موقوفاً إدارياً فسيبقى موقوفاً.");
  await Promise.all([loadDoctors(),refreshDashboard()]);
@@ -1659,8 +1657,8 @@ db.auth.getSession().then(async({data})=>{
       };
     }
 
-    const expiry = new Date(start);
-    expiry.setDate(expiry.getDate() + PAYMENT_DAYS);
+    const expiry = center.subscription_expires_at ? new Date(center.subscription_expires_at) : new Date(start);
+    if(!center.subscription_expires_at) expiry.setDate(expiry.getDate() + PAYMENT_DAYS);
 
     const remaining = Math.ceil(
       (expiry.getTime() - Date.now()) / (24 * 60 * 60 * 1000)
@@ -1717,7 +1715,7 @@ db.auth.getSession().then(async({data})=>{
 
       const { data, error } = await db
         .from("medical_centers")
-        .select("id,profile_id,name,city,address,phone,maps_url,is_active,created_at,last_payment_at,image_url")
+        .select("id,profile_id,name,city,address,phone,maps_url,is_active,created_at,last_payment_at,image_url,subscription_expires_at,subscription_fee")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -1917,18 +1915,7 @@ db.auth.getSession().then(async({data})=>{
     try {
       await getAdminSession();
 
-      const now = new Date().toISOString();
-
-      const { data, error } = await db
-        .from("medical_centers")
-        .update({
-          last_payment_at: now,
-          is_active: true,
-          updated_at: now
-        })
-        .eq("id", centerId)
-        .select("id,last_payment_at,is_active")
-        .maybeSingle();
+      const { data, error } = await db.rpc("admin_renew_clinical_subscription",{p_kind:"medical_center",p_id:centerId});
 
       if (error) throw error;
       if (!data) {
@@ -1940,7 +1927,7 @@ db.auth.getSession().then(async({data})=>{
       message(
         "mcPaymentMessage",
         "تم تسجيل استلام الدفعة وتجديد اشتراك مركز " +
-        center.name + " لمدة 30 يوماً، وتم تفعيل المركز."
+        center.name + " وفق مدة الاشتراك المركزية."
       );
 
     } catch (error) {
