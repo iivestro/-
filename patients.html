@@ -192,6 +192,7 @@ label{display:block;margin:10px 0 5px;color:#355568;font-weight:700;font-size:13
   <h2>اختر البوابة التي تريد الدخول إليها</h2>
   <p class="muted">يمكنك استعراض الأطباء مباشرة أو اختيار مركز طبي ثم مشاهدة الأطباء المرتبطين به.</p>
   <div class="portal-grid">
+<button type="button" class="portal-card" onclick="location.href='home-services.html?kind=male'"><strong>التمريض المنزلي</strong><span>طلب زيارة ممرض أو ممرضة.</span></button><button type="button" class="portal-card" onclick="location.href='home-services.html?kind=laboratory'"><strong>المختبرات المنزلية</strong><span>طلب سحب عينات من المنزل.</span></button>
    <button type="button" class="portal-card" onclick="openDoctorsPortal()">
     <strong>🩺 بوابة الأطباء</strong>
     <span>عرض جميع الأطباء المعتمدين والبحث حسب الاسم والاختصاص.</span>
@@ -204,7 +205,7 @@ label{display:block;margin:10px 0 5px;color:#355568;font-weight:700;font-size:13
  </section>
 
  <section id="centers" class="card hidden">
-  <button type="button" class="secondary portal-back" onclick="backToPortals()">← العودة إلى البوابتين</button>
+  <button type="button" class="secondary portal-back" onclick="backToPortals()">← العودة إلى البوابات</button>
   <h2>المراكز الطبية</h2>
   <p class="muted">ابحث باسم المركز أو المحافظة أو المنطقة أو رقم الهاتف، ثم اختر المركز لعرض أطبائه.</p>
   <div class="search-wrap"><input id="centerSearch" type="search" placeholder="ابحث عن مركز طبي..." oninput="filterMedicalCenters()" autocomplete="off"></div>
