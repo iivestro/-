@@ -1,0 +1,21 @@
+name: Staging functional HTTP
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: staging-load
+  cancel-in-progress: false
+jobs:
+  functional:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: grafana/setup-k6-action@v1
+      - run: k6 run --summary-export=functional-summary.json tests/load/functional.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: functional-summary
+          path: functional-summary.json
