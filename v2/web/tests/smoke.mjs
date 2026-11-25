@@ -34,5 +34,10 @@ try {
  const blocked=await fetch(base+'/api/auth/login',{method:'POST',headers:{...loginHeaders,Origin:'https://example.invalid'},body:'{}'});assert.equal(blocked.status,403);
  const login=await fetch(base+'/api/auth/login',{method:'POST',headers:loginHeaders,body:'{}'});assert.equal(login.status,503);
  assert.match(login.headers.get('cache-control')??'',/no-store/);
+ for(const path of ['/api/auth/logout','/api/appointments/request']){
+ const denied=await fetch(base+path,{method:'POST'});assert.equal(denied.status,401);
+ const unavailable=await fetch(base+path,{method:'POST',headers:{...loginHeaders,authorization:'Bearer abc.def.ghi'},body:'{}'});assert.equal(unavailable.status,503);
+ assert.match(unavailable.headers.get('cache-control')??'',/no-store/);
+ }
  console.log('Smoke checks passed');
 } finally {server.kill('SIGTERM');}
