@@ -2,7 +2,9 @@ import {authConfig} from '../../../../lib/auth';
 export const dynamic='force-dynamic';
 const reply=(body:unknown,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'private, no-store'}});
 export async function POST(request:Request){
- if(request.headers.get('origin')!==new URL(request.url).origin)return reply({error:'Forbidden'},403);
+ const origin=process.env.APP_ORIGIN;
+ if(!origin)return reply({error:'Unavailable'},503);
+ if(request.headers.get('origin')!==origin)return reply({error:'Forbidden'},403);
  if(!request.headers.get('content-type')?.toLowerCase().startsWith('application/json'))return reply({error:'Invalid request'},415);
  const config=authConfig();if(!config)return reply({error:'Unavailable'},503);
  try{
