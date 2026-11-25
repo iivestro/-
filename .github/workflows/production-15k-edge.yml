@@ -1,0 +1,36 @@
+name: Production 15k read-only edge capacity
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/production-15k-edge.yml'
+      - 'tests/load/production-15k-edge.js'
+permissions:
+  contents: read
+concurrency:
+  group: production-15k-edge
+  cancel-in-progress: false
+jobs:
+  shard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      max-parallel: 15
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: grafana/setup-k6-action@v1
+      - name: Run distributed read-only ramp
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          mkdir -p load-results
+          k6 run --summary-export="load-results/summary-${SHARD}.json" tests/load/production-15k-edge.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: production-15k-edge-shard-${{ matrix.shard }}
+          path: load-results/
