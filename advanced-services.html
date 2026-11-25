@@ -1,0 +1,342 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>الخدمات المتقدمة | بيشنت</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>
+*{box-sizing:border-box}body{margin:0;background:#f3faf9;color:#153b49;font:16px/1.65 Tahoma,Arial,sans-serif}header{background:#fff;border-bottom:1px solid #cde5e1;padding:16px 5%;display:flex;align-items:center;justify-content:space-between;gap:12px}header strong{color:#087f83}a{color:#12656c;font-weight:600}main{max-width:1120px;margin:24px auto;padding:16px}.hero{background:linear-gradient(120deg,#125863,#087f83,#129e96);color:white;border-radius:22px;padding:24px}.hero h1{margin:0}.card{background:white;border:1px solid #cde5e1;border-radius:18px;padding:18px;margin-top:16px}#menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}button,input,select{font:inherit;border:1px solid #cde5e1;border-radius:10px;min-height:44px;padding:10px;max-width:100%}button{background:#e1efed;color:#075b62;font-weight:600;cursor:pointer}button:disabled{opacity:.5}form{display:grid;gap:10px;max-width:520px}form button{background:#087f83;color:#fff}.item{background:#f4faf9;padding:12px;border:1px solid #cde5e1;border-radius:12px;margin:8px 0;overflow-wrap:anywhere}label{display:block;font-weight:600}.muted{color:#506d77}.item button{margin:4px}[hidden]{display:none!important}
+</style></head><body><header><strong>بيشنت | PATIENT</strong><a href="index.html">اللوحة الرئيسية</a></header><main><section class="hero"><h1>الخدمات والإدارة المتقدمة</h1><p>الدور الإلكتروني والدعم الفني والملف الصحي وإدارة المنصة.</p></section><section class="card"><p class="muted">معاينة تطويرية — الوظائف الجديدة غير مفعلة. لا تدخل بيانات أو صوراً طبية حقيقية. الملف الصحي الحالي نصي؛ رفع الملفات والمشاركة والتنبيهات الخارجية قيد الإكمال.</p><label for="rolePreview">معاينة البوابة</label><select id="rolePreview"><option value="patient">المراجع</option><option value="doctor">الطبيب</option><option value="medical_center">المركز الطبي</option><option value="representative">المندوب</option><option value="home_provider">الرعاية المنزلية</option><option value="admin">الإدارة</option></select><p id="account" role="status"></p><div id="menu"></div></section><section class="card" id="panel" hidden><h2 id="title"></h2><form id="fields"></form><div id="results"></div><p id="notice" role="status"></p></section></main><script>
+const SUPABASE_URL="https://oejkeqlqkwdfropylxsv.supabase.co";
+const SUPABASE_KEY="sb_publishable_Ue8nsJFsLpDLFUgSTB24cw_rckeqWag";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const FEATURES_READY=false; // preview gate, not authorization.
+const features=[
+  {
+    "action": "announcements",
+    "title": "إشعارات وإعلانات المنصة",
+    "roles": [
+      "patient",
+      "doctor",
+      "medical_center",
+      "representative",
+      "home_provider",
+      "admin"
+    ]
+  },
+  {
+    "action": "maintenance_status",
+    "title": "حالة الصيانة",
+    "roles": [
+      "patient",
+      "doctor",
+      "medical_center",
+      "representative",
+      "home_provider",
+      "admin"
+    ]
+  },
+  {
+    "action": "support_list",
+    "title": "تذاكر الدعم الفني",
+    "roles": [
+      "patient",
+      "doctor",
+      "medical_center",
+      "representative",
+      "home_provider",
+      "admin"
+    ]
+  },
+  {
+    "action": "support_create",
+    "title": "إرسال طلب دعم",
+    "roles": [
+      "patient",
+      "doctor",
+      "medical_center",
+      "representative",
+      "home_provider"
+    ],
+    "fields": [
+      [
+        "subject",
+        "عنوان المشكلة"
+      ],
+      [
+        "body",
+        "التفاصيل (لا تضع معلومات طبية)"
+      ]
+    ]
+  },
+  {
+    "action": "queue_my",
+    "title": "دوري الإلكتروني",
+    "roles": [
+      "patient"
+    ]
+  },
+  {
+    "action": "health_list",
+    "title": "ملفي الصحي الشخصي",
+    "roles": [
+      "patient"
+    ]
+  },
+  {
+    "action": "health_add",
+    "title": "إضافة سجل صحي خاص",
+    "roles": [
+      "patient"
+    ],
+    "fields": [
+      [
+        "category",
+        "نوع السجل",
+        "analysis|prescription|report|other"
+      ],
+      [
+        "title",
+        "عنوان السجل"
+      ],
+      [
+        "note",
+        "ملاحظة (اختيارية)",
+        "optional"
+      ],
+      [
+        "record_date",
+        "تاريخ السجل",
+        "date"
+      ]
+    ]
+  },
+  {
+    "action": "nearby",
+    "title": "البحث عن أقرب مقدمي الخدمة",
+    "roles": [
+      "patient"
+    ],
+    "fields": [
+      [
+        "latitude",
+        "خط العرض",
+        "number"
+      ],
+      [
+        "longitude",
+        "خط الطول",
+        "number"
+      ]
+    ]
+  },
+  {
+    "action": "regions",
+    "title": "المناطق والمحافظات",
+    "roles": [
+      "patient",
+      "admin"
+    ]
+  },
+  {
+    "action": "queue_provider",
+    "title": "الدور الإلكتروني اليوم",
+    "roles": [
+      "doctor",
+      "medical_center"
+    ]
+  },
+  {
+    "action": "queue_checkin",
+    "title": "تسجيل حضور المراجع",
+    "roles": [
+      "doctor",
+      "medical_center"
+    ],
+    "fields": [
+      [
+        "booking_id",
+        "معرف الحجز"
+      ]
+    ]
+  },
+  {
+    "action": "admin_summary",
+    "title": "إيرادات ومؤشرات الإدارة",
+    "roles": [
+      "admin"
+    ]
+  },
+  {
+    "action": "announcement_admin_list",
+    "title": "إدارة الإشعارات والإعلانات",
+    "roles": [
+      "admin"
+    ]
+  },
+  {
+    "action": "announcement_create",
+    "title": "إنشاء إعلان أو تنبيه (مسودة)",
+    "roles": [
+      "admin"
+    ],
+    "fields": [
+      [
+        "kind",
+        "نوع المحتوى",
+        "notice|advertisement"
+      ],
+      [
+        "title",
+        "العنوان"
+      ],
+      [
+        "body",
+        "المحتوى"
+      ],
+      [
+        "ends_at",
+        "تاريخ الانتهاء",
+        "datetime-local"
+      ]
+    ]
+  },
+  {
+    "action": "maintenance_set",
+    "title": "إعداد حالة الصيانة (غير مفروضة بعد)",
+    "roles": [
+      "admin"
+    ],
+    "fields": [
+      [
+        "enabled",
+        "الحالة",
+        "true|false"
+      ],
+      [
+        "message",
+        "رسالة الصيانة",
+        "optional"
+      ]
+    ]
+  },
+  {
+    "action": "region_set",
+    "title": "إضافة / تحديث منطقة",
+    "roles": [
+      "admin"
+    ],
+    "fields": [
+      [
+        "governorate",
+        "المحافظة"
+      ],
+      [
+        "district",
+        "المنطقة"
+      ],
+      [
+        "active",
+        "الحالة",
+        "true|false"
+      ]
+    ]
+  },
+  {
+    "action": "staff_list",
+    "title": "صلاحيات الموظفين المقترحة",
+    "roles": [
+      "admin"
+    ]
+  },
+  {
+    "action": "staff_draft",
+    "title": "تعيين صلاحية كمسودة غير فعالة",
+    "roles": [
+      "admin"
+    ],
+    "fields": [
+      [
+        "user_id",
+        "معرف حساب الموظف"
+      ],
+      [
+        "permission",
+        "الصلاحية",
+        "support|subscriptions|reports|announcements|regions|monitoring"
+      ]
+    ]
+  },
+  {
+    "action": "geo_set",
+    "title": "تحديد موقع مقدم خدمة",
+    "roles": [
+      "admin"
+    ],
+    "fields": [
+      [
+        "kind",
+        "نوع الخدمة",
+        "doctor|center|home"
+      ],
+      [
+        "provider_id",
+        "معرف مقدم الخدمة"
+      ],
+      [
+        "latitude",
+        "خط العرض",
+        "number"
+      ],
+      [
+        "longitude",
+        "خط الطول",
+        "number"
+      ]
+    ]
+  },
+  {
+    "action": "payment_record",
+    "title": "تسجيل دفعة مستلمة",
+    "roles": [
+      "admin"
+    ],
+    "fields": [
+      [
+        "service",
+        "الخدمة",
+        "doctor|center|representative|home|advertisement"
+      ],
+      [
+        "amount_iqd",
+        "المبلغ بالدينار",
+        "number"
+      ],
+      [
+        "reference",
+        "رقم وصل الدفع"
+      ],
+      [
+        "paid_at",
+        "تاريخ الدفع",
+        "datetime-local"
+      ]
+    ]
+  }
+];
+const labels={"id":"المعرف","subject":"العنوان","body":"التفاصيل","status":"الحالة","reply":"رد الإدارة","created_at":"تاريخ الإنشاء","updated_at":"آخر تحديث","category":"النوع","title":"العنوان","note":"ملاحظة","record_date":"تاريخ السجل","kind":"النوع","booking_id":"معرف الحجز","provider_id":"معرف مقدم الخدمة","service_date":"اليوم","queue_number":"رقم الدور","state":"الحالة","ahead":"عدد المراجعين قبلك","distance_km":"المسافة الجوية (كم)","latitude":"خط العرض","longitude":"خط الطول","recorded_revenue_iqd":"الإيرادات المسجلة بالدينار هذا الشهر","payment_count":"عدد الدفعات","support_open":"التذاكر المفتوحة","subscriptions_expiring":"الاشتراكات المنتهية خلال 7 أيام","errors_24h":"الأخطاء المسجلة آخر 24 ساعة","maintenance":"وضع الصيانة","message":"رسالة الصيانة","starts_at":"البداية","ends_at":"النهاية","published":"منشور","governorate":"المحافظة","district":"المنطقة","active":"فعال","permission":"الصلاحية","user_id":"معرف الموظف","saved":"تم الحفظ","updated":"تم التحديث","deleted":"تم الحذف","enforced":"مطبق فعلياً","registered":"تم التسجيل"};
+const values={"analysis":"تحليل","prescription":"وصفة طبية","report":"تقرير","other":"أخرى","notice":"إشعار","advertisement":"إعلان","waiting":"بانتظار الدور","called":"حان الدور","completed":"مكتمل","cancelled":"ملغى","open":"مفتوحة","answered":"تم الرد","closed":"مغلقة","doctor":"طبيب","center":"مركز طبي","representative":"مندوب","home":"رعاية منزلية","support":"الدعم الفني","subscriptions":"الاشتراكات","reports":"التقارير","announcements":"الإعلانات والإشعارات","regions":"المناطق","monitoring":"المراقبة","true":"نعم","false":"لا"};
+
+const $=id=>document.getElementById(id);
+const display=v=>v==null?'—':values[String(v)]??String(v);
+let selected=null,role='patient',busy=false,paymentId='';
+const say=t=>{$('notice').textContent=t;};
+function node(tag,text){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;return e;}
+function btn(text,fn){const b=node('button',text);b.type='button';b.onclick=fn;return b;}
+async function run(action,data={}){
+ if(busy)return;
+ if(!FEATURES_READY){say('الخدمات الجديدة مجهزة للمعاينة؛ لم يتم تشغيلها على قاعدة المنصة الأصلية.');return;}
+ busy=true;say('جارٍ التنفيذ');$('results').replaceChildren();
+ try{const {data:result,error}=await db.rpc('v2_feature_action',{p_action:action,p_data:data});if(error)throw Error();render(result);say('تم تنفيذ الطلب.');}catch{say('تعذر تنفيذ الطلب أو أن الحساب غير مخول.');}finally{busy=false;}
+}
+function render(result){const rows=Array.isArray(result)?result:result&&typeof result==='object'?[result]:[];const box=$('results');box.replaceChildren();if(!rows.length){box.append(node('p','لا توجد نتائج.'));return;}rows.forEach(r=>{const item=node('div');item.className='item';Object.entries(r).filter(([k])=>k!=='id').forEach(([k,v])=>item.append(node('p',(labels[k]??k)+': '+display(v))));if(selected?.action==='queue_provider'&&['waiting','called'].includes(r.state)){item.append(btn(r.state==='waiting'?'نداء المراجع':'إنهاء الدور',()=>run('queue_update',{id:r.id,state:r.state==='waiting'?'called':'completed'})));}if(selected?.action==='health_list')item.append(btn('حذف السجل',()=>{if(confirm('حذف السجل؟'))run('health_delete',{id:r.id});}));if(selected?.action==='support_list'&&role==='admin'&&r.status==='open'){const reply=node('input');reply.setAttribute('aria-label','رد الإدارة');reply.maxLength=2000;item.append(reply,btn('إرسال الرد',()=>{if(reply.value.trim())run('support_reply',{id:r.id,reply:reply.value});}));}if(selected?.action==='announcement_admin_list')item.append(btn(r.published?'إلغاء النشر':'نشر',()=>run('announcement_publish',{id:r.id,published:!r.published})));box.append(item);});}
+function choose(f){selected=f;paymentId='';$('panel').hidden=false;$('title').textContent=f.title;$('fields').replaceChildren();$('results').replaceChildren();say('');if(!f.fields){$('fields').append(btn('تحديث',()=>run(f.action)));run(f.action);return;}for(const [key,label,type] of f.fields){const l=node('label',label);l.htmlFor='f-'+key;let input;if(type?.includes('|')){input=node('select');input.append(new Option('اختر',''));type.split('|').forEach(v=>input.append(new Option(display(v),v)));}else{input=node('input');input.type=['number','date','datetime-local'].includes(type)?type:'text';input.maxLength=2000;if(type==='number')input.step='any';}input.id='f-'+key;input.name=key;input.required=type!=='optional';$('fields').append(l,input);}if(f.action==='nearby')$('fields').append(btn('استخدام موقعي بعد إذني',()=>{navigator.geolocation?.getCurrentPosition(p=>{$('f-latitude').value=String(p.coords.latitude);$('f-longitude').value=String(p.coords.longitude);say('تم تحديد الموقع؛ اضغط البحث.');},()=>say('تعذر الحصول على الموقع.'));}));const b=node('button',f.action==='nearby'?'بحث':'تنفيذ');b.type='submit';$('fields').append(b);}
+$('fields').onsubmit=e=>{e.preventDefault();if(!selected)return;const data={};const form=new FormData(e.currentTarget);for(const [key,,type] of selected.fields??[]){const v=String(form.get(key)??'');if(type==='optional'&&!v)continue;data[key]=type==='number'?Number(v):type==='datetime-local'?new Date(v).toISOString():v;}if(selected.action==='queue_checkin')data.kind=role==='doctor'?'doctor':'center';if(selected.action==='payment_record'){paymentId ||= crypto.randomUUID();data.request_id=paymentId;}run(selected.action,data);};
+function menu(){selected=null;$('panel').hidden=true;$('menu').replaceChildren();features.filter(f=>f.roles.includes(role)).forEach(f=>$('menu').append(btn(f.title,()=>choose(f))));}
+$('rolePreview').onchange=()=>{if(FEATURES_READY)return;role=$('rolePreview').value;menu();};
+(async()=>{if(!FEATURES_READY){$('account').textContent='معاينة فقط؛ لا توجد بيانات حقيقية.';menu();return;}const {data:{user}}=await db.auth.getUser();if(!user){$('account').textContent='سجل الدخول إلى بوابتك أولاً.';return;}const {data:p}=await db.from('profiles').select('role,approval_status').eq('id',user.id).maybeSingle();if(p?.approval_status!=='approved')return;role=p.role;$('rolePreview').disabled=true;menu();})();
+</script></body></html>
