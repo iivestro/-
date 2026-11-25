@@ -19,5 +19,10 @@ try {
  const unavailable=await fetch(base+'/api/auth/me',{headers:{authorization:'Bearer abc.def.ghi'}});
  assert.equal(unavailable.status,503);
  assert.equal((await unavailable.json()).error,'Unavailable');
+ const profile=await fetch(base+'/api/profile/me');
+ assert.equal(profile.status,401);
+ assert.match(profile.headers.get('cache-control')??'',/no-store/);
+ const profileUnavailable=await fetch(base+'/api/profile/me',{headers:{authorization:'Bearer abc.def.ghi'}});
+ assert.equal(profileUnavailable.status,503);
  console.log('Smoke checks passed');
 } finally {server.kill('SIGTERM');}
