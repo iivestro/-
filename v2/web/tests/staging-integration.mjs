@@ -11,12 +11,19 @@ assert.ok(fixture.includes(staging),'Staging fixture mismatch');
 const key=fixture.match(/const key='(sb_publishable_[A-Za-z0-9_-]+)'/)?.[1];
 const creds=fixture.match(/JSON\.stringify\(\{email:'([^'\\]+)',password:'([^'\\]+)'\}\)/);
 assert.ok(key&&creds,'Synthetic fixture format changed');
-const server=spawn(process.execPath,['node_modules/next/dist/bin/next','start','-H','127.0.0.1','-p','3218'],{stdio:'ignore',env:{...process.env,APP_ORIGIN:base,SUPABASE_URL:staging,SUPABASE_PUBLISHABLE_KEY:key,STAGING_BOOKING_WRITES:'disabled',STAGING_ADMIN_WRITES:'disabled',STAGING_SERVICE_WRITES:'disabled'}});
+const server=spawn(process.execPath,['node_modules/next/dist/bin/next','start','-H','127.0.0.1','-p','3218'],{stdio:'ignore',env:{...process.env,APP_ORIGIN:base,SUPABASE_URL:staging,SUPABASE_PUBLISHABLE_KEY:key,STAGING_BOOKING_WRITES:'disabled',STAGING_ADMIN_WRITES:'disabled',STAGING_SERVICE_WRITES:'disabled',STAGING_REGISTRATION_WRITES:'disabled'}});
 let token;
 try {
  let ready=false;
  for(let i=0;i<40;i++){try{if((await fetch(base+'/api/health')).ok){ready=true;break;}}catch{}await delay(500);}
  assert.ok(ready,'Server startup failed');
+ const regHeaders={Origin:base,'Content-Type':'application/json'};
+ const signup={accountType:'patient',fullName:'Synthetic Test Patient',phone:'07000000000',governorate:'النجف',email:'not-delivered@example.invalid',password:'Synthetic-test-only-password'};
+ for(const [body,expected] of [[{...signup,accountType:'admin'},400],[{...signup,password:'short'},400],[{...signup,accountType:'representative'},400],[signup,503],[{...signup,accountType:'representative',employerType:'company',employerName:'Synthetic Company'},503]]){
+ const r=await fetch(base+'/api/auth/register',{method:'POST',headers:regHeaders,body:JSON.stringify(body)});assert.equal(r.status,expected,'Registration validation or gate');
+ }
+ const wrongOrigin=await fetch(base+'/api/auth/register',{method:'POST',headers:{...regHeaders,Origin:'https://invalid.example'},body:JSON.stringify(signup)});assert.equal(wrongOrigin.status,403);console.log('PASS registration validation, forbidden roles, origin and closed gate (no email sent)');
+
  const login=await fetch(base+'/api/auth/login',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify({email:creds[1],password:creds[2]})});
  assert.equal(login.status,200,'Synthetic account sign-in');
  const session=await login.json();token=session.access_token;assert.ok(typeof token==='string'&&token.length>0,'Access token missing');
