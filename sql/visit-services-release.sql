@@ -35,10 +35,12 @@ BEGIN
  SELECT role INTO r FROM public.profiles WHERE id=u AND approval_status='approved';
  IF r IS NULL THEN RAISE EXCEPTION 'Approved account required' USING ERRCODE='42501';END IF;
  IF jsonb_typeof(p_data) IS DISTINCT FROM 'object' OR octet_length(p_data::text)>8192 THEN RAISE EXCEPTION 'Invalid payload' USING ERRCODE='22023';END IF;
- f:=CASE WHEN p_action IN('support_list','support_create','support_reply') THEN 'support' WHEN p_action IN('queue_bookings','queue_checkin','queue_my','queue_provider','queue_update') THEN 'queue' WHEN p_action IN('nearby','geo_set','geo_providers') THEN 'nearby' WHEN p_action='visit_reminders' THEN 'reminders' END;
+ f:=CASE WHEN p_action IN('support_list','support_create','support_reply') THEN 'support' WHEN p_action IN('queue_bookings','queue_checkin','queue_my','queue_provider','queue_update') THEN 'queue' WHEN p_action IN('nearby','geo_set','geo_providers') THEN 'nearby' WHEN p_action IN('visit_reminders','visit_notifications') THEN 'reminders' END;
  IF f IS NULL OR NOT EXISTS(SELECT 1 FROM private.v2_visit_feature_switches WHERE feature=f AND enabled) THEN RAISE EXCEPTION 'Feature disabled' USING ERRCODE='42501';END IF;
  isadmin:=r='admin';
- IF p_action='visit_reminders' AND r='patient' THEN
+ IF p_action='visit_notifications' THEN
+ SELECT coalesce(jsonb_agg(to_jsonb(x)),'[]'::jsonb) INTO result FROM (SELECT title,message,created_at FROM public.notifications WHERE user_id=u AND title IN('تذكير بموعدك','الدور الإلكتروني','حان دورك','رد الدعم الفني') AND created_at>now()-interval '7 days' ORDER BY created_at DESC LIMIT 50)x;
+ ELSIF p_action='visit_reminders' AND r='patient' THEN
  SELECT coalesce(jsonb_agg(to_jsonb(x)),'[]'::jsonb) INTO result FROM (
  SELECT b.id AS booking_id,'doctor'::text AS kind,b.appointment_at AS appointment_at,f.full_name AS provider_name
  FROM public.appointments b JOIN public.doctors d ON d.id=b.doctor_id JOIN public.profiles f ON f.id=d.profile_id
@@ -85,7 +87,7 @@ BEGIN
  result:=jsonb_build_object('id',q.id,'queue_number',q.queue_number,'state',q.state);
  ELSIF p_action='queue_my' AND r='patient' THEN
  SELECT coalesce(jsonb_agg(to_jsonb(x)),'[]'::jsonb) INTO result FROM (
- SELECT a.id,a.kind,a.booking_id,a.service_date,a.queue_number,a.state,CASE a.kind WHEN 'doctor' THEN (SELECT f.full_name FROM public.doctors p JOIN public.profiles f ON f.id=p.profile_id WHERE p.id=a.provider_id) ELSE (SELECT cd.full_name FROM public.center_doctors cd WHERE cd.id=a.provider_id) END AS provider_name,
+ SELECT a.id,a.kind,a.booking_id,a.service_date,a.queue_number,a.state,(SELECT min(b.queue_number) FROM private.v2_visit_queue b WHERE b.kind=a.kind AND b.provider_id=a.provider_id AND b.service_date=a.service_date AND b.state='called') AS current_number,CASE a.kind WHEN 'doctor' THEN (SELECT f.full_name FROM public.doctors p JOIN public.profiles f ON f.id=p.profile_id WHERE p.id=a.provider_id) ELSE (SELECT cd.full_name FROM public.center_doctors cd WHERE cd.id=a.provider_id) END AS provider_name,
  CASE WHEN a.state IN('completed','cancelled') THEN 0 ELSE (SELECT count(*) FROM private.v2_visit_queue b WHERE b.kind=a.kind AND b.provider_id=a.provider_id AND b.service_date=a.service_date AND b.queue_number<a.queue_number AND b.state IN('waiting','called')) END AS ahead
  FROM private.v2_visit_queue a WHERE a.patient_id=u AND a.service_date>=nowday ORDER BY a.created_at DESC LIMIT 50)x;
  ELSIF p_action='queue_provider' AND r IN('doctor','medical_center') THEN
@@ -100,6 +102,8 @@ BEGIN
  OR (r='medical_center' AND a.kind='center' AND EXISTS(SELECT 1 FROM public.center_doctors cd JOIN public.medical_centers p ON p.id=cd.center_id WHERE cd.id=a.provider_id AND p.profile_id=u AND p.is_active AND p.subscription_expires_at>now() AND cd.is_active))) FOR UPDATE;
  state:=p_data->>'state';
  IF q.id IS NULL OR NOT ((q.state='waiting' AND state IN('called','cancelled')) OR (q.state='called' AND state IN('completed','cancelled'))) THEN RAISE EXCEPTION 'Invalid queue transition' USING ERRCODE='42501'; END IF;
+ PERFORM pg_advisory_xact_lock(hashtextextended(q.kind||':'||q.provider_id::text||':'||q.service_date::text,0));
+ IF state='called' AND EXISTS(SELECT 1 FROM private.v2_visit_queue x WHERE x.kind=q.kind AND x.provider_id=q.provider_id AND x.service_date=q.service_date AND x.state='called' AND x.id<>q.id) THEN RAISE EXCEPTION 'Finish current visit first' USING ERRCODE='22023';END IF;
  UPDATE private.v2_visit_queue SET state=p_data->>'state' WHERE id=q.id;
  IF state='called' AND NOT ((q.kind='doctor' AND EXISTS(SELECT 1 FROM public.appointments b WHERE b.id=q.booking_id AND b.status='approved' AND b.requested_date=q.service_date)) OR(q.kind='center' AND EXISTS(SELECT 1 FROM public.center_appointments b WHERE b.id=q.booking_id AND b.status='confirmed' AND b.requested_date=q.service_date))) THEN RAISE EXCEPTION 'Booking no longer active' USING ERRCODE='42501'; END IF;
  IF state='called' THEN INSERT INTO public.notifications(user_id,title,message) VALUES(q.patient_id,'حان دورك','يرجى التوجه إلى الاستقبال.'); END IF;
