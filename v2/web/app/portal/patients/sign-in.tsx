@@ -1,4 +1,5 @@
 'use client';
+import HealthDocuments from '../health-documents';
 import FeaturePanel from '../feature-panel';
 import {useEffect,useState,type FormEvent} from 'react';
 import Directory from './directory';
@@ -29,7 +30,7 @@ export default function PatientSignIn(){
  }catch{setNotice('تعذر الاتصال. حاول مجدداً.');}finally{form.reset();setBusy(false);}
  }
  async function signOut(){if(!session)return;const token=session.token;setSession(null);setNotice('تم إنهاء الجلسة المحلية.');try{const res=await fetch('/api/auth/logout',{method:'POST',headers:{Authorization:'Bearer '+token},cache:'no-store'});if(!res.ok)setNotice('تم الخروج محلياً، تعذر تأكيد إنهاء الجلسة على الخادم.');}catch{setNotice('تم الخروج محلياً، تعذر تأكيد إنهاء الجلسة على الخادم.');}}
- if(session)return <><p>أهلاً {session.name}</p><button onClick={signOut}>خروج</button><FeaturePanel token={session.token} role="patient"/><Directory token={session.token}/><Appointments token={session.token}/></>;
+ if(session)return <><p>أهلاً {session.name}</p><button onClick={signOut}>خروج</button><FeaturePanel token={session.token} role="patient"/><HealthDocuments token={session.token} role="patient"/><Directory token={session.token}/><Appointments token={session.token}/></>;
  return <article><h2>{mode==='register'?'إنشاء حساب مراجع':mode==='verify'?'تأكيد رقم واتساب':'تسجيل دخول المراجع'}</h2><p>نسخة اختبارية — لا تستخدم بيانات حقيقية. يتفعّل الحساب الجديد بعد تأكيد الرقم دون موافقة الإدارة.</p><form key={mode} onSubmit={submit} className="login-form">
  {mode==='register'&&<><label htmlFor="fullName">الاسم الكامل</label><input id="fullName" name="fullName" minLength={3} maxLength={120} required/><label htmlFor="age">العمر</label><input id="age" name="age" type="number" min={1} max={120} step={1} required/><label htmlFor="governorate">المحافظة</label><select id="governorate" name="governorate" required defaultValue=""><option value="">اختر المحافظة</option>{['بغداد','النجف','كربلاء','بابل','القادسية','المثنى','ذي قار','ميسان','البصرة','واسط','ديالى','صلاح الدين','الأنبار','نينوى','كركوك','أربيل','دهوك','السليمانية','حلبجة'].map(g=><option key={g}>{g}</option>)}</select></>}
  <label htmlFor="phone">رقم الهاتف</label><input id="phone" name="phone" type="tel" inputMode="numeric" value={phone} onChange={e=>setPhone(e.target.value)} maxLength={11} pattern="07[0-9]{9}" required disabled={busy||mode==='verify'}/>
