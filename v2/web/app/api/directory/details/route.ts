@@ -7,8 +7,9 @@ export async function GET(request:Request){
  const config=authConfig();if(!config)return reply({error:'Unavailable'},503);
  const params=new URL(request.url).searchParams;
  const id=params.get('id')??'',kind=params.get('kind'),after=params.get('after');
+ const centerId=params.get('centerId')??'';
  const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
- if(!uuid.test(id)||(kind!=='doctor'&&kind!=='center')||(after&&!uuid.test(after)))return reply({error:'Invalid request'},400);
+ if(!uuid.test(id)||(kind!=='doctor'&&kind!=='center'&&kind!=='center-doctor')||(kind==='center-doctor'&&!uuid.test(centerId))||(after&&!uuid.test(after)))return reply({error:'Invalid request'},400);
  try{
  const access=await approvedPatient(token);
  if(access.status!==200)return reply({error:access.status===403?'Forbidden':access.status===401?'Unauthorized':'Unavailable'},access.status);
@@ -18,6 +19,14 @@ export async function GET(request:Request){
  if(!res.ok)throw new Error('Unavailable');
  const rows:unknown=await res.json();if(!Array.isArray(rows))throw new Error('Unavailable');return rows;
  };
+ if(kind==='center-doctor'){
+ const centers=await read('medical_centers',{select:'id',id:'eq.'+centerId,is_active:'eq.true',subscription_expires_at:'gt.'+new Date().toISOString(),limit:'1'});
+ if(centers[0]?.id!==centerId)return reply({error:'Not found'},404);
+ const doctors=await read('center_doctors',{select:'id,profile:profiles!center_doctors_profile_id_fkey!inner(role,approval_status)',id:'eq.'+id,center_id:'eq.'+centerId,is_active:'eq.true','profile.role':'eq.doctor','profile.approval_status':'eq.approved',limit:'1'});
+ if(doctors[0]?.id!==id)return reply({error:'Not found'},404);
+ const items=await read('center_doctor_schedules',{select:'day_of_week,start_time,end_time',center_doctor_id:'eq.'+id,is_available:'eq.true',order:'day_of_week.asc,start_time.asc',limit:'100'});
+ return reply({items,next:null});
+ }
  const filters={select:'id',id:'eq.'+id,is_active:'eq.true',subscription_expires_at:'gt.'+new Date().toISOString(),limit:'1'};
  const parent=await read(kind==='doctor'?'doctors':'medical_centers',kind==='doctor'?{...filters,admin_is_active:'eq.true'}:filters);
  if(parent[0]?.id!==id)return reply({error:'Not found'},404);
