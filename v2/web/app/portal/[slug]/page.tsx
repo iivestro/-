@@ -1,3 +1,4 @@
+import EmergencyChat from '../emergency-chat';
 import PatientSignIn from '../patients/sign-in';
 import Workspace from '../workspace';
 import Link from 'next/link';
@@ -8,5 +9,5 @@ export default async function Portal({params}:{params:Promise<{slug:string}>}){
  const {slug}=await params;
  const portal=portals.find(p=>p.slug===slug);
  if(!portal) notFound();
- return <main><Link href="/">العودة إلى الرئيسية</Link><section className="hero"><h1>{portal.title}</h1><p>{portal.description}</p></section>{slug==='patients'?<PatientSignIn/>:slug==='doctor'?<Workspace role="doctor"/>:slug==='medical-center'?<Workspace role="medical_center"/>:slug==='representatives'?<Workspace role="representative"/>:slug==='admin'?<Workspace role="admin"/>:slug==='home-provider'?<Workspace role="home_provider"/>:<article><h2>النسخة التجريبية</h2><p>هذه واجهة تطويرية. لم يتم تفعيل تسجيل الدخول أو الوصول إلى البيانات أو العمليات الطبية بعد.</p><p>تظل الخدمات الحالية متاحة عبر النسخة الأصلية.</p></article>}</main>;
+ return <main><Link href="/">اللوحة الرئيسية</Link><section className="hero"><h1>{portal.title}</h1><p>{portal.description}</p></section>{slug==='patients'?<PatientSignIn/>:slug==='doctor'?<Workspace role="doctor"/>:slug==='medical-center'?<Workspace role="medical_center"/>:slug==='representatives'?<Workspace role="representative"/>:slug==='admin'?<Workspace role="admin"/>:slug==='home-provider'?<Workspace role="home_provider"/>:slug==='emergency-chat'||slug==='emergency'?<EmergencyChat doctor={slug==='emergency'}/>:<article><h2>النسخة التجريبية</h2><p>هذه واجهة تطويرية. لم يتم تفعيل تسجيل الدخول أو الوصول إلى البيانات أو العمليات الطبية بعد.</p><p>تظل الخدمات الحالية متاحة عبر النسخة الأصلية.</p></article>}</main>;
 }
