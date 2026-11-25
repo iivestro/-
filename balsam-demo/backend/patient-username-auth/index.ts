@@ -25,11 +25,11 @@ async function sha256(value: string) {
   return Array.from(new Uint8Array(bytes), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-function normalizeUsername(value: unknown) {
+function normalizeLoginName(value: unknown) {
   if (typeof value !== "string") return null;
-  const normalized = value.normalize("NFKC").trim().toLocaleLowerCase("en-US");
+  const normalized = value.normalize("NFKC").trim().replace(/\s+/gu, " ").toLocaleLowerCase("en-US");
   const length = Array.from(normalized).length;
-  if (length < 3 || length > 32 || !/^[\p{L}\p{N}\p{M}._-]+$/u.test(normalized)) return null;
+  if (length < 3 || length > 120 || !/^[\p{L}\p{N}\p{M} ._'’-]+$/u.test(normalized)) return null;
   return normalized;
 }
 
@@ -84,9 +84,9 @@ Deno.serve(async (req: Request) => {
   try {
     const body = await req.json();
     const action = body?.action;
-    const usernameKey = normalizeUsername(body?.username);
+    const usernameKey = normalizeLoginName(body?.username);
     if (!usernameKey || !["signup", "lookup"].includes(action)) {
-      return reply(400, { error: "تحقق من اسم الدخول والبيانات." }, origin);
+      return reply(400, { error: "أدخل الاسم الكامل والبيانات بشكل صحيح." }, origin);
     }
 
     const ip = req.headers.get("cf-connecting-ip")
@@ -118,12 +118,15 @@ Deno.serve(async (req: Request) => {
     const age = Number(body?.age);
     const governorate = typeof body?.governorate === "string" ? body.governorate : "";
     const password = typeof body?.password === "string" ? body.password : "";
-    if (mappedAccount) return reply(409, { error: "اسم الدخول مستخدم. اختر اسماً آخر." }, origin);
-    if (fullName.length < 2 || fullName.length > 120
+    if (mappedAccount) {
+      return reply(409, { error: "هذا الاسم مستخدم. أضف اسم الأب أو الجد إلى الاسم الكامل." }, origin);
+    }
+    if (normalizeLoginName(fullName) !== usernameKey
+      || Array.from(fullName).length < 3 || fullName.length > 120
       || !Number.isInteger(age) || age < 1 || age > 120
       || !governors.has(governorate)
       || password.length < 10 || password.length > 72) {
-      return reply(400, { error: "أكمل البيانات، واجعل كلمة المرور 10 أحرف على الأقل." }, origin);
+      return reply(400, { error: "أكمل البيانات، واجعل الاسم 3 أحرف وكلمة المرور 10 أحرف على الأقل." }, origin);
     }
 
     const loginEmail = await internalEmail(usernameKey);
@@ -139,7 +142,7 @@ Deno.serve(async (req: Request) => {
       },
     });
     if (createError || !created.user) {
-      return reply(409, { error: "تعذر إنشاء الحساب. تحقق من اسم الدخول وحاول مجدداً." }, origin);
+      return reply(409, { error: "تعذر إنشاء الحساب. تحقق من الاسم الكامل وحاول مجدداً." }, origin);
     }
 
     const userId = created.user.id;
@@ -163,13 +166,13 @@ Deno.serve(async (req: Request) => {
 
     const { error: mapError } = await admin.from("patient_login_accounts").insert({
       user_id: userId,
-      username: typeof body.username === "string" ? body.username.normalize("NFKC").trim() : usernameKey,
+      username: fullName,
       username_key: usernameKey,
       login_email: loginEmail,
     });
     if (mapError) {
       await admin.auth.admin.deleteUser(userId);
-      return reply(409, { error: "اسم الدخول مستخدم. اختر اسماً آخر." }, origin);
+      return reply(409, { error: "هذا الاسم مستخدم. أضف اسم الأب أو الجد إلى الاسم الكامل." }, origin);
     }
 
     return reply(201, { login_email: loginEmail }, origin);

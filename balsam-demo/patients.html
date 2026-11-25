@@ -196,9 +196,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
   <div id="signupPanel">
    <h3>إنشاء حساب مراجع جديد</h3>
    <label>الاسم الكامل</label>
-   <input id="name" maxlength="150" placeholder="الاسم الكامل">
-   <label>اسم الدخول المميز</label>
-   <input id="username" maxlength="32" autocomplete="username" placeholder="اختر اسم دخول لا يستخدمه غيرك">
+   <input id="name" maxlength="120" autocomplete="name" placeholder="الاسم الكامل">
    <label>العمر</label>
    <input id="age" type="number" min="1" max="120" placeholder="العمر">
    <label>المحافظة</label>
@@ -213,8 +211,8 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
 
   <div id="loginPanel" class="hidden">
    <h3>تسجيل الدخول</h3>
-   <label>اسم الدخول</label>
-   <input id="loginUsername" maxlength="32" autocomplete="username" placeholder="اسم الدخول">
+   <label>الاسم الكامل</label>
+   <input id="loginName" maxlength="120" autocomplete="name" placeholder="الاسم الكامل">
    <label>كلمة المرور</label>
    <input id="password" type="password" autocomplete="current-password" placeholder="كلمة المرور">
    <button type="button" onclick="login()">تسجيل الدخول</button>
@@ -310,44 +308,42 @@ function showAuthTab(tab){
 
 async function signup(){
  const full_name=el("name").value.trim();
- const username=el("username").value.trim();
  const age=Number(el("age").value);
  const governorate=el("governorate").value;
  const password=el("signupPassword").value;
 
- const usernameLength=Array.from(username.normalize("NFKC").trim()).length;
- if(!full_name||full_name.length>120||usernameLength<3||usernameLength>32||!age||age<1||age>120||!governorate||password.length<10){
-  message("أكمل الحقول، واجعل اسم الدخول 3 أحرف على الأقل وكلمة المرور 10 أحرف على الأقل.");
+ if(Array.from(full_name).length<3||full_name.length>120||!age||age<1||age>120||!governorate||password.length<10){
+  message("أكمل الحقول، واجعل الاسم الكامل 3 أحرف على الأقل وكلمة المرور 10 أحرف على الأقل.");
   return;
  }
 
  message("جاري إنشاء الحساب...");
  const {data,error}=await db.functions.invoke("patient-username-auth",{
-  body:{action:"signup",username,full_name,age,governorate,password}
+  body:{action:"signup",username:full_name,full_name,age,governorate,password}
  });
 
  if(error){
-  let explanation="تعذر إنشاء الحساب. تحقق من اسم الدخول وحاول مرة أخرى.";
+  let explanation="تعذر إنشاء الحساب. تحقق من الاسم الكامل وحاول مرة أخرى.";
   try{const body=await error.context?.json();if(body?.error)explanation=body.error;}catch{}
   message(explanation);return;
  }
  const {error:loginError}=await db.auth.signInWithPassword({email:data.login_email,password});
- if(loginError){message("تم إنشاء الحساب. سجّل الدخول الآن باسم الدخول وكلمة المرور.");showAuthTab("login");el("loginUsername").value=username;return;}
+ if(loginError){message("تم إنشاء الحساب. سجّل الدخول الآن بالاسم الكامل وكلمة المرور.");showAuthTab("login");el("loginName").value=full_name;return;}
  await loadAccount();
 }
 
 async function login(){
- const username=el("loginUsername").value.trim();
+ const username=el("loginName").value.trim();
  const password=el("password").value;
- if(!username||!password){message("أدخل اسم الدخول وكلمة المرور.");return;}
+ if(!username||!password){message("أدخل الاسم الكامل وكلمة المرور.");return;}
 
  message("جاري تسجيل الدخول...");
  const {data,error}=await db.functions.invoke("patient-username-auth",{
   body:{action:"lookup",username}
  });
- if(error||!data?.login_email){message("اسم الدخول أو كلمة المرور غير صحيح.");return;}
+ if(error||!data?.login_email){message("الاسم الكامل أو كلمة المرور غير صحيح.");return;}
  const {error:loginError}=await db.auth.signInWithPassword({email:data.login_email,password});
- if(loginError){message("اسم الدخول أو كلمة المرور غير صحيح.");return;}
+ if(loginError){message("الاسم الكامل أو كلمة المرور غير صحيح.");return;}
  await loadAccount();
 }
 
