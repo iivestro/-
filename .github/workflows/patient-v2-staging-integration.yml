@@ -1,0 +1,31 @@
+name: PATIENT v2 staging integration
+on:
+  push:
+    branches: [patient-v2]
+    paths: ['.github/workflows/patient-v2-staging-integration.yml','v2/web/tests/staging-integration.mjs']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: staging-load
+  cancel-in-progress: false
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: legacy-test
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+        working-directory: v2/web
+      - run: npm run build
+        working-directory: v2/web
+      - run: node tests/staging-integration.mjs
+        working-directory: v2/web
