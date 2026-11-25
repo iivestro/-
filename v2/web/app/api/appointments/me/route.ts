@@ -1,4 +1,4 @@
-import {authConfig,verifyUser} from '../../../../lib/auth';
+import {authConfig,approvedPatient} from '../../../../lib/auth';
 export const dynamic='force-dynamic';
 const reply=(body:unknown,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'private, no-store'}});
 export async function GET(request:Request){
@@ -6,7 +6,8 @@ export async function GET(request:Request){
  if(!token)return reply({error:'Unauthorized'},401);
  const config=authConfig();if(!config)return reply({error:'Unavailable'},503);
  try{
- const user=await verifyUser(token);if(!user)return reply({error:'Unauthorized'},401);
+ const user=await approvedPatient(token);
+ if(user.status!==200)return reply({error:user.status===403?'Forbidden':user.status===401?'Unauthorized':'Unavailable'},user.status);
  const get=async(table:string,params:Record<string,string>)=>{
  const url=new URL(config.url+'/rest/v1/'+table);
  for(const [key,value] of Object.entries(params))url.searchParams.set(key,value);
@@ -14,8 +15,6 @@ export async function GET(request:Request){
  if(!res.ok)throw new Error('Database request failed');
  const data:unknown=await res.json();if(!Array.isArray(data))throw new Error('Invalid result');return data;
  };
- const profiles=await get('profiles',{select:'id,role,approval_status',id:'eq.'+user.id,limit:'1'});
- if(profiles[0]?.id!==user.id||profiles[0]?.role!=='patient'||profiles[0]?.approval_status!=='approved')return reply({error:'Forbidden'},403);
  const kind=new URL(request.url).searchParams.get('kind')??'doctor';
  if(kind!=='doctor'&&kind!=='center')return reply({error:'Invalid kind'},400);
  const after=new URL(request.url).searchParams.get('after');
