@@ -39,8 +39,8 @@ try {
  const unavailable=await fetch(base+path,{method:'POST',headers:{...loginHeaders,authorization:'Bearer abc.def.ghi'},body:'{}'});assert.equal(unavailable.status,503);
  assert.match(unavailable.headers.get('cache-control')??'',/no-store/);
  }
- for(const [slug,label] of [['doctor','الطبيب'],['medical-center','المركز الطبي'],['representatives','المندوب'],['admin','الإدارة']]){
- const res=await fetch(base+'/portal/'+slug);assert.equal(res.status,200);assert.ok((await res.text()).includes('تسجيل دخول '+label));
+ for(const [slug,label] of [['doctor','الطبيب'],['medical-center','المركز الطبي'],['representatives','المندوب'],['admin','الإدارة'],['home-provider','الرعاية المنزلية']]){
+ const res=await fetch(base+'/portal/'+slug);assert.equal(res.status,200);assert.ok((await res.text()).includes('تسجيل دخول '+label),'Missing sign-in heading for '+slug);
  }
  console.log('Smoke checks passed');
 } finally {server.kill('SIGTERM');}
