@@ -1,3 +1,4 @@
+import {randomUUID} from 'node:crypto';
 import {authConfig,approvedPatient} from '../../../../lib/auth';
 export const dynamic='force-dynamic';
 const reply=(body:unknown,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'private, no-store'}});
@@ -28,5 +29,14 @@ export async function POST(request:Request){
  if(res.status===409)return reply({error:'Booking conflict'},409);
  if(res.status===400||res.status===422)return reply({error:'Booking unavailable'},422);
  return reply({error:'Unavailable'},503);
+ }catch{return reply({error:'Unavailable'},503);}
+}
+
+export async function GET(request:Request){
+ const token=/^Bearer ([A-Za-z0-9._-]{1,8192})$/.exec(request.headers.get('authorization')??'')?.[1];
+ if(!token)return reply({error:'Unauthorized'},401);
+ const config=authConfig();if(!config)return reply({error:'Unavailable'},503);
+ try{const user=await approvedPatient(token);if(user.status!==200)return reply({error:'Unavailable'},user.status);
+ return reply({requestId:randomUUID(),writesEnabled:config.url==='https://sfaatbfiwwbvobpvhwxo.supabase.co'&&process.env.STAGING_BOOKING_WRITES==='enabled-after-validation'});
  }catch{return reply({error:'Unavailable'},503);}
 }
