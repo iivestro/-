@@ -8,6 +8,16 @@
     "platforms": [
       "ios",
       "android"
+    ],
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "يحتاج بيشنت إلى اختيار الصورة التي ترغب في إرفاقها بالمحادثة.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ]
     ]
   }
 }
