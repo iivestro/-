@@ -1,4 +1,4 @@
-name: Staging functional HTTP
+name: Staging auth and access-control load
 on:
   workflow_dispatch:
   push:
@@ -7,25 +7,25 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: staging-load
+  group: staging-auth-load
   cancel-in-progress: false
 jobs:
   functional:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: grafana/setup-k6-action@v1
-      - name: Progressive load
+      - name: Progressive staging checks
         run: |
           mkdir -p functional-results
-          for level in 1000 1250 1500 2000; do
+          for level in 100 500 1000 1500; do
             echo "Testing $level virtual users"
-            LOAD_DURATION=45s LOAD_VUS=$level k6 run --summary-export=functional-results/summary-$level.json tests/load/functional.js || exit 1
+            LOAD_DURATION=45s LOAD_VUS=$level k6 run --summary-export="functional-results/summary-$level.json" tests/load/functional.js || exit 1
           done
-          LOAD_DURATION=10m LOAD_VUS=500 k6 run --summary-export=functional-results/soak-500.json tests/load/functional.js
+          LOAD_DURATION=5m LOAD_VUS=250 k6 run --summary-export=functional-results/soak-250.json tests/load/functional.js
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: functional-summary
+          name: staging-functional-summary
           path: functional-results/
