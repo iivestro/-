@@ -151,6 +151,17 @@ button{cursor:pointer}
   .brand{font-size:18px}
   .container{margin:18px auto}
 }
+
+:root{--sky:#087f83;--dark:#12656c;--line:#dcebea;--pale:#e8f7f5;--blue:#087f83;--blue-dark:#12656c;--bg:#f4faf9;--border:#dcebea}
+body{background:radial-gradient(ellipse at top right,#def3f0,transparent 45%),#f4faf9;font-family:"Segoe UI",Tahoma,Arial,sans-serif}
+.attachment{flex:1 1 100%;border:1px solid #dcebea;background:#f5fbfa;border-radius:14px;padding:12px;min-width:0}
+.attachment input{max-width:100%;font-size:13px}
+.attachment-image{display:block;max-width:min(100%,320px);max-height:240px;object-fit:contain;border-radius:12px;margin:8px 0}
+.attachment-image[hidden]{display:none!important}
+.secondary-image{color:#12656c;background:#e8f7f5;min-height:44px;border:1px solid #cde5e1}
+.image-note{font-size:12px;color:#506d77;line-height:1.7;margin:6px 0}
+.send,.composer{flex-wrap:wrap}.send textarea,.composer textarea{min-width:0}
+button{min-height:44px}
 </style>
 </head>
 <body>
@@ -161,7 +172,7 @@ button{cursor:pointer}
   </div>
   <div class="top-actions">
     <a href="index.html" style="text-decoration:none">
-      <button class="btn btn-light">الرئيسية</button>
+      <button class="btn btn-light">اللوحة الرئيسية</button>
     </a>
     <button id="logoutBtn" class="btn btn-red hidden">تسجيل الخروج</button>
   </div>
