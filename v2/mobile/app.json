@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "PATIENT — بيشنت",
+    "slug": "patient-v2-preview",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "platforms": [
+      "ios",
+      "android"
+    ]
+  }
+}
