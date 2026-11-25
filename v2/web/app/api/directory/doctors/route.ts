@@ -1,4 +1,4 @@
-import {authConfig,verifyUser} from '../../../../lib/auth';
+import {authConfig,approvedPatient} from '../../../../lib/auth';
 export const dynamic='force-dynamic';
 const reply=(body:unknown,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'private, no-store'}});
 export async function GET(request:Request){
@@ -8,7 +8,8 @@ export async function GET(request:Request){
  const cursor=new URL(request.url).searchParams.get('after');
  if(cursor&&!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cursor))return reply({error:'Invalid cursor'},400);
  try{
-  if(!await verifyUser(token))return reply({error:'Unauthorized'},401);
+  const access=await approvedPatient(token);
+  if(access.status!==200)return reply({error:access.status===403?'Forbidden':access.status===401?'Unauthorized':'Unavailable'},access.status);
   const url=new URL(config.url+'/rest/v1/doctors');
   url.searchParams.set('select','id,specialty_id,qualification,experience_years,consultation_fee');
   url.searchParams.set('is_active','eq.true');url.searchParams.set('admin_is_active','eq.true');
