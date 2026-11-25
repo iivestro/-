@@ -10,7 +10,8 @@ export const features:FeatureDefinition[]=[
       "medical_center",
       "representative",
       "home_provider",
-      "admin"
+      "admin",
+      "staff"
     ]
   },
   {
@@ -22,7 +23,8 @@ export const features:FeatureDefinition[]=[
       "medical_center",
       "representative",
       "home_provider",
-      "admin"
+      "admin",
+      "staff"
     ]
   },
   {
@@ -34,7 +36,8 @@ export const features:FeatureDefinition[]=[
       "medical_center",
       "representative",
       "home_provider",
-      "admin"
+      "admin",
+      "staff"
     ]
   },
   {
@@ -124,7 +127,8 @@ export const features:FeatureDefinition[]=[
     "title": "المناطق والمحافظات",
     "roles": [
       "patient",
-      "admin"
+      "admin",
+      "staff"
     ]
   },
   {
@@ -136,17 +140,11 @@ export const features:FeatureDefinition[]=[
     ]
   },
   {
-    "action": "queue_checkin",
-    "title": "تسجيل حضور المراجع",
+    "action": "queue_bookings",
+    "title": "تسجيل حضور من حجوزات اليوم",
     "roles": [
       "doctor",
       "medical_center"
-    ],
-    "fields": [
-      [
-        "booking_id",
-        "معرف الحجز"
-      ]
     ]
   },
   {
@@ -160,14 +158,16 @@ export const features:FeatureDefinition[]=[
     "action": "announcement_admin_list",
     "title": "إدارة الإشعارات والإعلانات",
     "roles": [
-      "admin"
+      "admin",
+      "staff"
     ]
   },
   {
     "action": "announcement_create",
     "title": "إنشاء إعلان أو تنبيه (مسودة)",
     "roles": [
-      "admin"
+      "admin",
+      "staff"
     ],
     "fields": [
       [
@@ -192,7 +192,7 @@ export const features:FeatureDefinition[]=[
   },
   {
     "action": "maintenance_set",
-    "title": "إعداد حالة الصيانة (غير مفروضة بعد)",
+    "title": "إيقاف أو استئناف الحجوزات للصيانة",
     "roles": [
       "admin"
     ],
@@ -213,7 +213,8 @@ export const features:FeatureDefinition[]=[
     "action": "region_set",
     "title": "إضافة / تحديث منطقة",
     "roles": [
-      "admin"
+      "admin",
+      "staff"
     ],
     "fields": [
       [
@@ -239,8 +240,8 @@ export const features:FeatureDefinition[]=[
     ]
   },
   {
-    "action": "staff_draft",
-    "title": "تعيين صلاحية كمسودة غير فعالة",
+    "action": "staff_set",
+    "title": "تفعيل أو إيقاف صلاحية موظف",
     "roles": [
       "admin"
     ],
@@ -253,6 +254,11 @@ export const features:FeatureDefinition[]=[
         "permission",
         "الصلاحية",
         "support|subscriptions|reports|announcements|regions|monitoring"
+      ],
+      [
+        "active",
+        "الحالة",
+        "true|false"
       ]
     ]
   },
@@ -311,8 +317,39 @@ export const features:FeatureDefinition[]=[
         "datetime-local"
       ]
     ]
+  },
+  {
+    "action": "staff_permissions",
+    "title": "صلاحياتي",
+    "roles": [
+      "staff"
+    ]
+  },
+  {
+    "action": "reports_read",
+    "title": "التقارير المالية",
+    "roles": [
+      "admin",
+      "staff"
+    ]
+  },
+  {
+    "action": "monitoring_read",
+    "title": "مراقبة الأخطاء",
+    "roles": [
+      "admin",
+      "staff"
+    ]
+  },
+  {
+    "action": "subscription_read",
+    "title": "الاشتراكات القريبة من الانتهاء",
+    "roles": [
+      "admin",
+      "staff"
+    ]
   }
 ];
-export const labels:Record<string,string>={"id":"المعرف","subject":"العنوان","body":"التفاصيل","status":"الحالة","reply":"رد الإدارة","created_at":"تاريخ الإنشاء","updated_at":"آخر تحديث","category":"النوع","title":"العنوان","note":"ملاحظة","record_date":"تاريخ السجل","kind":"النوع","booking_id":"معرف الحجز","provider_id":"معرف مقدم الخدمة","service_date":"اليوم","queue_number":"رقم الدور","state":"الحالة","ahead":"عدد المراجعين قبلك","distance_km":"المسافة الجوية (كم)","latitude":"خط العرض","longitude":"خط الطول","recorded_revenue_iqd":"الإيرادات المسجلة بالدينار هذا الشهر","payment_count":"عدد الدفعات","support_open":"التذاكر المفتوحة","subscriptions_expiring":"الاشتراكات المنتهية خلال 7 أيام","errors_24h":"الأخطاء المسجلة آخر 24 ساعة","maintenance":"وضع الصيانة","message":"رسالة الصيانة","starts_at":"البداية","ends_at":"النهاية","published":"منشور","governorate":"المحافظة","district":"المنطقة","active":"فعال","permission":"الصلاحية","user_id":"معرف الموظف","saved":"تم الحفظ","updated":"تم التحديث","deleted":"تم الحذف","enforced":"مطبق فعلياً","registered":"تم التسجيل"};
+export const labels:Record<string,string>={"patient_name":"اسم المراجع","appointment_at":"موعد الحضور","provider_name":"اسم مقدم الخدمة","subscription_expires_at":"انتهاء الاشتراك","event_type":"نوع الخطأ","component":"القسم","event_count":"عدد الأخطاء","id":"المعرف","subject":"العنوان","body":"التفاصيل","status":"الحالة","reply":"رد الإدارة","created_at":"تاريخ الإنشاء","updated_at":"آخر تحديث","category":"النوع","title":"العنوان","note":"ملاحظة","record_date":"تاريخ السجل","kind":"النوع","booking_id":"معرف الحجز","provider_id":"معرف مقدم الخدمة","service_date":"اليوم","queue_number":"رقم الدور","state":"الحالة","ahead":"عدد المراجعين قبلك","distance_km":"المسافة الجوية (كم)","latitude":"خط العرض","longitude":"خط الطول","recorded_revenue_iqd":"الإيرادات المسجلة بالدينار هذا الشهر","payment_count":"عدد الدفعات","support_open":"التذاكر المفتوحة","subscriptions_expiring":"الاشتراكات المنتهية خلال 7 أيام","errors_24h":"الأخطاء المسجلة آخر 24 ساعة","maintenance":"وضع الصيانة","message":"رسالة الصيانة","starts_at":"البداية","ends_at":"النهاية","published":"منشور","governorate":"المحافظة","district":"المنطقة","active":"فعال","permission":"الصلاحية","user_id":"معرف الموظف","saved":"تم الحفظ","updated":"تم التحديث","deleted":"تم الحذف","enforced":"مطبق فعلياً","registered":"تم التسجيل"};
 export const values:Record<string,string>={"analysis":"تحليل","prescription":"وصفة طبية","report":"تقرير","other":"أخرى","notice":"إشعار","advertisement":"إعلان","waiting":"بانتظار الدور","called":"حان الدور","completed":"مكتمل","cancelled":"ملغى","open":"مفتوحة","answered":"تم الرد","closed":"مغلقة","doctor":"طبيب","center":"مركز طبي","representative":"مندوب","home":"رعاية منزلية","support":"الدعم الفني","subscriptions":"الاشتراكات","reports":"التقارير","announcements":"الإعلانات والإشعارات","regions":"المناطق","monitoring":"المراقبة","true":"نعم","false":"لا"};
 export function display(v:unknown){if(v===null||v===undefined)return '—';return values[String(v)]??String(v);}
