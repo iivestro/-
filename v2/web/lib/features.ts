@@ -1,6 +1,7 @@
 export type FeatureField=[string,string,string?];
 export type FeatureDefinition={action:string;title:string;roles:string[];fields?:FeatureField[]};
 export const features:FeatureDefinition[]=[
+  {action:"visit_reminders",title:"تذكير بمواعيدي خلال 24 ساعة",roles:["patient"]},
   {
     "action": "announcements",
     "title": "إشعارات وإعلانات المنصة",
@@ -105,7 +106,7 @@ export const features:FeatureDefinition[]=[
   },
   {
     "action": "nearby",
-    "title": "البحث عن أقرب مقدمي الخدمة",
+    "title": "الأطباء والمراكز بالقرب مني",
     "roles": [
       "patient"
     ],
