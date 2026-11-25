@@ -54,6 +54,10 @@ try {
  const unauth=await fetch(base+'/api/admin/accounts');assert.equal(unauth.status,401);console.log('PASS unauthenticated admin denied');
  const keyRes=await fetch(base+'/api/appointments/request',{headers});assert.equal(keyRes.status,200);const bookingKey=await keyRes.json();assert.equal(bookingKey.writesEnabled,false);assert.match(bookingKey.requestId,/^[0-9a-f-]{36}$/i);console.log('PASS booking request identifier and closed write gate');
  const blocked=await fetch(base+'/api/appointments/request',{method:'POST',headers:{...headers,Origin:base,'Content-Type':'application/json'},body:'{}'});assert.equal(blocked.status,503);console.log('PASS booking gate remains closed');
+ const audit=await fetch(base+'/api/admin/audit',{headers});assert.equal(audit.status,403);assert.equal((await fetch(base+'/api/admin/audit')).status,401);console.log('PASS audit access denied to patient and anonymous');
+ const logout=await fetch(base+'/api/auth/logout',{method:'POST',headers:{...headers,Origin:base}});assert.ok(logout.ok,'Logout should succeed');
+ const revoked=await fetch(base+'/api/profile/me',{headers});assert.equal(revoked.status,401,'Logged-out token must be rejected');token=undefined;console.log('PASS revoked session token denied by server');
+
 }finally{
  if(token){try{const res=await fetch(base+'/api/auth/logout',{method:'POST',headers:{Authorization:'Bearer '+token,Origin:base}});console.log('Local session sign-out HTTP '+res.status);}catch{console.log('Local session sign-out unavailable');}}
  server.kill('SIGTERM');
