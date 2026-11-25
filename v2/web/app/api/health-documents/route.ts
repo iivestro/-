@@ -1,3 +1,4 @@
+import {recordOperationalEvent} from '../../../lib/monitoring';
 import {authConfig,verifyUser} from '../../../lib/auth';
 export const dynamic='force-dynamic';
 const reply=(body:unknown,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
@@ -29,7 +30,7 @@ export async function POST(request:Request){
  const reserve=await rpc('reserve',{item_id:b.item_id,mime_type:b.mime_type});
  if(!objectPath.test(reserve.object_path)||!uuid.test(reserve.id))throw Error('Invalid reservation');
  const res=await fetch(cfg.url+'/storage/v1/object/patient-private-health/'+reserve.object_path,{method:'POST',headers:{...auth,'Content-Type':b.mime_type,'x-upsert':'false','Cache-Control':'0'},body:new Uint8Array(bytes),cache:'no-store',redirect:'error',signal:AbortSignal.timeout(20000)});
- if(!res.ok)return reply({error:'Upload failed'},503);
+ if(!res.ok){await recordOperationalEvent('storage','storage_error');return reply({error:'Upload failed'},503);}
  return reply({result:{id:reserve.id,scan_state:'pending'}},202);
  }
  if(typeof b.id!=='string'||!uuid.test(b.id))return reply({error:'Invalid document'},400);
