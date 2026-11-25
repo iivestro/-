@@ -6,5 +6,6 @@ export const portals = [
  {slug:'emergency',title:'طبيب الطوارئ',description:'خدمة مؤجلة إلى حين مراجعة السلامة'},
  {slug:'representatives',title:'بوابة المندوبين',description:'الزيارات والمواعيد'},
  {slug:'medical-center',title:'المراكز الطبية',description:'الأطباء والحجوزات وإدارة المركز'},
+ {slug:'staff',title:'بوابة الموظفين',description:'المهام الإدارية حسب الصلاحيات'},
  {slug:'admin',title:'لوحة الإدارة',description:'إدارة الحسابات والاشتراكات'}
 ] as const;
