@@ -1,3 +1,4 @@
+import {recordOperationalEvent} from '../../../lib/monitoring';
 import {authConfig,verifyUser} from '../../../lib/auth';
 export const dynamic='force-dynamic';
 const reply=(body:unknown,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'private, no-store'}});
@@ -16,5 +17,5 @@ export async function POST(request:Request){
  const r=await fetch(config.url+'/rest/v1/rpc/v2_feature_action',{method:'POST',headers:{apikey:config.key,Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({p_action:b.action,p_data:b.data}),cache:'no-store',redirect:'error',signal:AbortSignal.timeout(8000)});
  if(!r.ok)return reply({error:'Request unavailable'},r.status===401?401:r.status===403?403:r.status===429?429:r.status===400?400:503);
  return reply({result:await r.json()});
- }catch{return reply({error:'Unavailable'},503);}
+ }catch{await recordOperationalEvent('admin');return reply({error:'Unavailable'},503);}
 }
