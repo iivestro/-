@@ -12,6 +12,9 @@ export async function verifyUser(token:string) {
  if(!response.ok) return null;
  const user:unknown=await response.json();
  if(typeof user!=='object'||user===null||!('id' in user)||typeof user.id!=='string') return null;
+ // Fail closed on missing/expired/deleted session rows; the Auth endpoint above verifies the signed token first.
+ const active=await fetch(config.url+'/rest/v1/rpc/v2_session_active',{method:'POST',headers:{apikey:config.key,Authorization:'Bearer '+token,'Content-Type':'application/json'},body:'{}',cache:'no-store',redirect:'error',signal:AbortSignal.timeout(5000)});
+ if(!active.ok||await active.json()!==true)return null;
  return {id:user.id};
 }
 
