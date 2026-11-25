@@ -1,0 +1,30 @@
+name: PATIENT v2 mobile preview
+on:
+  push:
+    branches: [patient-v2]
+    paths:
+      - 'v2/mobile/**'
+      - '.github/workflows/patient-v2-mobile.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  mobile-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: v2/mobile
+    env:
+      EXPO_NO_TELEMETRY: '1'
+      CI: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npx expo install --check
+      - run: npm run typecheck
+      - run: npx expo export --platform android
+      - run: npx expo export --platform ios
