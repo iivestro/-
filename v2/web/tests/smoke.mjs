@@ -29,5 +29,10 @@ try {
  assert.match(denied.headers.get('cache-control')??'',/no-store/);
  const unavailable=await fetch(base+path,{headers:{authorization:'Bearer abc.def.ghi'}});assert.equal(unavailable.status,503);
  }
+ const portal=await fetch(base+'/portal/patients');assert.equal(portal.status,200);assert.match(await portal.text(),/تسجيل دخول المراجع/);
+ const loginHeaders={'Content-Type':'application/json',Origin:base};
+ const blocked=await fetch(base+'/api/auth/login',{method:'POST',headers:{...loginHeaders,Origin:'https://example.invalid'},body:'{}'});assert.equal(blocked.status,403);
+ const login=await fetch(base+'/api/auth/login',{method:'POST',headers:loginHeaders,body:'{}'});assert.equal(login.status,503);
+ assert.match(login.headers.get('cache-control')??'',/no-store/);
  console.log('Smoke checks passed');
 } finally {server.kill('SIGTERM');}
