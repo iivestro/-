@@ -12,8 +12,9 @@ export default function Directory({token}:{token:string}){
  const [selected,setSelected]=useState<Item|null>(null);
  const [details,setDetails]=useState<Detail[]>([]);
  const [detailNext,setDetailNext]=useState<string|null>(null);
+ const [centerSchedule,setCenterSchedule]=useState<{doctor:Detail;hours:Detail[]}|null>(null);
  async function load(type:'doctors'|'centers',after?:string){
- if(busy)return;setBusy(true);setMessage('');setKind(type);setSelected(null);setDetails([]);setDetailNext(null);
+ if(busy)return;setBusy(true);setMessage('');setKind(type);setCenterSchedule(null);setSelected(null);setDetails([]);setDetailNext(null);
  if(!after){setItems([]);setNext(null);}
  try{
  const params=new URLSearchParams();if(after)params.set('after',after);
@@ -25,7 +26,7 @@ export default function Directory({token}:{token:string}){
  }catch{setMessage('تعذر تحميل الدليل. يرجى المحاولة مجدداً.');}finally{setBusy(false);}
  }
  async function detail(item:Item,after?:string){
- if(busy)return;setBusy(true);setMessage('');setSelected(item);if(!after){setDetails([]);setDetailNext(null);}
+ if(busy)return;setBusy(true);setMessage('');setSelected(item);setCenterSchedule(null);if(!after){setDetails([]);setDetailNext(null);}
  try{
  const params=new URLSearchParams({id:item.id,kind:kind==='doctors'?'doctor':'center'});if(after)params.set('after',after);
  const res=await fetch('/api/directory/details?'+params,{headers:{Authorization:'Bearer '+token},cache:'no-store'});
@@ -35,5 +36,13 @@ export default function Directory({token}:{token:string}){
  if(!data.items.length)setMessage('لا توجد تفاصيل إضافية.');
  }catch{setMessage('تعذر تحميل التفاصيل.');}finally{setBusy(false);}
  }
- return <section><h2>دليل الخدمات الطبية</h2><button disabled={busy} onClick={()=>load('doctors')}>الأطباء</button> <button disabled={busy} onClick={()=>load('centers')}>المراكز الطبية</button><p role="status">{busy?'جارٍ التحميل':message}</p>{selected?<article><button disabled={busy} onClick={()=>{setSelected(null);setMessage('');}}>العودة إلى الدليل</button><h3>{selected.name??selected.qualification??'الطبيب'}</h3><h4>{kind==='doctors'?'أوقات الدوام بتوقيت العراق':'أطباء المركز'}</h4>{details.map((d,i)=><article key={d.id??i}>{kind==='doctors'?<p>{days[d.day_of_week??-1]??'غير محدد'}: {d.start_time?.slice(0,5)} – {d.end_time?.slice(0,5)}</p>:<><h4>{d.full_name}</h4><p>{d.specialty}</p></>}</article>)}{detailNext&&<button disabled={busy} onClick={()=>detail(selected,detailNext)}>عرض المزيد</button>}</article>:<><div className="grid">{items.map(item=><article key={item.id}><h3>{item.name??item.qualification??'طبيب'}</h3><p>{item.specialty} {item.city} {item.address}</p>{item.experience_years!=null&&<p>الخبرة: {item.experience_years} سنة</p>}{item.consultation_fee!=null&&<p>الأجور: {item.consultation_fee} د.ع</p>}<button disabled={busy} onClick={()=>detail(item)}>{kind==='doctors'?'أوقات الدوام':'أطباء المركز'}</button></article>)}</div>{next&&<button disabled={busy} onClick={()=>load(kind,next)}>عرض المزيد</button>}</>}</section>;
+ async function centerHours(doctor:Detail){
+ if(busy||!doctor.id||!selected)return;setBusy(true);setMessage('');setCenterSchedule(null);
+ try{const params=new URLSearchParams({kind:'center-doctor',id:doctor.id,centerId:selected.id});
+ const res=await fetch('/api/directory/details?'+params,{headers:{Authorization:'Bearer '+token},cache:'no-store'});
+ if(!res.ok)throw new Error('Failed');const data=await res.json() as {items:Detail[]};
+ setCenterSchedule({doctor,hours:data.items});if(!data.items.length)setMessage('لا توجد ساعات دوام متاحة.');
+ }catch{setMessage('تعذر تحميل دوام طبيب المركز.');}finally{setBusy(false);}
+ }
+ return <section><h2>دليل الخدمات الطبية</h2><button disabled={busy} onClick={()=>load('doctors')}>الأطباء</button> <button disabled={busy} onClick={()=>load('centers')}>المراكز الطبية</button><p role="status">{busy?'جارٍ التحميل':message}</p>{selected?<article><button disabled={busy} onClick={()=>{setSelected(null);setCenterSchedule(null);setMessage('');}}>العودة إلى الدليل</button><h3>{selected.name??selected.qualification??'الطبيب'}</h3><h4>{kind==='doctors'?'أوقات الدوام بتوقيت العراق':'أطباء المركز'}</h4>{details.map((d,i)=><article key={d.id??i}>{kind==='doctors'?<p>{days[d.day_of_week??-1]??'غير محدد'}: {d.start_time?.slice(0,5)} – {d.end_time?.slice(0,5)}</p>:<><h4>{d.full_name}</h4><p>{d.specialty}</p><button disabled={busy||!d.id} onClick={()=>centerHours(d)}>أوقات الدوام</button></>}</article>)}{centerSchedule&&<section><h4>دوام {centerSchedule.doctor.full_name}</h4><button disabled={busy} onClick={()=>setCenterSchedule(null)}>إغلاق الدوام</button>{centerSchedule.hours.map((h,i)=><p key={i}>{days[h.day_of_week??-1]??'غير محدد'}: {h.start_time?.slice(0,5)} – {h.end_time?.slice(0,5)}</p>)}</section>}{detailNext&&<button disabled={busy} onClick={()=>detail(selected,detailNext)}>عرض المزيد</button>}</article>:<><div className="grid">{items.map(item=><article key={item.id}><h3>{item.name??item.qualification??'طبيب'}</h3><p>{item.specialty} {item.city} {item.address}</p>{item.experience_years!=null&&<p>الخبرة: {item.experience_years} سنة</p>}{item.consultation_fee!=null&&<p>الأجور: {item.consultation_fee} د.ع</p>}<button disabled={busy} onClick={()=>detail(item)}>{kind==='doctors'?'أوقات الدوام':'أطباء المركز'}</button></article>)}</div>{next&&<button disabled={busy} onClick={()=>load(kind,next)}>عرض المزيد</button>}</>}</section>;
 }
