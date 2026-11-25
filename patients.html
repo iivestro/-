@@ -206,22 +206,29 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
     <option value="">اختر المحافظة</option>
     <option>بغداد</option><option>نينوى</option><option>البصرة</option><option>النجف</option><option>كربلاء</option><option>بابل</option><option>القادسية</option><option>المثنى</option><option>ذي قار</option><option>ميسان</option><option>واسط</option><option>ديالى</option><option>صلاح الدين</option><option>كركوك</option><option>الأنبار</option><option>أربيل</option><option>السليمانية</option><option>دهوك</option><option>حلبجة</option>
    </select>
-   <label for="signupEmail">البريد الإلكتروني</label>
-   <input id="signupEmail" type="email" placeholder="البريد الإلكتروني">
    <label for="signupPassword">كلمة المرور</label>
-   <input id="signupPassword" type="password" placeholder="6 أحرف على الأقل">
-   <button type="button" onclick="signup()">إنشاء الحساب</button>
+   <input id="signupPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" placeholder="12 حرفاً على الأقل">
+   <p class="muted">بعد تأكيد رقم واتساب، يتفعّل حسابك مباشرةً دون انتظار موافقة الإدارة.</p>
+   <button type="button" id="phoneSignupButton" onclick="signup()">إرسال رمز واتساب</button>
   </div>
 
   <div id="loginPanel" class="hidden">
    <h3>تسجيل الدخول</h3>
-   <label for="email">البريد الإلكتروني</label>
-   <input id="email" type="email" placeholder="البريد الإلكتروني">
+   <label for="loginPhone">رقم الهاتف</label>
+   <input id="loginPhone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="11" placeholder="07XXXXXXXXX">
    <label for="password">كلمة المرور</label>
    <input id="password" type="password" placeholder="كلمة المرور">
-   <button type="button" onclick="login()">تسجيل الدخول</button>
+   <button type="button" id="phoneLoginButton" onclick="login()">تسجيل الدخول</button>
   </div>
-  <p id="message" class="msg"></p>
+  <div id="phoneVerifyPanel" class="hidden">
+   <h3>تأكيد رقم الهاتف عبر واتساب</h3>
+   <p class="muted" id="phoneVerifyHint"></p>
+   <label for="phoneCode">رمز التحقق (6 أرقام)</label>
+   <input id="phoneCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000">
+   <button type="button" id="phoneVerifyButton" onclick="verifyPatientPhone()">تأكيد الرقم والدخول</button>
+   <button type="button" class="secondary" onclick="showAuthTab('signup')">العودة إلى التسجيل</button>
+  </div>
+  <p id="message" class="msg" role="status" aria-live="polite"></p>
  </section>
 
  <section id="status" class="card hidden">
@@ -300,7 +307,14 @@ const DEFAULT_DOCTOR_PHOTO="data:image/svg+xml;charset=UTF-8,"+encodeURIComponen
 
 function message(t){el("message").textContent=t;}
 
+let pendingPatientPhone=null,patientAuthBusy=false;
+// Deployment safety latch, NOT an authorization control. Keep closed until Auth provider and database guards are tested.
+const PATIENT_WHATSAPP_READY=false;
 function showAuthTab(tab){
+ if(patientAuthBusy)return;
+ pendingPatientPhone=null;
+ el("phoneCode").value="";
+ el("phoneVerifyPanel").classList.add("hidden");
  const signup=tab==="signup";
  el("signupPanel").classList.toggle("hidden",!signup);
  el("loginPanel").classList.toggle("hidden",signup);
@@ -309,38 +323,53 @@ function showAuthTab(tab){
  message("");
 }
 
-async function signup(){
- const full_name=el("name").value.trim();
- const phone=el("phone").value.trim();
- const age=Number(el("age").value);
- const governorate=el("governorate").value;
- const email=el("signupEmail").value.trim();
- const password=el("signupPassword").value;
-
- if(!full_name||!/^07[0-9]{9}$/.test(phone)||!age||age<1||age>120||!governorate||!email||password.length<6){
-  message("أكمل الحقول وتأكد من رقم الهاتف والعمر وكلمة المرور.");
-  return;
- }
-
- message("جاري إنشاء الحساب...");
- const {error}=await db.auth.signUp({
-  email,password,
-  options:{data:{full_name,phone,age:String(age),governorate}}
- });
-
- if(error){message("تعذر إنشاء الحساب: "+error.message);return;}
- message("تم إرسال طلب التسجيل. سيبقى الحساب قيد موافقة الإدارة. تحقق من بريدك الإلكتروني إذا طُلب تأكيده.");
+function normalizedPatientPhone(value){
+ const v=String(value).trim().replace(/[٠-٩]/g,ch=>String(ch.charCodeAt(0)-1632)).replace(/[۰-۹]/g,ch=>String(ch.charCodeAt(0)-1776));
+ return /^07[0-9]{9}$/.test(v)?"+964"+v.slice(1):null;
 }
-
-async function login(){
- const email=el("email").value.trim();
- const password=el("password").value;
- if(!email||!password){message("أدخل البريد الإلكتروني وكلمة المرور.");return;}
-
- message("جاري تسجيل الدخول...");
- const {error}=await db.auth.signInWithPassword({email,password});
- if(error){message("تعذر تسجيل الدخول: "+error.message);return;}
+function setPatientAuthBusy(value){
+ patientAuthBusy=value;
+ ["phoneSignupButton","phoneLoginButton","phoneVerifyButton","signupTab","loginTab"].forEach(id=>el(id).disabled=value);
+}
+async function signup(){
+ if(patientAuthBusy)return;
+ const full_name=el("name").value.trim(),phone=normalizedPatientPhone(el("phone").value),age=Number(el("age").value),governorate=el("governorate").value,password=el("signupPassword").value;
+ if(full_name.length<3||full_name.length>120||!phone||!Number.isInteger(age)||age<1||age>120||!governorate||password.length<12||password.length>128){message("أكمل الحقول وتأكد من رقم الهاتف والعمر وكلمة المرور.");return;}
+ if(!PATIENT_WHATSAPP_READY){message("التسجيل عبر واتساب غير متاح حالياً؛ لم يكتمل ربط خدمة التحقق.");return;}
+ setPatientAuthBusy(true);message("جاري طلب رمز التحقق...");
+ try{
+ const {data,error}=await db.auth.signUp({phone,password,options:{channel:"whatsapp",data:{account_type:"patient",full_name,age,governorate}}});
+ if(error){message("تعذر إرسال رمز التحقق. حاول لاحقاً.");return;}
+ if(data.session){await db.auth.signOut();message("إعداد التحقق غير صحيح. يرجى التواصل مع الدعم.");return;}
+ pendingPatientPhone=phone;el("signupPassword").value="";
+ el("signupPanel").classList.add("hidden");el("loginPanel").classList.add("hidden");el("phoneVerifyPanel").classList.remove("hidden");
+ el("phoneVerifyHint").textContent="أدخل الرمز المرسل إلى رقم "+phone;
+ message("");
+ }catch{message("تعذر الاتصال بخدمة التحقق.");}finally{setPatientAuthBusy(false);}
+}
+async function verifyPatientPhone(){
+ if(patientAuthBusy||!PATIENT_WHATSAPP_READY||!pendingPatientPhone)return;
+ const token=el("phoneCode").value.trim();
+ if(!/^[0-9]{6}$/.test(token)){message("أدخل رمز التحقق المكوّن من 6 أرقام.");return;}
+ setPatientAuthBusy(true);
+ try{
+ const {data,error}=await db.auth.verifyOtp({phone:pendingPatientPhone,token,type:"sms"});
+ if(error||!data.session){message("تعذر تأكيد الرمز. تحقق منه أو أعد التسجيل.");return;}
+ pendingPatientPhone=null;el("phoneCode").value="";el("phoneVerifyPanel").classList.add("hidden");
  await loadAccount();
+ }catch{message("تعذر الاتصال بخدمة التحقق.");}finally{setPatientAuthBusy(false);}
+}
+async function login(){
+ if(patientAuthBusy)return;
+ const phone=normalizedPatientPhone(el("loginPhone").value),password=el("password").value;
+ if(!phone||!password){message("أدخل رقم الهاتف وكلمة المرور.");return;}
+ if(!PATIENT_WHATSAPP_READY){message("الدخول برقم الهاتف غير متاح حالياً في هذه النسخة التجريبية.");return;}
+ setPatientAuthBusy(true);
+ try{
+ const {error}=await db.auth.signInWithPassword({phone,password});
+ if(error){message("تعذر تسجيل الدخول. تحقق من رقم الهاتف وكلمة المرور.");return;}
+ await loadAccount();
+ }catch{message("تعذر تسجيل الدخول.");}finally{el("password").value="";setPatientAuthBusy(false);}
 }
 
 async function loadAccount(){
@@ -380,11 +409,19 @@ async function loadAccount(){
   return;
  }
 
+ if(profile.approval_status==="suspended"){
+  el("statusText").textContent="الحساب موقوف. يرجى التواصل مع الإدارة.";
+  return;
+ }
  if(profile.approval_status!=="approved"){
-  el("statusText").innerHTML='<div class="status-box status-pending">مرحباً '+escapeHTML(profile.full_name||"بك")+'. حسابك قيد مراجعة الإدارة، وستظهر البوابات بعد الموافقة.</div>';
+  el("statusText").innerHTML='<div class="status-box status-pending">مرحباً '+escapeHTML(profile.full_name||"بك")+'. لم يكتمل تفعيل الحساب. تحقق من رقم الهاتف أو تواصل مع الدعم.</div>';
   return;
  }
 
+ if(!user.phone||!user.phone_confirmed_at){
+  el("statusText").textContent="يجب تأكيد رقم الهاتف قبل الدخول إلى هذه النسخة.";
+  return;
+ }
  el("status").classList.add("hidden");
  el("portalChoices").classList.remove("hidden");
  el("myBookingsButton").classList.remove("hidden");
