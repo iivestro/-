@@ -11,7 +11,7 @@ assert.ok(fixture.includes(staging),'Staging fixture mismatch');
 const key=fixture.match(/const key='(sb_publishable_[A-Za-z0-9_-]+)'/)?.[1];
 const creds=fixture.match(/JSON\.stringify\(\{email:'([^'\\]+)',password:'([^'\\]+)'\}\)/);
 assert.ok(key&&creds,'Synthetic fixture format changed');
-const server=spawn(process.execPath,['node_modules/next/dist/bin/next','start','-H','127.0.0.1','-p','3218'],{stdio:'ignore',env:{...process.env,APP_ORIGIN:base,SUPABASE_URL:staging,SUPABASE_PUBLISHABLE_KEY:key,STAGING_BOOKING_WRITES:'disabled',STAGING_ADMIN_WRITES:'disabled',STAGING_SERVICE_WRITES:'disabled',STAGING_REGISTRATION_WRITES:'disabled'}});
+const server=spawn(process.execPath,['node_modules/next/dist/bin/next','start','-H','127.0.0.1','-p','3218'],{stdio:'ignore',env:{...process.env,APP_ORIGIN:base,SUPABASE_URL:staging,SUPABASE_PUBLISHABLE_KEY:key,STAGING_BOOKING_WRITES:'disabled',STAGING_ADMIN_WRITES:'disabled',STAGING_SERVICE_WRITES:'disabled',STAGING_REGISTRATION_WRITES:'disabled',STAGING_WHATSAPP_WRITES:'disabled'}});
 let token;
 try {
  let ready=false;
@@ -24,6 +24,11 @@ try {
  }
  const wrongOrigin=await fetch(base+'/api/auth/register',{method:'POST',headers:{...regHeaders,Origin:'https://invalid.example'},body:JSON.stringify(signup)});assert.equal(wrongOrigin.status,403);console.log('PASS registration validation, forbidden roles, origin and closed gate (no email sent)');
 
+ const phoneSignup={action:'start',phone:'07000000000',fullName:'Synthetic Test Patient',age:30,governorate:'النجف',password:'Synthetic-test-only-password'};
+ for(const [body,expected] of [[{...phoneSignup,age:0},400],[{...phoneSignup,phone:'123'},400],[{...phoneSignup,password:'short'},400],[phoneSignup,503],[{action:'verify',phone:phoneSignup.phone,code:'123'},400],[{action:'verify',phone:phoneSignup.phone,code:'123456'},503]]){
+ const r=await fetch(base+'/api/auth/patient-phone',{method:'POST',headers:regHeaders,body:JSON.stringify(body)});assert.equal(r.status,expected,'Phone registration validation/gate');
+ }
+ console.log('PASS phone registration validation and closed WhatsApp gate');
  const login=await fetch(base+'/api/auth/login',{method:'POST',headers:{Origin:base,'Content-Type':'application/json'},body:JSON.stringify({email:creds[1],password:creds[2]})});
  assert.equal(login.status,200,'Synthetic account sign-in');
  const session=await login.json();token=session.access_token;assert.ok(typeof token==='string'&&token.length>0,'Access token missing');
