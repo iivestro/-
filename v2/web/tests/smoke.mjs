@@ -24,7 +24,7 @@ try {
  assert.match(profile.headers.get('cache-control')??'',/no-store/);
  const profileUnavailable=await fetch(base+'/api/profile/me',{headers:{authorization:'Bearer abc.def.ghi'}});
  assert.equal(profileUnavailable.status,503);
- for(const path of ['/api/directory/centers','/api/directory/doctors','/api/appointments/me','/api/directory/details']){
+ for(const path of ['/api/directory/centers','/api/directory/doctors','/api/appointments/me','/api/directory/details','/api/provider/workspace']){
  const denied=await fetch(base+path);assert.equal(denied.status,401);
  assert.match(denied.headers.get('cache-control')??'',/no-store/);
  const unavailable=await fetch(base+path,{headers:{authorization:'Bearer abc.def.ghi'}});assert.equal(unavailable.status,503);
@@ -38,6 +38,9 @@ try {
  const denied=await fetch(base+path,{method:'POST'});assert.equal(denied.status,401);
  const unavailable=await fetch(base+path,{method:'POST',headers:{...loginHeaders,authorization:'Bearer abc.def.ghi'},body:'{}'});assert.equal(unavailable.status,503);
  assert.match(unavailable.headers.get('cache-control')??'',/no-store/);
+ }
+ for(const [slug,label] of [['doctor','الطبيب'],['medical-center','المركز الطبي'],['representatives','المندوب'],['admin','الإدارة']]){
+ const res=await fetch(base+'/portal/'+slug);assert.equal(res.status,200);assert.ok((await res.text()).includes('تسجيل دخول '+label));
  }
  console.log('Smoke checks passed');
 } finally {server.kill('SIGTERM');}
