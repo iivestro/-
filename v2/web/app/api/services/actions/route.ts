@@ -1,9 +1,20 @@
+import {randomUUID} from 'node:crypto';
 import {authConfig,verifyUser} from '../../../../lib/auth';
 export const dynamic='force-dynamic';
 const reply=(body:unknown,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'private, no-store'}});
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const isId=(v:unknown):v is string=>typeof v==='string'&&uuid.test(v);
 const clock=(v:unknown):v is string=>typeof v==='string'&&/^([01]\d|2[0-3]):[0-5]\d$/.test(v);
+export async function GET(request:Request){
+ const token=/^Bearer ([A-Za-z0-9._-]{1,8192})$/.exec(request.headers.get('authorization')??'')?.[1];if(!token)return reply({error:'Unauthorized'},401);
+ const cfg=authConfig();if(!cfg)return reply({error:'Unavailable'},503);
+ try{const user=await verifyUser(token);if(!user||!isId(user.id))return reply({error:'Unauthorized'},401);
+ const u=new URL(cfg.url+'/rest/v1/profiles');for(const [k,v] of Object.entries({select:'id',id:'eq.'+user.id,role:'eq.admin',approval_status:'eq.approved',limit:'1'}))u.searchParams.set(k,v);
+ const res=await fetch(u,{headers:{apikey:cfg.key,Authorization:'Bearer '+token},cache:'no-store',redirect:'error',signal:AbortSignal.timeout(5000)});if(!res.ok)return reply({error:'Unavailable'},503);
+ const rows=await res.json();if(rows?.[0]?.id!==user.id)return reply({error:'Forbidden'},403);
+ return reply({requestId:randomUUID(),writesEnabled:cfg.url==='https://sfaatbfiwwbvobpvhwxo.supabase.co'&&process.env.STAGING_SERVICE_WRITES==='enabled-after-validation'});
+ }catch{return reply({error:'Unavailable'},503);}
+}
 export async function POST(request:Request){
  const token=/^Bearer ([A-Za-z0-9._-]{1,8192})$/.exec(request.headers.get('authorization')??'')?.[1];
  if(!token)return reply({error:'Unauthorized'},401);
@@ -50,8 +61,8 @@ export async function POST(request:Request){
  {const rows=await read('home_service_requests',{select:'id',id:'eq.'+b.id,provider_id:'eq.'+providerId,limit:'1'});if(rows[0]?.id!==b.id)return reply({error:'Not found'},404);}
  if(b.status==='quoted'&&(!Number.isInteger(b.price)||b.price<0||b.price>100000000||typeof b.date!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(b.date)||!clock(b.time)||!Number.isFinite(Date.parse(b.date+'T'+b.time+':00+03:00'))||Date.parse(b.date+'T'+b.time+':00+03:00')<=Date.now()))return reply({error:'Invalid quote'},400);
  rpc='home_service_progress';args={p_request:b.id,p_status:b.status,p_price:b.status==='quoted'?b.price:null,p_time:b.status==='quoted'?b.date+'T'+b.time+':00+03:00':null};break;
- case 'renew_clinical':if(!isId(b.id)||!['doctor','medical_center'].includes(b.kind))return reply({error:'Invalid provider'},400);rpc='admin_renew_clinical_subscription';args={p_kind:b.kind,p_id:b.id};break;
- case 'renew_rep':if(!isId(b.id))return reply({error:'Invalid account'},400);rpc='admin_renew_representative_subscription';args={p_profile_id:b.id};break;
+ case 'renew_clinical':if(!isId(b.id)||!isId(b.requestId)||!['doctor','medical_center'].includes(b.kind))return reply({error:'Invalid provider'},400);rpc='v2_renew_subscription';args={p_request_id:b.requestId,p_kind:b.kind,p_target_id:b.id};break;
+ case 'renew_rep':if(!isId(b.id)||!isId(b.requestId))return reply({error:'Invalid account'},400);rpc='v2_renew_subscription';args={p_request_id:b.requestId,p_kind:'representative',p_target_id:b.id};break;
  default:return reply({error:'Invalid action'},400);
  }
  const r=await fetch(config.url+'/rest/v1/rpc/'+rpc,{method:'POST',headers,body:JSON.stringify(args),cache:'no-store',redirect:'error',signal:AbortSignal.timeout(8000)});
