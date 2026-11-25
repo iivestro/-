@@ -7,7 +7,7 @@ export async function GET(request:Request){
  if(!token)return reply({error:'Unauthorized'},401);
  const config=authConfig();if(!config)return reply({error:'Unavailable'},503);
  const params=new URL(request.url).searchParams,kind=params.get('kind'),after=params.get('after');
- if(!kind||!['doctor','medical_center','representative','admin'].includes(kind)||(after&&!uuid.test(after)))return reply({error:'Invalid request'},400);
+ if(!kind||!['doctor','medical_center','representative','admin','home_provider'].includes(kind)||(after&&!uuid.test(after)))return reply({error:'Invalid request'},400);
  try{
  const user=await verifyUser(token);if(!user)return reply({error:'Unauthorized'},401);
  if(!uuid.test(user.id))return reply({error:'Unavailable'},503);
@@ -16,11 +16,18 @@ export async function GET(request:Request){
  const res=await fetch(url,{headers:{apikey:config.key,Authorization:'Bearer '+token},cache:'no-store',redirect:'error',signal:AbortSignal.timeout(5000)});
  if(!res.ok)throw new Error('Unavailable');const rows:unknown=await res.json();if(!Array.isArray(rows))throw new Error('Unavailable');return rows;
  };
+ if(kind!=='home_provider'){
  const profiles=await read('profiles',{select:'id,role,approval_status',id:'eq.'+user.id,limit:'1'});
  const profile=profiles[0];if(profile?.id!==user.id||profile.role!==kind||profile.approval_status!=='approved')return reply({error:'Forbidden'},403);
+ }
  const page={order:'id.asc',limit:'26',...(after?{id:'gt.'+after}:{})};
- let rows;
- if(kind==='doctor'){
+ let rows;let displayName:string|null=null;
+ if(kind==='home_provider'){
+ const providers=await read('home_service_providers',{select:'id,display_name',account_id:'eq.'+user.id,approved:'eq.true',subscription_expires_at:'gt.'+new Date().toISOString(),limit:'2'});
+ if(providers.length!==1||typeof providers[0].id!=='string'||!uuid.test(providers[0].id))return reply({error:'Forbidden'},403);
+ displayName=typeof providers[0].display_name==='string'?providers[0].display_name:null;
+ rows=await read('home_service_requests',{...page,select:'id,status,scheduled_at,created_at',provider_id:'eq.'+providers[0].id});
+ }else if(kind==='doctor'){
  const providers=await read('doctors',{select:'id',profile_id:'eq.'+user.id,is_active:'eq.true',admin_is_active:'eq.true',subscription_expires_at:'gt.'+new Date().toISOString(),limit:'1'});
  const id=providers[0]?.id;if(typeof id!=='string'||!uuid.test(id))return reply({error:'Forbidden'},403);
  rows=await read('appointments',{...page,select:'id,status,requested_date,appointment_at',doctor_id:'eq.'+id});
@@ -35,7 +42,7 @@ export async function GET(request:Request){
  }else{
  rows=await read('profiles',{...page,select:'id,role,approval_status,created_at'});
  }
- const items=rows.slice(0,25).map(({id,status,requested_date,appointment_at,role,approval_status,created_at})=>({id,status,requested_date,appointment_at,role,approval_status,created_at}));
- return reply({items,next:rows.length>25?items[24].id:null});
+ const items=rows.slice(0,25).map(({id,status,requested_date,appointment_at,role,approval_status,created_at,scheduled_at})=>({id,status,requested_date,appointment_at,role,approval_status,created_at,scheduled_at}));
+ return reply({items,displayName,next:rows.length>25?items[24].id:null});
  }catch{return reply({error:'Unavailable'},503);}
 }
