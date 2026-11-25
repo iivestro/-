@@ -1,0 +1,7 @@
+# STAGING security review — 2026-11-25
+
+Read-only catalog inspection of sfaatbfiwwbvobpvhwxo. All 24 public ordinary tables have RLS enabled. This is not an isolation test. Emergency chat tables have no policies; keep closed pending review.
+
+Priority finding: authenticated has UPDATE grants on profiles.role, profiles.approval_status and appointments.patient_id. Existing profiles self-update policy permits non-doctor roles in both USING and WITH CHECK. Treat as potential privilege escalation until synthetic tests verify effective behavior including triggers. Appointment doctor update policy does not itself freeze patient_id. Review triggers and admin UI before implementing immutable-field guards with explicit authorized admin paths. Test patient A/B, pending/approved, doctor A/B, center A/B, suspended users and admin; rollback synthetic fixtures. Do not expose secrets.
+
+Center booking statuses are pending/confirmed/cancelled/completed/rejected. Proposed partial unique index is in staging-center-booking-index-proposal.sql; verify slot semantics and duplicate counts before applying. No index removals justified by current zero scan counters. No database changes, new load tests, production changes or paid provisioning performed. Overnight task completion not verified; defer DDL and contention tests until coordinated. Capacity target remains 500,000 registered accounts, not verified concurrent capacity.
