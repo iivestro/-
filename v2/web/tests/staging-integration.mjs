@@ -11,7 +11,7 @@ assert.ok(fixture.includes(staging),'Staging fixture mismatch');
 const key=fixture.match(/const key='(sb_publishable_[A-Za-z0-9_-]+)'/)?.[1];
 const creds=fixture.match(/JSON\.stringify\(\{email:'([^'\\]+)',password:'([^'\\]+)'\}\)/);
 assert.ok(key&&creds,'Synthetic fixture format changed');
-const server=spawn(process.execPath,['node_modules/next/dist/bin/next','start','-H','127.0.0.1','-p','3218'],{stdio:'ignore',env:{...process.env,APP_ORIGIN:base,SUPABASE_URL:staging,SUPABASE_PUBLISHABLE_KEY:key,STAGING_BOOKING_WRITES:'disabled'}});
+const server=spawn(process.execPath,['node_modules/next/dist/bin/next','start','-H','127.0.0.1','-p','3218'],{stdio:'ignore',env:{...process.env,APP_ORIGIN:base,SUPABASE_URL:staging,SUPABASE_PUBLISHABLE_KEY:key,STAGING_BOOKING_WRITES:'disabled',STAGING_ADMIN_WRITES:'disabled'}});
 let token;
 try {
  let ready=false;
@@ -32,6 +32,14 @@ try {
  const res=await fetch(base+'/api/provider/workspace?kind='+role,{headers});assert.equal(res.status,403,'Patient must not access '+role);
  }
  console.log('PASS role isolation for five restricted workspaces');
+ for(const [route,expected] of [['/api/admin/accounts',403],['/api/admin/accounts?role=patient',403],['/api/account/overview?section=subscription&role=doctor',403],['/api/account/overview?section=schedule&role=doctor',403],['/api/account/overview?section=visits&role=representative',403],['/api/account/overview?section=notifications&role=patient',200]]){
+ const r=await fetch(base+route,{headers});assert.equal(r.status,expected,route);console.log('PASS '+route+' HTTP '+expected);
+ }
+ for(const [route,expected] of [['/api/admin/accounts',403],['/api/appointments/decision',503]]){
+ const r=await fetch(base+route,{method:'POST',headers:{...headers,Origin:base,'Content-Type':'application/json'},body:'{}'});assert.equal(r.status,expected,route);console.log('PASS protected write '+route);
+ }
+ const unauth=await fetch(base+'/api/admin/accounts');assert.equal(unauth.status,401);console.log('PASS unauthenticated admin denied');
+ const keyRes=await fetch(base+'/api/appointments/request',{headers});assert.equal(keyRes.status,200);const bookingKey=await keyRes.json();assert.equal(bookingKey.writesEnabled,false);assert.match(bookingKey.requestId,/^[0-9a-f-]{36}$/i);console.log('PASS booking request identifier and closed write gate');
  const blocked=await fetch(base+'/api/appointments/request',{method:'POST',headers:{...headers,Origin:base,'Content-Type':'application/json'},body:'{}'});assert.equal(blocked.status,503);console.log('PASS booking gate remains closed');
 }finally{
  if(token){try{const res=await fetch(base+'/api/auth/logout',{method:'POST',headers:{Authorization:'Bearer '+token,Origin:base}});console.log('Local session sign-out HTTP '+res.status);}catch{console.log('Local session sign-out unavailable');}}
