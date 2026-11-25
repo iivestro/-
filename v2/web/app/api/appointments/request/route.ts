@@ -1,3 +1,4 @@
+import {recordOperationalEvent} from '../../../../lib/monitoring';
 import {randomUUID} from 'node:crypto';
 import {authConfig,approvedPatient} from '../../../../lib/auth';
 export const dynamic='force-dynamic';
@@ -29,7 +30,7 @@ export async function POST(request:Request){
  if(res.status===409)return reply({error:'Booking conflict'},409);
  if(res.status===400||res.status===422)return reply({error:'Booking unavailable'},422);
  return reply({error:'Unavailable'},503);
- }catch{return reply({error:'Unavailable'},503);}
+ }catch{await recordOperationalEvent('booking');return reply({error:'Unavailable'},503);}
 }
 
 export async function GET(request:Request){
@@ -38,5 +39,5 @@ export async function GET(request:Request){
  const config=authConfig();if(!config)return reply({error:'Unavailable'},503);
  try{const user=await approvedPatient(token);if(user.status!==200)return reply({error:'Unavailable'},user.status);
  return reply({requestId:randomUUID(),writesEnabled:config.url==='https://sfaatbfiwwbvobpvhwxo.supabase.co'&&process.env.STAGING_BOOKING_WRITES==='enabled-after-validation'});
- }catch{return reply({error:'Unavailable'},503);}
+ }catch{await recordOperationalEvent('booking');return reply({error:'Unavailable'},503);}
 }
