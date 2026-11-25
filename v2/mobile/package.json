@@ -12,7 +12,8 @@
   "dependencies": {
     "expo": "~58.0.26",
     "react": "19.3.0",
-    "react-native": "0.88.1"
+    "react-native": "0.88.1",
+    "expo-image-picker": "58.0.10"
   },
   "devDependencies": {
     "@types/react": "~19.3.0",
