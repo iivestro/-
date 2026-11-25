@@ -19,7 +19,7 @@ try {
  assert.ok(ready,'Server startup failed');
  const regHeaders={Origin:base,'Content-Type':'application/json'};
  const signup={accountType:'patient',fullName:'Synthetic Test Patient',phone:'07000000000',governorate:'النجف',email:'not-delivered@example.invalid',password:'Synthetic-test-only-password'};
- for(const [body,expected] of [[{...signup,accountType:'admin'},400],[{...signup,password:'short'},400],[{...signup,accountType:'representative'},400],[signup,503],[{...signup,accountType:'representative',employerType:'company',employerName:'Synthetic Company'},503]]){
+ for(const [body,expected] of [[{...signup,accountType:'admin'},400],[{...signup,password:'short'},400],[{...signup,accountType:'representative'},400],[signup,400],[{...signup,accountType:'representative',employerType:'company',employerName:'Synthetic Company'},503]]){
  const r=await fetch(base+'/api/auth/register',{method:'POST',headers:regHeaders,body:JSON.stringify(body)});assert.equal(r.status,expected,'Registration validation or gate');
  }
  const wrongOrigin=await fetch(base+'/api/auth/register',{method:'POST',headers:{...regHeaders,Origin:'https://invalid.example'},body:JSON.stringify(signup)});assert.equal(wrongOrigin.status,403);console.log('PASS registration validation, forbidden roles, origin and closed gate (no email sent)');
