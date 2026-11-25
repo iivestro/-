@@ -22,3 +22,4 @@ jobs:
       - run: npm audit --audit-level=high
       - run: npm run typecheck
       - run: npm run build
+      - run: node tests/smoke.mjs
