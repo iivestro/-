@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {setTimeout as delay} from 'node:timers/promises';
 const base='http://127.0.0.1:3217';
-const server=spawn(process.execPath,['node_modules/next/dist/bin/next','start','-H','127.0.0.1','-p','3217'],{stdio:'inherit',env:{...process.env,SUPABASE_URL:'',SUPABASE_PUBLISHABLE_KEY:''}});
+const server=spawn(process.execPath,['node_modules/next/dist/bin/next','start','-H','127.0.0.1','-p','3217'],{stdio:'inherit',env:{...process.env,APP_ORIGIN:base,SUPABASE_URL:'',SUPABASE_PUBLISHABLE_KEY:''}});
 try {
  let ready=false;
  for(let i=0;i<60;i++){try{if((await fetch(base+'/api/health')).ok){ready=true;break;}}catch{} await delay(500);}
