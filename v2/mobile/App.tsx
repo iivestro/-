@@ -1,5 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
 import {ActivityIndicator,Pressable,ScrollView,StatusBar,StyleSheet,Text,TextInput,View} from 'react-native';
+declare const process: {env:{EXPO_PUBLIC_PATIENT_API_URL?:string}};
 const rawBase=process.env.EXPO_PUBLIC_PATIENT_API_URL??'';
 function apiOrigin(){try{const u=new URL(rawBase);return u.protocol==='https:'&&!u.username&&!u.password&&u.pathname==='/'&&!u.search&&!u.hash?u.origin:null;}catch{return null;}}
 const base=apiOrigin();
