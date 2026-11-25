@@ -325,7 +325,7 @@ async function signup(){
  message("جاري إنشاء الحساب...");
  const {error}=await db.auth.signUp({
   email,password,
-  options:{emailRedirectTo:"https://iivestro.github.io/-/",data:{full_name,phone,age:String(age),governorate}}
+  options:{data:{full_name,phone,age:String(age),governorate}}
  });
 
  if(error){message("تعذر إنشاء الحساب: "+error.message);return;}
