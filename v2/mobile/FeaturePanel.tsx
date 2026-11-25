@@ -10,7 +10,15 @@ export default function FeaturePanel({token,role,base}:{token:string;role:string
  useEffect(()=>()=>active.current?.abort(),[token]);
  async function run(action:string,data:Record<string,unknown>={}){
  if(busy||!base)return;setBusy(true);setNotice('');setResult(null);const ctl=new AbortController();active.current=ctl;const timer=setTimeout(()=>ctl.abort(),12000);
- try{const r=await fetch(base+'/api/features',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',Origin:base},body:JSON.stringify({action,data}),signal:ctl.signal});if(!r.ok)throw Error(r.status===503?'الوظائف الجديدة قيد الاختبار ولم تُفعّل بعد.':'تعذر تنفيذ الطلب. تحقق من البيانات والصلاحية.');const json=await r.json();if(!ctl.signal.aborted)setResult(json.result);}
+ try{const r=await fetch(base+'/api/features',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',Origin:base},body:JSON.stringify({action,data}),signal:ctl.signal});if(!r.ok)throw Error(r.status===503?'الوظائف الجديدة قيد الاختبار ولم تُفعّل بعد.':'تعذر تنفيذ الطلب. تحقق من البيانات والصلاحية.');const json=await r.json();
+ const refreshAction:Record<string,string>={support_create:'support_list',support_reply:'support_list',queue_checkin:'queue_provider',queue_update:'queue_provider'};
+ const next=refreshAction[action];
+ if(next&&!ctl.signal.aborted){
+ const feature=features.find(f=>f.action===next&&f.roles.includes(role));
+ if(feature){setSelected(feature);setForm({});}
+ const refreshed=await fetch(base+'/api/features',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',Origin:base},body:JSON.stringify({action:next,data:{}}),cache:'no-store',signal:ctl.signal});
+ if(!ctl.signal.aborted){if(refreshed.ok){const fresh=await refreshed.json();setResult(fresh.result);setNotice('تم تنفيذ الطلب.');}else{setNotice('تم تنفيذ الطلب؛ اضغط تحديث لعرض القائمة.');}}
+ }else if(!ctl.signal.aborted)setResult(json.result);}
  catch(e){if(!ctl.signal.aborted)setNotice(e instanceof Error?e.message:'تعذر الاتصال.');}
  finally{clearTimeout(timer);if(active.current===ctl){active.current=null;setBusy(false);}}
  }
@@ -36,7 +44,7 @@ export default function FeaturePanel({token,role,base}:{token:string;role:string
  {selected.fields?button('تنفيذ',submit,true):button('تحديث',()=>void run(selected.action))}
  {selected.action==='nearby'&&<>{button('استخدام موقعي بعد إذني',()=>void locate())}<Text style={s.note}>يُستخدم الموقع لهذا البحث فقط، ولا يتم تتبعك في الخلفية.</Text></>}
  {Array.isArray(result)&&result.length===0&&<Text style={s.note}>لا توجد نتائج.</Text>}
- {rows.map((row,i)=><View key={String(row.id??i)} style={s.inner}>{Object.entries(row).filter(([k])=>k!=='id').map(([k,v])=><Text style={s.note} key={k}>{labels[k]??k}: {display(v)}</Text>)}
+ {rows.map((row,i)=><View key={String(row.id??i)} style={s.inner}>{Object.entries(row).filter(([k])=>!['id','booking_id','provider_id'].includes(k)).map(([k,v])=><Text style={s.note} key={k}>{labels[k]??k}: {display(v)}</Text>)}
  {selected.action==='support_list'&&['admin','staff'].includes(role)&&row.status==='open'&&<><TextInput accessibilityLabel="رد الإدارة" placeholder="اكتب الرد" style={s.input} value={form['reply_'+row.id]??''} onChangeText={v=>setForm(f=>({...f,['reply_'+row.id]:v}))} maxLength={2000}/>{button('إرسال الرد',()=>void run('support_reply',{id:row.id,reply:form['reply_'+row.id]??''}),true)}</>}
  {selected.action==='queue_bookings'&&button('تسجيل الحضور وإصدار الدور',()=>void run('queue_checkin',{booking_id:row.id,kind:role==='doctor'?'doctor':'center'}),true)}
  {selected.action==='queue_provider'&&['waiting','called'].includes(String(row.state))&&<>{row.state==='waiting'?button('نداء المراجع',()=>void run('queue_update',{id:row.id,state:'called'}),true):button('إنهاء الدور',()=>void run('queue_update',{id:row.id,state:'completed'}),true)}{button('إلغاء الدور',()=>void run('queue_update',{id:row.id,state:'cancelled'}))}</>}
