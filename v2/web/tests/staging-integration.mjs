@@ -11,7 +11,7 @@ assert.ok(fixture.includes(staging),'Staging fixture mismatch');
 const key=fixture.match(/const key='(sb_publishable_[A-Za-z0-9_-]+)'/)?.[1];
 const creds=fixture.match(/JSON\.stringify\(\{email:'([^'\\]+)',password:'([^'\\]+)'\}\)/);
 assert.ok(key&&creds,'Synthetic fixture format changed');
-const server=spawn(process.execPath,['node_modules/next/dist/bin/next','start','-H','127.0.0.1','-p','3218'],{stdio:'ignore',env:{...process.env,APP_ORIGIN:base,SUPABASE_URL:staging,SUPABASE_PUBLISHABLE_KEY:key,STAGING_BOOKING_WRITES:'disabled',STAGING_ADMIN_WRITES:'disabled'}});
+const server=spawn(process.execPath,['node_modules/next/dist/bin/next','start','-H','127.0.0.1','-p','3218'],{stdio:'ignore',env:{...process.env,APP_ORIGIN:base,SUPABASE_URL:staging,SUPABASE_PUBLISHABLE_KEY:key,STAGING_BOOKING_WRITES:'disabled',STAGING_ADMIN_WRITES:'disabled',STAGING_SERVICE_WRITES:'disabled'}});
 let token;
 try {
  let ready=false;
@@ -37,6 +37,12 @@ try {
  }
  for(const [route,expected] of [['/api/admin/accounts',403],['/api/appointments/decision',503]]){
  const r=await fetch(base+route,{method:'POST',headers:{...headers,Origin:base,'Content-Type':'application/json'},body:'{}'});assert.equal(r.status,expected,route);console.log('PASS protected write '+route);
+ }
+ for(const [section,status] of [['home_directory',200],['home_requests',200],['doctor_visits',403],['admin_doctors',403],['admin_centers',403],['admin_reps',403]]){
+ const r=await fetch(base+'/api/services/catalog?section='+section,{headers});assert.equal(r.status,status,section);console.log('PASS service catalog '+section+' HTTP '+status);
+ }
+ for(const [action,status] of [['home_book',503],['schedule_save',403],['visit_book',403],['visit_decide',403],['home_progress',403],['renew_rep',403],['renew_clinical',403]]){
+ const r=await fetch(base+'/api/services/actions',{method:'POST',headers:{...headers,Origin:base,'Content-Type':'application/json'},body:JSON.stringify({action})});assert.equal(r.status,status,action);console.log('PASS service action authorization '+action+' HTTP '+status);
  }
  const unauth=await fetch(base+'/api/admin/accounts');assert.equal(unauth.status,401);console.log('PASS unauthenticated admin denied');
  const keyRes=await fetch(base+'/api/appointments/request',{headers});assert.equal(keyRes.status,200);const bookingKey=await keyRes.json();assert.equal(bookingKey.writesEnabled,false);assert.match(bookingKey.requestId,/^[0-9a-f-]{36}$/i);console.log('PASS booking request identifier and closed write gate');
