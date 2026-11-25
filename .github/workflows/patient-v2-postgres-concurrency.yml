@@ -1,0 +1,37 @@
+name: PATIENT v2 PostgreSQL isolated tests
+on:
+  push:
+    branches: [patient-v2]
+    paths: ['.github/workflows/patient-v2-postgres-concurrency.yml','v2/tests/booking-concurrency*','v2/sql/booking-*-proposal.sql']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: ci-isolated-local-only
+          POSTGRES_DB: patient_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d patient_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: ci-isolated-local-only
+      PGDATABASE: patient_ci
+    steps:
+      - uses: actions/checkout@v4
+      - run: psql -X -v ON_ERROR_STOP=1 -f v2/tests/booking-concurrency-schema.sql
+      - run: psql -X -v ON_ERROR_STOP=1 -f v2/sql/booking-uniqueness-proposal.sql
+      - run: psql -X -v ON_ERROR_STOP=1 -f v2/sql/booking-capacity-proposal.sql
+      - run: python3 v2/tests/booking-concurrency.py
