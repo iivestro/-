@@ -1,12 +1,3 @@
-const portals = [
- ['بوابة المراجع','الدخول إلى خدمات المراجعين والحجوزات الطبية.'],
- ['بوابة مقدمي الرعاية المنزلية','المختبرات والتمريض وإدارة الزيارات.'],
- ['بوابة الطبيب','إدارة حجوزات المراجعين والمندوبين وأوقات الدوام.'],
- ['محادثة الطوارئ','قناة تواصل نصية مع طبيب الطوارئ.'],
- ['بوابة طبيب الطوارئ','استقبال محادثات الطوارئ ومتابعة الردود.'],
- ['بوابة المندوبين','متابعة الزيارات والمواعيد وتنظيم التواصل.'],
- ['بوابة المراكز الطبية','إدارة المركز ومتابعة حجوزات الأطباء التابعين له.']
-] as const;
-export default function Home() {
- return <><header><strong>بيشنت | PATIENT</strong><span>بوابتك للرعاية الصحية الرقمية</span></header><main><section className="hero"><p>رعاية صحية أقرب وأسهل</p><h1>أهلاً بك في بيشنت</h1><p>منصة واحدة تجمع المراجعين والأطباء والمراكز الطبية وخدمات الطوارئ.</p></section><h2>اختر بوابتك</h2><p role="status">نسخة تطويرية — البوابات غير متصلة بعد.</p><section className="grid" aria-label="بوابات المنصة">{portals.map(([title,description])=><article key={title}><h3>{title}</h3><p>{description}</p><button disabled>قيد التطوير</button></article>)}</section></main><footer>© 2026 PATIENT — جميع الحقوق محفوظة</footer></>;
-}
+import Link from 'next/link';
+import {portals} from '../lib/portals';
+export default function Home(){return <><header><strong>بيشنت | PATIENT</strong><span>بوابتك للرعاية الصحية الرقمية</span></header><main><section className="hero"><p>رعاية صحية أقرب وأسهل</p><h1>أهلاً بك في بيشنت</h1><p>منصة واحدة تجمع المراجعين والأطباء والمراكز الطبية.</p></section><h2>اختر بوابتك</h2><p role="status">نسخة تطويرية — معاينة الواجهات فقط.</p><section className="grid" aria-label="بوابات المنصة">{portals.filter(p=>p.slug!=='admin').map(p=><article key={p.slug}><h3>{p.title}</h3><p>{p.description}</p><Link className="portal-link" href={'/portal/'+p.slug}>معاينة البوابة</Link></article>)}</section></main><footer>© 2026 PATIENT</footer></>;}
