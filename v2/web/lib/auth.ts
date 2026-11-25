@@ -14,3 +14,17 @@ export async function verifyUser(token:string) {
  if(typeof user!=='object'||user===null||!('id' in user)||typeof user.id!=='string') return null;
  return {id:user.id};
 }
+
+export async function approvedPatient(token:string):Promise<{status:200;id:string}|{status:401|403|503}> {
+ const config=authConfig();if(!config)return {status:503};
+ const user=await verifyUser(token);if(!user)return {status:401};
+ if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.id))return {status:503};
+ const url=new URL(config.url+'/rest/v1/profiles');
+ url.searchParams.set('id','eq.'+user.id);url.searchParams.set('select','id,role,approval_status');url.searchParams.set('limit','1');
+ const res=await fetch(url,{headers:{apikey:config.key,Authorization:'Bearer '+token},cache:'no-store',redirect:'error',signal:AbortSignal.timeout(5000)});
+ if(!res.ok)return {status:503};
+ const data:unknown=await res.json();if(!Array.isArray(data))return {status:503};
+ const profile=data[0];
+ if(profile?.id!==user.id||profile?.role!=='patient'||profile?.approval_status!=='approved')return {status:403};
+ return {status:200,id:user.id};
+}
