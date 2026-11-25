@@ -17,7 +17,17 @@
           "cameraPermission": false,
           "microphonePermission": false
         }
-      ]
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "يسمح لك بيشنت بتحديد موقعك عند البحث عن مقدمي الخدمات القريبين فقط.",
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": false
+        }
+      ],
+      "expo-notifications"
     ]
   }
 }
