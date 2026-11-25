@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f5fbff">
+<title>بلسم | BALSAM - بوابة المراجعين</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2"></script>
+<style>
+*{box-sizing:border-box}
+:root{--primary:#35b8e6;--dark:#087fae;--light:#eaf8ff;--page:#f4faff;--text:#183447;--muted:#647f91;--border:#cceaf6;--navy:#123b55}
+body{margin:0;background:var(--page);color:var(--text);font-family:Tahoma,Arial,sans-serif;line-height:1.75;min-height:100vh}
+.topbar{position:sticky;top:0;z-index:20;background:#ffffffed;border-bottom:1px solid var(--border);padding:10px 4%}
+.topbar-inner{max-width:1250px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.brand{font-weight:bold;color:var(--navy);font-size:18px}
+.top-actions{display:flex;gap:8px;align-items:center}
+main{max-width:1250px;margin:auto;padding:25px 20px 90px}
+.hero{background:linear-gradient(115deg,#0d668c,#159fc9,#48c7e9);color:white;padding:35px;border-radius:22px;margin-bottom:22px}
+.hero h1{font-size:clamp(27px,4vw,42px);margin:0 0 8px}
+.hero p{margin:0;color:#effaff}
+.card{background:white;border:1px solid var(--border);border-radius:18px;padding:23px;margin-bottom:20px;box-shadow:0 8px 25px #166f9710}
+h2{color:var(--navy);font-size:22px;margin:0 0 12px}
+h3{color:var(--navy);margin:0 0 8px}
+label{display:block;font-size:13px;font-weight:bold;color:#36576b}
+input,select,textarea{width:100%;padding:13px;margin:7px 0 14px;border:1px solid #c5e4f0;border-radius:10px;background:#fbfeff;font-size:15px;color:var(--text)}
+button{border:0;border-radius:10px;background:linear-gradient(120deg,#35b8e6,#159bc9);color:white;font-weight:bold;padding:12px 16px;cursor:pointer;margin-top:8px}
+button:disabled{opacity:.5;cursor:not-allowed}
+.secondary{background:#e9f8ff;color:var(--dark);border:1px solid #c7eafa}
+.hidden{display:none!important}
+.msg{color:var(--dark);overflow-wrap:anywhere}
+.muted{color:var(--muted);font-size:13px}
+.tabs,.portal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:15px 0}
+.tabs button{margin:0}
+.portal-card{background:#f5fcff;border:1px solid var(--border);border-radius:16px;padding:22px;text-align:right;min-height:120px}
+.portal-card strong{display:block;font-size:18px;color:var(--navy);margin-bottom:8px}
+.portal-card span{font-size:13px;color:var(--muted)}
+#centerList,#doctorList,#myAppointmentsList{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.center-card,.doctor{background:white;border:1px solid var(--border);border-radius:15px;padding:17px;box-shadow:0 5px 18px #166f970b}
+.center-card h3,.doctor-name{color:var(--dark)}
+.doctor-toggle{width:100%;display:flex;align-items:center;gap:12px;text-align:right;background:transparent;color:var(--text);padding:0;margin:0;box-shadow:none}
+.doctor-photo{width:72px;height:72px;object-fit:cover;border-radius:14px;border:2px solid var(--primary)}
+.doctor-specialty{font-size:13px;color:var(--muted)}
+.doctor-details{border-top:1px solid var(--border);margin-top:12px;padding-top:12px}
+.info{padding:8px 10px;background:var(--light);border-radius:8px;margin:6px 0;font-size:13px}
+.search-wrap{max-width:700px;margin:15px auto}
+.search-wrap input{margin:0}
+.portal-back{width:auto;margin:0 0 15px}
+#booking{grid-column:1/-1;border-top:1px solid var(--border);padding-top:15px;margin-top:15px}
+#myBookingsButton{position:fixed;bottom:20px;right:20px;z-index:30;border-radius:30px;padding:14px 22px;box-shadow:0 5px 20px #087fae44}
+.status-box{padding:14px;border-radius:10px;margin-top:10px}
+.status-pending{background:#fff8e7;color:#85631a}
+.status-rejected{background:#fff0f1;color:#a83245}
+.booking-status-label{display:inline-block;padding:4px 12px;border-radius:20px;background:#eaf8ff;font-weight:bold}
+@media(max-width:600px){main{padding:15px 12px 90px}.hero{padding:25px 20px}.card{padding:17px}.portal-grid,.tabs{grid-template-columns:1fr}.topbar-inner{flex-wrap:wrap}.brand{font-size:14px}.top-actions button{font-size:11px;padding:8px}}
+
+/* BALSAM Signature Medical UI */
+:root{--primary:#0e9f9a;--dark:#123b55;--light:#e8f7f5;--page:#f3f8fa;--text:#183447;--muted:#60798a;--border:#d8e7eb;--navy:#102f46;--shadow:0 16px 42px rgba(16,47,70,.08)}
+body{background:radial-gradient(ellipse at 8% 0%,rgba(14,159,154,.10),transparent 34%),radial-gradient(ellipse at 94% 18%,rgba(44,126,180,.08),transparent 30%),var(--page);color:var(--text);font-family:"Segoe UI",Tahoma,Arial,sans-serif}
+.topbar{background:rgba(255,255,255,.88);backdrop-filter:blur(18px);border-bottom:1px solid rgba(216,231,235,.9);box-shadow:0 5px 24px rgba(16,47,70,.04)}
+.brand{display:flex;align-items:center;gap:10px;color:var(--navy);letter-spacing:.2px}
+.brand:before{content:"✚";display:grid;place-items:center;width:36px;height:36px;border-radius:12px;color:white;background:linear-gradient(145deg,#18b9ae,#087c89);box-shadow:0 7px 18px rgba(14,159,154,.25)}
+main{max-width:1320px;padding-top:30px}
+.hero{position:relative;overflow:hidden;isolation:isolate;background:linear-gradient(115deg,#102f46 0%,#125d70 56%,#0e9f9a 100%);border:1px solid rgba(255,255,255,.16);border-radius:30px;padding:clamp(28px,5vw,54px);box-shadow:0 24px 55px rgba(16,47,70,.18)}
+.hero:before,.hero:after{content:"";position:absolute;border:1px solid rgba(255,255,255,.12);border-radius:50%;z-index:-1}
+.hero:before{width:330px;height:330px;inset:-160px auto auto -65px;box-shadow:0 0 0 32px rgba(255,255,255,.025),0 0 0 68px rgba(255,255,255,.02)}
+.hero:after{width:210px;height:210px;inset:auto 7% -145px auto;background:rgba(255,255,255,.045)}
+.hero h1{letter-spacing:-.5px;text-shadow:0 3px 20px rgba(0,0,0,.12)}
+.hero p{max-width:720px;color:rgba(255,255,255,.86)}
+.card,.center-card,.doctor{background:rgba(255,255,255,.96);border:1px solid rgba(216,231,235,.95);border-radius:22px;box-shadow:var(--shadow);padding:clamp(18px,2.4vw,28px)}
+.card h2,.card h3{color:var(--navy);letter-spacing:-.2px}
+button{min-height:44px;border-radius:13px;background:linear-gradient(135deg,#109e9a,#087c89);box-shadow:0 6px 15px rgba(14,159,154,.16);transition:transform .18s ease,box-shadow .18s ease,filter .18s ease}
+button:hover{filter:brightness(1.04);transform:translateY(-1px);box-shadow:0 10px 22px rgba(14,159,154,.2)}
+button.secondary{background:#edf6f7;color:#245468;border:1px solid #d5e7e9;box-shadow:none}
+input,select,textarea{min-height:46px;border:1px solid #d6e4e8;border-radius:12px;background:#fbfdfe;padding:11px 13px;transition:border-color .18s,box-shadow .18s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#109e9a;box-shadow:0 0 0 4px rgba(16,158,154,.12);background:white}
+label{display:block;margin:10px 0 5px;color:#355568;font-weight:700;font-size:13px}
+.portal-card{min-height:150px;text-align:right;border:1px solid #d9e9ec;background:linear-gradient(145deg,#fff,#f1f8f8);color:var(--navy);box-shadow:none;padding:22px}
+.portal-card strong{display:block;font-size:18px;margin-bottom:8px;color:#0d7778}
+.portal-card span{display:block;color:#617b89;font-weight:400;line-height:1.8}
+.portal-card:hover{border-color:#7dcac4;background:#f0fbfa}
+.search-wrap input{box-shadow:0 8px 24px rgba(16,47,70,.06)}
+.info{background:#eff8f8;border:1px solid #e0eeee;border-radius:12px}
+#myBookingsButton{background:linear-gradient(135deg,#123b55,#0e9f9a);border:2px solid white;box-shadow:0 12px 28px rgba(16,47,70,.24)}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important}}
+
+
+/* Provider directory refresh */
+#centerList,#doctorList{align-items:stretch;gap:18px}
+.center-card,.doctor{position:relative;overflow:hidden;padding:0;border:1px solid #dce9eb;border-radius:22px;background:#fff;box-shadow:0 12px 30px rgba(16,47,70,.07);transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
+.center-card:hover,.doctor:hover{transform:translateY(-3px);border-color:#a8d9d5;box-shadow:0 18px 38px rgba(16,47,70,.11)}
+.center-card{display:flex;flex-direction:column;min-height:100%}
+.center-cover{height:150px;position:relative;background:linear-gradient(135deg,#10394f,#147e82 65%,#27b5a8);overflow:hidden}
+.center-cover:after{content:"✚";position:absolute;left:22px;top:10px;font-size:100px;line-height:1;color:#ffffff18;font-weight:900}
+.center-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.center-cover-fallback{height:100%;display:grid;place-items:center;color:#fff;font-size:48px;font-weight:800}
+.center-content{padding:18px 19px 19px;display:flex;flex-direction:column;flex:1}
+.center-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}
+.center-heading h3{font-size:18px;line-height:1.5;margin:0;color:#123b55}
+.provider-kind{white-space:nowrap;background:#e9f7f5;color:#087c78;border:1px solid #d5eeea;border-radius:30px;padding:4px 9px;font-size:11px;font-weight:800}
+.center-meta{display:grid;gap:8px;margin:0 0 16px}
+.center-meta-row{display:flex;align-items:flex-start;gap:9px;color:#617b89;font-size:13px;line-height:1.7}
+.center-meta-row b{color:#294c5d;font-weight:700}
+.center-card>button,.center-content>button{width:100%;margin-top:auto}
+.doctor{padding:17px}
+.doctor-toggle{display:grid;grid-template-columns:82px minmax(0,1fr) 24px;align-items:center;gap:14px;width:100%;min-height:82px;padding:0;background:transparent!important;color:inherit!important;box-shadow:none!important;text-align:right}
+.doctor-toggle:after{content:"⌄";font-size:23px;color:#0e9f9a;align-self:center;transition:transform .2s}
+.doctor-toggle[aria-expanded="true"]:after{transform:rotate(180deg)}
+.doctor-photo{width:82px;height:82px;object-fit:cover;border-radius:19px;border:1px solid #d9e9e9;background:#eef7f6;box-shadow:0 5px 14px #123b5510}
+.doctor-summary{min-width:0;display:grid;gap:5px}
+.doctor-name{font-size:16px;line-height:1.5;font-weight:800;color:#123b55;overflow-wrap:anywhere}
+.doctor-specialty{display:inline-flex;align-items:center;width:fit-content;max-width:100%;padding:3px 10px;border-radius:30px;background:#eaf7f5;color:#087c78;font-size:12px;font-weight:700}
+.doctor-subline{font-size:12px;color:#718795}
+.doctor-details{border-top:1px solid #e6eeee;margin-top:16px;padding-top:15px;display:grid;gap:8px}
+.doctor-details .info{margin:0;padding:10px 12px;background:#f5f9f9;border:1px solid #e7efef;border-radius:12px;color:#38586a}
+.doctor-details .muted{line-height:1.9;margin:3px 0}
+.doctor-details button{width:100%;margin-top:7px}
+#centerSearchInfo{padding:0 4px}
+@media(max-width:600px){
+ #centerList,#doctorList{grid-template-columns:1fr}
+ .center-cover{height:132px}
+ .doctor{padding:14px}
+ .doctor-toggle{grid-template-columns:70px minmax(0,1fr) 20px;gap:11px}
+ .doctor-photo{width:70px;height:70px;border-radius:16px}
+ .center-content{padding:16px}
+}
+
+
+/* BALSAM — unified medical identity */
+:root{--primary:#087f83;--dark:#12656c;--light:#e8f7f5;--page:#f4faf9;--text:#173e4a;--muted:#506d77;--border:#dcebea;--navy:#153b49;--shadow:0 12px 32px rgba(16,74,78,.08)}
+body{margin:0;min-height:100vh;font-family:"Segoe UI",Tahoma,Arial,sans-serif;color:var(--text);background:radial-gradient(ellipse at 95% 0%,#def3f0 0,transparent 38%),#f4faf9;line-height:1.75}
+.topbar{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--border);box-shadow:0 4px 20px #123b4909}
+.topbar-inner{max-width:1150px;margin:auto;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-size:17px;color:#153b49;font-weight:800;line-height:1.45;min-width:0}
+.brand-mark{width:42px;height:42px;flex:none;border-radius:14px;display:grid;place-items:center;color:white;background:linear-gradient(145deg,#12a6a0,#08777e);box-shadow:0 6px 18px #087f8326}
+.brand-mark svg{width:25px;height:25px}
+.brand-sub{display:block;color:#506d77;font-size:12px;font-weight:500}
+.top-link{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;border:1px solid #cde5e1;border-radius:12px;background:#f1f9f8;color:#12656c;font-weight:700;font-size:13px;padding:8px 13px;text-decoration:none;white-space:nowrap}
+.top-link svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+main{max-width:1050px;margin:auto;padding:24px 18px 65px}
+.hero{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:15px;min-height:178px;padding:30px;border:0;border-radius:24px;color:#fff;background:linear-gradient(120deg,#125863,#087f83 62%,#129e96);box-shadow:0 16px 36px #087f8324;margin:0 0 22px}
+.hero:before,.hero:after{content:"";position:absolute;z-index:-1;border:1px solid #ffffff26;border-radius:50%;pointer-events:none}
+.hero:before{width:300px;height:300px;left:-110px;top:-170px;box-shadow:0 0 0 35px #ffffff08,0 0 0 70px #ffffff06}
+.hero:after{width:190px;height:190px;right:10%;bottom:-140px}
+.hero-content{position:relative;z-index:1;min-width:0}
+.hero-tag{display:inline-block;padding:4px 11px;color:white;background:#ffffff18;border:1px solid #ffffff30;border-radius:24px;font-size:12px}
+.hero h1{margin:8px 0;font-size:clamp(25px,4vw,36px);line-height:1.4;color:#fff}
+.hero p{font-size:14px;color:#f0fffd;margin:0;line-height:1.85}
+.hero-art{display:grid;place-items:center;width:92px;height:92px;flex:0 0 92px;border:1px solid #ffffff38;border-radius:24px;background:#ffffff13;color:#e5fffa}
+.hero-art svg{width:52px;height:52px;stroke:currentColor;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round;fill:none}
+.card{background:#fff;border:1px solid var(--border);border-radius:22px;padding:24px;box-shadow:var(--shadow)}
+.card h2,h2{color:var(--navy);line-height:1.45}
+label{color:#335663;font-weight:700}
+input,select,textarea{font-size:16px;min-height:46px;border:1px solid #cde2e4;background:#fbfdfd;border-radius:12px;color:var(--text)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#087f83;box-shadow:0 0 0 3px #087f831b}
+button{font-family:inherit;min-height:44px;background:linear-gradient(135deg,#087f83,#076c77);color:white;border-radius:12px;font-size:14px}
+button.secondary{background:#eaf6f4;color:#12656c;border:1px solid #cde5e1;box-shadow:none}
+button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3px}
+.tabs{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#signupPanel>button,#loginPanel>button{width:100%}
+@media(max-width:650px){main{padding:16px 13px 65px}.topbar-inner{padding:10px 13px}.brand{font-size:15px}.brand-mark{width:38px;height:38px}.brand-sub{font-size:11px}.top-link{font-size:12px;padding:7px 11px}.hero{min-height:155px;padding:22px 19px;gap:10px;border-radius:22px}.hero-art{width:64px;height:64px;flex-basis:64px;border-radius:18px}.hero-art svg{width:39px;height:39px}.hero p{font-size:13px}.card{padding:18px;border-radius:19px}.tabs button{font-size:13px;padding:10px 7px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important}}
+
+.brand:before{content:none}
+.top-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.top-actions button{margin:0;font-size:13px;padding:8px 12px}
+@media(max-width:600px){.top-actions{width:100%}.top-actions button{flex:1}.tabs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+<meta name="application-name" content="بلسم"><meta name="apple-mobile-web-app-title" content="بلسم"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/svg+xml" href="./assets/balsam-icon.svg"><link rel="apple-touch-icon" href="./assets/balsam-192.png"></head>
+<body><div dir="rtl" style="position:sticky;top:0;z-index:99999;padding:9px 12px;background:#fff4d6;color:#6b4610;border-bottom:1px solid #e8c766;text-align:center;font:700 13px/1.5 Arial,sans-serif">⚠️ نسخة بلسم التجريبية — بيانات تدريب فقط، لا تُدخل معلومات مرضى حقيقية</div>
+
+<header class="topbar">
+ <div class="topbar-inner">
+  <div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16 4v24M4 16h24" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><path d="M2 17h7l3-6 5 11 3-6h10" stroke="#baf8eb" stroke-width="1.8" fill="none" stroke-linejoin="round"/></svg></span><span>بلسم | BALSAM<span class="brand-sub">بوابة المراجع</span></span></div>
+  <a class="top-link" href="index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10l9-7 9 7M5 9v12h14V9M10 21v-7h4v7"/></svg>اللوحة الرئيسية</a><a class="top-link" href="visit-services.html">الخدمات والدعم</a>
+  <div id="portalTopbar" class="top-actions hidden">
+   <button type="button" class="secondary" onclick="refreshPortal()">تحديث الحجوزات</button>
+   <button type="button" onclick="logout()">تسجيل الخروج</button>
+  </div>
+ </div>
+</header>
+
+<main>
+ <div class="hero">
+  <h1>بلسم | BALSAM</h1>
+  <p>رعايتك الطبية تبدأ من هنا</p>
+  <p>اكتشف الأطباء والمراكز الطبية واحجز موعدك بسهولة.</p>
+ </div>
+
+ <section id="auth" class="card">
+  <h2>بوابة المراجع</h2>
+  <div class="tabs">
+   <button type="button" id="signupTab" onclick="showAuthTab('signup')">إنشاء حساب</button>
+   <button type="button" id="loginTab" class="secondary" onclick="showAuthTab('login')">تسجيل الدخول</button>
+  </div>
+
+  <div id="signupPanel">
+   <h3>إنشاء حساب مراجع جديد</h3>
+   <label>الاسم الكامل</label>
+   <input id="name" maxlength="150" placeholder="الاسم الكامل">
+   <label>رقم الهاتف</label>
+   <input id="phone" type="tel" inputmode="numeric" maxlength="11" placeholder="07XXXXXXXXX">
+   <label>العمر</label>
+   <input id="age" type="number" min="1" max="120" placeholder="العمر">
+   <label>المحافظة</label>
+   <select id="governorate">
+    <option value="">اختر المحافظة</option>
+    <option>بغداد</option><option>نينوى</option><option>البصرة</option><option>النجف</option><option>كربلاء</option><option>بابل</option><option>القادسية</option><option>المثنى</option><option>ذي قار</option><option>ميسان</option><option>واسط</option><option>ديالى</option><option>صلاح الدين</option><option>كركوك</option><option>الأنبار</option><option>أربيل</option><option>السليمانية</option><option>دهوك</option><option>حلبجة</option>
+   </select>
+   <label>البريد الإلكتروني</label>
+   <input id="signupEmail" type="email" placeholder="البريد الإلكتروني">
+   <label>كلمة المرور</label>
+   <input id="signupPassword" type="password" placeholder="6 أحرف على الأقل">
+   <button type="button" onclick="signup()">إنشاء الحساب</button>
+  </div>
+
+  <div id="loginPanel" class="hidden">
+   <h3>تسجيل الدخول</h3>
+   <label>البريد الإلكتروني</label>
+   <input id="email" type="email" placeholder="البريد الإلكتروني">
+   <label>كلمة المرور</label>
+   <input id="password" type="password" placeholder="كلمة المرور">
+   <button type="button" onclick="login()">تسجيل الدخول</button>
+  </div>
+  <p id="message" class="msg"></p>
+ </section>
+
+ <section id="status" class="card hidden">
+  <h2>حالة الحساب</h2>
+  <p id="statusText" class="msg"></p>
+ </section>
+
+ <section id="portalChoices" class="card hidden">
+  <h2>اختر البوابة التي تريد الدخول إليها</h2>
+  <p class="muted">اختر إحدى البوابات الأربع للوصول إلى الرعاية الصحية المناسبة لك.</p>
+  <div class="portal-grid">
+
+   <button type="button" class="portal-card" onclick="openDoctorsPortal()">
+    <strong>🩺 بوابة الأطباء</strong>
+    <span>عرض جميع الأطباء المعتمدين والبحث حسب الاسم والاختصاص.</span>
+   </button>
+   <button type="button" class="portal-card" onclick="openCentersPortal()">
+    <strong>🏥 بوابة المراكز الطبية</strong>
+    <span>استعراض المراكز الطبية واختيار الأطباء الموجودين في كل مركز.</span>
+   </button>
+   <button type="button" class="portal-card" onclick="location.href='home-services.html?kind=laboratory'"><strong>🔬 بوابة المختبرات الطبية</strong><span>اختيار المختبر وطلب سحب العينات من المنزل واستلام النتائج.</span></button>
+   <button type="button" class="portal-card" onclick="location.href='home-services.html?kind=male'"><strong>💙 بوابة التمريض</strong><span>اختيار ممرض أو ممرضة وطلب الرعاية التمريضية المنزلية.</span></button>
+  </div>
+ </section>
+
+ <section id="centers" class="card hidden">
+  <button type="button" class="secondary portal-back" onclick="backToPortals()">← العودة إلى البوابات</button>
+  <h2>المراكز الطبية</h2>
+  <p class="muted">ابحث باسم المركز أو المحافظة أو المنطقة أو رقم الهاتف، ثم اختر المركز لعرض أطبائه.</p>
+  <div class="search-wrap"><input id="centerSearch" type="search" placeholder="ابحث عن مركز طبي..." oninput="filterMedicalCenters()" autocomplete="off"></div>
+  <p id="centerSearchInfo" class="muted" aria-live="polite"></p>
+  <div id="centerList" class="msg">جاري تحميل المراكز...</div>
+  <p id="centerSearchEmpty" class="hidden msg">لا توجد مراكز تطابق عبارة البحث.</p>
+ </section>
+
+ <section id="doctors" class="card hidden">
+  <button type="button" class="secondary portal-back" onclick="backFromDoctors()">← العودة</button>
+  <h2 id="doctorsTitle">الأطباء المعتمدون</h2>
+  <p id="doctorsIntro" class="muted">اختر الطبيب لعرض تفاصيله وحجز موعد معه.</p>
+  <div class="search-wrap">
+   <input id="doctorSearch" type="search" placeholder="ابحث باسم الطبيب أو الاختصاص...">
+  </div>
+  <div id="doctorList" class="msg">جاري تحميل الأطباء...</div>
+  <p id="doctorSearchEmpty" class="hidden msg">لا يوجد طبيب مطابق لبحثك.</p>
+ </section>
+
+ <section id="myAppointments" class="card hidden">
+  <button type="button" class="secondary portal-back" onclick="backToPrevious()">← العودة</button>
+  <h2>حجوزاتي</h2>
+  <div id="myAppointmentsList" class="msg">جاري تحميل الحجوزات...</div>
+ </section>
+</main>
+
+<button id="myBookingsButton" class="hidden" type="button" onclick="openMyAppointments()">▤ حجوزاتي</button>
+
+<script>
+const SUPABASE_URL="https://sfaatbfiwwbvobpvhwxo.supabase.co";
+const SUPABASE_KEY="sb_publishable_CBPPwjIcmVbGK1fr8EHyYg_DlfldbK6";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const el=id=>document.getElementById(id);
+
+let selectedDoctor=null;
+let selectedCenterDoctor=null;
+let selectedSchedules=[];
+let currentCenterId=null;
+let medicalCentersCache=[];
+let previousView="portals";
+let portalRefreshBusy=false;
+
+const DEFAULT_DOCTOR_PHOTO="data:image/svg+xml;charset=UTF-8,"+encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160">
+<rect width="160" height="160" rx="22" fill="#eaf8ff"/>
+<circle cx="80" cy="57" r="29" fill="#38bce8"/>
+<path d="M25 150c5-39 25-58 55-58s50 19 55 58" fill="#38bce8"/>
+</svg>`);
+
+function message(t){el("message").textContent=t;}
+
+function showAuthTab(tab){
+ const signup=tab==="signup";
+ el("signupPanel").classList.toggle("hidden",!signup);
+ el("loginPanel").classList.toggle("hidden",signup);
+ el("signupTab").classList.toggle("secondary",!signup);
+ el("loginTab").classList.toggle("secondary",signup);
+ message("");
+}
+
+async function signup(){
+ const full_name=el("name").value.trim();
+ const phone=el("phone").value.trim();
+ const age=Number(el("age").value);
+ const governorate=el("governorate").value;
+ const email=el("signupEmail").value.trim();
+ const password=el("signupPassword").value;
+
+ if(!full_name||!/^07[0-9]{9}$/.test(phone)||!age||age<1||age>120||!governorate||!email||password.length<6){
+  message("أكمل الحقول وتأكد من رقم الهاتف والعمر وكلمة المرور.");
+  return;
+ }
+
+ message("جاري إنشاء الحساب...");
+ const {error}=await db.auth.signUp({
+  email,password,
+  options:{data:{full_name,phone,age:String(age),governorate}}
+ });
+
+ if(error){message("تعذر إنشاء الحساب: "+error.message);return;}
+ message("تم إنشاء الحساب دون انتظار موافقة الإدارة. تحقق من بريدك الإلكتروني إذا طُلب تأكيده، ثم سجل الدخول.");
+}
+
+async function login(){
+ const email=el("email").value.trim();
+ const password=el("password").value;
+ if(!email||!password){message("أدخل البريد الإلكتروني وكلمة المرور.");return;}
+
+ message("جاري تسجيل الدخول...");
+ const {error}=await db.auth.signInWithPassword({email,password});
+ if(error){message("تعذر تسجيل الدخول: "+error.message);return;}
+ await loadAccount();
+}
+
+async function loadAccount(){
+ const {data:{user}}=await db.auth.getUser();
+ if(!user)return;
+
+ el("portalTopbar").classList.remove("hidden");
+
+ const {data:profile,error}=await db.from("profiles")
+  .select("full_name,role,approval_status")
+  .eq("id",user.id).maybeSingle();
+
+ if(error){
+  el("statusText").textContent="تعذر قراءة حالة الحساب: "+error.message;
+  el("status").classList.remove("hidden");
+  return;
+ }
+
+ if(!profile){
+  el("auth").classList.add("hidden");
+  el("status").classList.remove("hidden");
+  el("statusText").textContent="لم يتم العثور على ملف الحساب. يرجى مراجعة الإدارة.";
+  return;
+ }
+
+ el("auth").classList.add("hidden");
+ hideAllViews();
+ el("status").classList.remove("hidden");
+
+ if(profile.role!=="patient"){
+  el("statusText").textContent="هذا الحساب ليس حساب مراجع.";
+  return;
+ }
+
+ if(profile.approval_status==="rejected"){
+  el("statusText").innerHTML='<div class="status-box status-rejected">تم رفض طلب الحساب. يرجى التواصل مع الإدارة.</div>';
+  return;
+ }
+
+ if(profile.approval_status!=="approved"){
+  el("statusText").innerHTML='<div class="status-box status-pending">مرحباً '+escapeHTML(profile.full_name||"بك")+'. حسابك قيد مراجعة الإدارة، وستظهر البوابات بعد الموافقة.</div>';
+  return;
+ }
+
+ el("status").classList.add("hidden");
+ el("portalChoices").classList.remove("hidden");
+ el("myBookingsButton").classList.remove("hidden");
+ await loadMyAppointments();
+}
+
+function hideAllViews(){
+ ["status","portalChoices","centers","doctors","myAppointments"].forEach(id=>el(id).classList.add("hidden"));
+ el("myBookingsButton").classList.add("hidden");
+}
+
+function backToPortals(){
+ currentCenterId=null;
+ el("centers").classList.add("hidden");
+ el("doctors").classList.add("hidden");
+ el("myAppointments").classList.add("hidden");
+ el("portalChoices").classList.remove("hidden");
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function openDoctorsPortal(){
+ currentCenterId=null;
+ previousView="doctors";
+ el("portalChoices").classList.add("hidden");
+ el("centers").classList.add("hidden");
+ el("doctors").classList.remove("hidden");
+ el("doctorsTitle").textContent="الأطباء المعتمدون";
+ el("doctorsIntro").textContent="استعرض الأطباء المعتمدين واحجز موعدك مع الطبيب مباشرة.";
+ el("doctorSearch").value="";
+ loadDoctors();
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function openCentersPortal(){
+ previousView="centers";
+ el("portalChoices").classList.add("hidden");
+ el("doctors").classList.add("hidden");
+ el("centers").classList.remove("hidden");
+ loadMedicalCenters();
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function backFromDoctors(){
+ if(currentCenterId){
+  currentCenterId=null;
+  el("doctors").classList.add("hidden");
+  el("centers").classList.remove("hidden");
+ }else{
+  backToPortals();
+ }
+}
+
+function normalizeCenterSearch(value){
+ return String(value||"").toLocaleLowerCase("ar")
+  .replace(/[\u064B-\u065F\u0670\u0640]/g,"")
+  .replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه")
+  .replace(/\s+/g," ").trim();
+}
+
+function filterMedicalCenters(){
+ const query=normalizeCenterSearch(el("centerSearch")?.value||"");
+ const filtered=medicalCentersCache.filter(center=>{
+  const searchable=[center.name,center.address,center.city,center.phone]
+   .map(normalizeCenterSearch).join(" ");
+  return !query||searchable.includes(query);
+ });
+ renderMedicalCenters(filtered);
+}
+
+function renderMedicalCenters(centers){
+ const list=el("centerList"),empty=el("centerSearchEmpty"),info=el("centerSearchInfo");
+ list.innerHTML="";
+ if(info)info.textContent=medicalCentersCache.length
+  ? "عدد المراكز المطابقة: "+centers.length+" من "+medicalCentersCache.length
+  : "";
+ if(!centers.length){
+  list.classList.add("hidden");
+  empty?.classList.remove("hidden");
+  return;
+ }
+ list.classList.remove("hidden");
+ empty?.classList.add("hidden");
+ centers.forEach(center=>{
+  const card=document.createElement("article");
+  card.className="center-card";
+  const cover=document.createElement("div");cover.className="center-cover";
+  if(center.image_url){
+   const image=document.createElement("img");image.src=center.image_url;image.alt="صورة "+(center.name||"المركز الطبي");image.loading="lazy";
+   image.onerror=()=>{image.remove();cover.classList.add("center-cover-fallback");cover.textContent="✚";};
+   cover.append(image);
+  }else{cover.classList.add("center-cover-fallback");cover.textContent="✚";}
+  const content=document.createElement("div");content.className="center-content";
+  const heading=document.createElement("div");heading.className="center-heading";
+  const title=document.createElement("h3");title.textContent=center.name||"مركز طبي";
+  const kind=document.createElement("span");kind.className="provider-kind";kind.textContent="مركز طبي";
+  heading.append(title,kind);
+  const meta=document.createElement("div");meta.className="center-meta";
+  const addMeta=(icon,label,value)=>{const row=document.createElement("div");row.className="center-meta-row";const mark=document.createElement("span");mark.textContent=icon;const text=document.createElement("span");const strong=document.createElement("b");strong.textContent=label+" ";text.append(strong,document.createTextNode(value||"غير محدد"));row.append(mark,text);meta.append(row);};
+  addMeta("⌖","العنوان:",center.address||center.city);
+  addMeta("☎","الهاتف:",center.phone);
+  const button=document.createElement("button");button.type="button";button.textContent="استعراض أطباء المركز ←";
+  button.onclick=()=>openCenterDoctors(center.id,center.name||"المركز الطبي");
+  content.append(heading,meta,button);card.append(cover,content);list.appendChild(card);
+ });
+}
+
+async function loadMedicalCenters(){
+ const list=el("centerList");
+ list.classList.remove("hidden");
+ list.textContent="جاري تحميل المراكز الطبية...";
+ if(el("centerSearch"))el("centerSearch").value="";
+ if(el("centerSearchEmpty"))el("centerSearchEmpty").classList.add("hidden");
+ if(el("centerSearchInfo"))el("centerSearchInfo").textContent="";
+ const {data:centers,error}=await db.from("medical_centers")
+  .select("id,name,address,phone,city,maps_url,image_url")
+  .eq("is_active",true)
+  .order("name",{ascending:true});
+ if(error){
+  medicalCentersCache=[];
+  list.textContent="تعذر تحميل المراكز الطبية: "+error.message;
+  return;
+ }
+ medicalCentersCache=centers||[];
+ if(!medicalCentersCache.length){
+  list.textContent="لا توجد مراكز طبية متاحة حالياً.";
+  return;
+ }
+ filterMedicalCenters();
+}
+
+async function openCenterDoctors(centerId,centerName){
+ currentCenterId=centerId;
+ previousView="centers";
+
+ el("centers").classList.add("hidden");
+ el("doctors").classList.remove("hidden");
+
+ el("doctorsTitle").textContent="أطباء "+centerName;
+ el("doctorsIntro").textContent="هذه قائمة الأطباء المرتبطين بهذا المركز. الحجز يتم مع الطبيب الذي تختاره.";
+ el("doctorSearch").value="";
+
+ await loadDoctors(centerId);
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function normalizeSearch(value){
+ return String(value||"").toLocaleLowerCase("ar").normalize("NFD")
+  .replace(/[\u064B-\u065F\u0670]/g,"")
+  .replace(/ـ/g,"").trim();
+}
+
+function filterDoctors(){
+ const query=normalizeSearch(el("doctorSearch").value);
+ const cards=[...el("doctorList").querySelectorAll(".doctor[data-name]")];
+ let visible=0;
+
+ cards.forEach(card=>{
+  const match=!query||
+   card.dataset.name.includes(query)||
+   card.dataset.specialty.includes(query);
+  card.classList.toggle("hidden",!match);
+  if(match)visible++;
+ });
+
+ el("doctorSearchEmpty").classList.toggle("hidden",!query||visible>0);
+}
+
+async function loadDoctors(centerId=null){
+ if(centerId){await loadCenterDoctors(centerId);return;}
+ const list=el("doctorList");
+ list.textContent="جاري تحميل الأطباء...";
+ const {data:doctors,error}=await db.from("doctors")
+  .select("id,profile_id,qualification,experience_years,consultation_fee,bio,photo_url,specialties(name_ar),clinics(name,address,phone,maps_url)");
+ if(error){list.textContent="تعذر تحميل الأطباء: "+error.message;return;}
+ if(!doctors||doctors.length===0){list.textContent="لا توجد سجلات أطباء حالياً.";return;}
+ const profileIds=doctors.map(d=>d.profile_id).filter(Boolean);
+ const {data:profiles,error:profileError}=await db.from("profiles")
+  .select("id,full_name,role,approval_status,phone").in("id",profileIds);
+ if(profileError){list.textContent="تعذر تحميل أسماء الأطباء: "+profileError.message;return;}
+ const approved=(profiles||[]).filter(p=>p.role==="doctor"&&p.approval_status==="approved");
+ const ids=new Set(approved.map(p=>p.id));
+ const visible=doctors.filter(d=>ids.has(d.profile_id));
+ if(!visible.length){list.textContent="لا يوجد أطباء معتمدون للعرض حالياً.";return;}
+ list.innerHTML="";
+ visible.forEach(d=>{
+  const profile=approved.find(p=>p.id===d.profile_id);
+  const item=document.createElement("article");item.className="doctor";
+  item.dataset.name=normalizeSearch(profile.full_name||"");
+  item.dataset.specialty=normalizeSearch(d.specialties?.name_ar||"");
+  const toggle=document.createElement("button");toggle.type="button";toggle.className="doctor-toggle";
+  const photo=document.createElement("img");photo.className="doctor-photo";photo.alt="صورة الطبيب";photo.loading="lazy";photo.src=d.photo_url||DEFAULT_DOCTOR_PHOTO;photo.onerror=()=>{photo.onerror=null;photo.src=DEFAULT_DOCTOR_PHOTO;};
+  const area=document.createElement("div"),title=document.createElement("strong"),specialty=document.createElement("div"),subline=document.createElement("span");
+  area.className="doctor-summary";
+  title.className="doctor-name";title.textContent=profile.full_name||"طبيب";
+  specialty.className="doctor-specialty";specialty.textContent=d.specialties?.name_ar||"اختصاص غير محدد";
+  subline.className="doctor-subline";subline.textContent="طبيب معتمد";
+  area.append(title,specialty,subline);toggle.append(photo,area);toggle.setAttribute("aria-expanded","false");
+  const details=document.createElement("div");details.className="doctor-details hidden";
+  const info=(label,value)=>{const p=document.createElement("div");p.className="info";p.textContent=label+": "+(value??"غير محدد");details.append(p);};
+  info("المؤهل العلمي",d.qualification);info("سنوات الخبرة",d.experience_years);info("أجور الاستشارة",d.consultation_fee);info("العيادة",d.clinics?.name);info("العنوان",d.clinics?.address);
+  if(d.bio){const p=document.createElement("p");p.className="muted";p.textContent=d.bio;details.append(p);}
+  const book=document.createElement("button");book.type="button";book.textContent="اختيار الطبيب وحجز موعد";book.onclick=()=>selectDoctor(d,profile.full_name||"طبيب");details.append(book);
+  toggle.onclick=()=>{const opening=details.classList.contains("hidden");details.classList.toggle("hidden");toggle.setAttribute("aria-expanded",String(opening));};item.append(toggle,details);list.append(item);
+ });
+ filterDoctors();
+}
+
+async function loadCenterDoctors(centerId){
+ const list=el("doctorList");list.textContent="جاري تحميل أطباء المركز...";
+ const {data:doctors,error}=await db.from("center_doctors")
+  .select("id,center_id,profile_id,full_name,specialty,qualification,experience_years,consultation_fee,bio,photo_url,is_active")
+  .eq("center_id",centerId).eq("is_active",true).order("full_name");
+ if(error){list.textContent="تعذر تحميل أطباء المركز: "+error.message;return;}
+ if(!doctors?.length){list.textContent="لا يوجد أطباء نشطون في هذا المركز حالياً.";return;}
+ const ids=doctors.map(d=>d.profile_id).filter(Boolean);
+ if(!ids.length){list.textContent="لا يوجد أطباء مرتبطون بحسابات معتمدة في هذا المركز حالياً.";return;}
+ const {data:profiles,error:pe}=await db.from("profiles").select("id,role,approval_status").in("id",ids);
+ if(pe){list.textContent="تعذر التحقق من اعتماد الأطباء: "+pe.message;return;}
+ const approved=new Set((profiles||[]).filter(p=>p.role==="doctor"&&p.approval_status==="approved").map(p=>p.id));
+ const visible=doctors.filter(d=>d.profile_id&&approved.has(d.profile_id));
+ if(!visible.length){list.textContent="لا يوجد أطباء معتمدون للعرض حالياً.";return;}
+ list.innerHTML="";
+ for(const d of visible){
+  const item=document.createElement("article");item.className="doctor";
+  item.dataset.name=normalizeSearch(d.full_name||"");item.dataset.specialty=normalizeSearch(d.specialty||"");
+  const toggle=document.createElement("button");toggle.type="button";toggle.className="doctor-toggle";
+  const photo=document.createElement("img");photo.className="doctor-photo";photo.alt="صورة الطبيب";photo.loading="lazy";photo.src=d.photo_url||DEFAULT_DOCTOR_PHOTO;photo.onerror=()=>{photo.onerror=null;photo.src=DEFAULT_DOCTOR_PHOTO;};
+  const area=document.createElement("div"),title=document.createElement("strong"),specialty=document.createElement("div"),subline=document.createElement("span");
+  area.className="doctor-summary";
+  title.className="doctor-name";title.textContent=d.full_name||"طبيب";
+  specialty.className="doctor-specialty";specialty.textContent=d.specialty||"اختصاص غير محدد";
+  subline.className="doctor-subline";subline.textContent="ضمن كادر المركز";
+  area.append(title,specialty,subline);toggle.append(photo,area);toggle.setAttribute("aria-expanded","false");
+  const details=document.createElement("div");details.className="doctor-details hidden";
+  const info=(label,value)=>{const p=document.createElement("div");p.className="info";p.textContent=label+": "+(value??"غير محدد");details.append(p);};
+  info("المؤهل العلمي",d.qualification);info("سنوات الخبرة",d.experience_years);info("أجور الاستشارة",d.consultation_fee);
+  if(d.bio){const p=document.createElement("p");p.className="muted";p.textContent=d.bio;details.append(p);}
+  const book=document.createElement("button");book.type="button";book.textContent="اختيار الطبيب وطلب موعد";book.onclick=()=>selectCenterDoctor(d);details.append(book);
+  toggle.onclick=()=>details.classList.toggle("hidden");item.append(toggle,details);list.append(item);
+ }
+ filterDoctors();
+}
+
+async function selectCenterDoctor(doctor){
+ selectedCenterDoctor=doctor;selectedDoctor=null;selectedSchedules=[];
+ const old=el("booking");if(old)old.remove();
+ const panel=document.createElement("div");panel.id="booking";
+ const heading=document.createElement("h3");heading.textContent="طلب موعد مع "+(doctor.full_name||"الطبيب");
+ const msg=document.createElement("p");msg.id="scheduleMessage";msg.className="muted";msg.textContent="جاري تحميل أيام الدوام...";
+ const label=document.createElement("label");label.textContent="اختر يوم المراجعة";
+ const date=document.createElement("input");date.type="date";date.id="appointmentDate";
+ const notesLabel=document.createElement("label");notesLabel.textContent="ملاحظات (اختياري)";
+ const notes=document.createElement("textarea");notes.id="appointmentNotes";notes.rows=3;
+ const button=document.createElement("button");button.id="bookButton";button.textContent="إرسال طلب الحجز";
+ const result=document.createElement("p");result.id="bookingMessage";result.className="msg";
+ panel.append(heading,msg,label,date,notesLabel,notes,button,result);el("doctorList").prepend(panel);
+ const now=new Date(),today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");
+ date.min=today;date.value=today;
+ const {data,error}=await db.from("center_doctor_schedules")
+  .select("day_of_week,start_time,end_time,is_available,unlimited_daily,max_daily_patients")
+  .eq("center_doctor_id",doctor.id).eq("is_available",true);
+ if(error){msg.textContent="تعذر تحميل الدوام: "+error.message;button.disabled=true;return;}
+ selectedSchedules=data||[];
+ if(!selectedSchedules.length){msg.textContent="لم يحدد الطبيب أيام دوام متاحة حالياً.";button.disabled=true;return;}
+ date.addEventListener("change",checkCenterSelectedDay);
+ button.addEventListener("click",bookCenterAppointment);
+ checkCenterSelectedDay();
+}
+
+function checkCenterSelectedDay(){
+ const date=el("appointmentDate")?.value;if(!date)return;
+ const day=new Date(date+"T12:00:00").getDay();
+ const schedule=selectedSchedules.find(s=>Number(s.day_of_week)===day);
+ if(!schedule){el("scheduleMessage").textContent="لا يوجد دوام متاح في هذا اليوم.";el("bookButton").disabled=true;return;}
+ const cap=schedule.unlimited_daily?"العدد اليومي غير محدد":("الحد اليومي: "+schedule.max_daily_patients+" مراجع");
+ el("scheduleMessage").textContent="دوام الطبيب من "+schedule.start_time.slice(0,5)+" إلى "+schedule.end_time.slice(0,5)+" — "+cap+". سيحدد الطبيب ساعة الحضور عند الموافقة.";
+ el("bookButton").disabled=false;
+}
+
+async function bookCenterAppointment(){
+ if(!selectedCenterDoctor)return;
+ const date=el("appointmentDate").value,notes=el("appointmentNotes").value.trim();
+ if(!date){el("bookingMessage").textContent="اختر يوم المراجعة.";return;}
+ const day=new Date(date+"T12:00:00").getDay();
+ if(!selectedSchedules.some(s=>Number(s.day_of_week)===day)){el("bookingMessage").textContent="لا يوجد دوام في اليوم المحدد.";return;}
+ const {data:{user},error:authError}=await db.auth.getUser();
+ if(authError||!user){el("bookingMessage").textContent="انتهت جلسة الدخول. سجل الدخول مجدداً.";return;}
+ const button=el("bookButton");button.disabled=true;el("bookingMessage").textContent="جارٍ إرسال طلب الحجز...";
+ const {error}=await db.from("center_appointments").insert({
+  patient_id:user.id,center_id:selectedCenterDoctor.center_id,center_doctor_id:selectedCenterDoctor.id,
+  requested_date:date,appointment_at:null,status:"pending",notes:notes||null
+ });
+ button.disabled=false;
+ if(error){el("bookingMessage").textContent="تعذر إرسال الطلب: "+error.message;return;}
+ el("bookingMessage").textContent="تم إرسال طلبك. سيحدد الطبيب أو المركز ساعة الحضور عند الموافقة.";
+ await loadMyAppointments();
+}
+async function selectDoctor(doctor,name){
+ selectedCenterDoctor=null;
+ selectedDoctor=doctor;
+ selectedSchedules=[];
+
+ const old=el("booking");
+ if(old)old.remove();
+
+ const panel=document.createElement("div");
+ panel.id="booking";
+
+ const heading=document.createElement("h3");
+ heading.textContent="حجز موعد مع الطبيب: "+name;
+
+ const scheduleMessage=document.createElement("p");
+ scheduleMessage.id="scheduleMessage";
+ scheduleMessage.className="muted";
+ scheduleMessage.textContent="جاري تحميل دوام الطبيب...";
+
+ const dateLabel=document.createElement("label");
+ dateLabel.textContent="تاريخ الموعد";
+
+ const dateInput=document.createElement("input");
+ dateInput.type="date";
+ dateInput.id="appointmentDate";
+
+ const notesLabel=document.createElement("label");
+ notesLabel.textContent="ملاحظات (اختياري)";
+
+ const notes=document.createElement("textarea");
+ notes.id="appointmentNotes";
+ notes.rows=3;
+ notes.placeholder="اكتب ملاحظاتك هنا";
+
+ const book=document.createElement("button");
+ book.id="bookButton";
+ book.textContent="إرسال طلب الحجز";
+
+ const result=document.createElement("p");
+ result.id="bookingMessage";
+ result.className="msg";
+
+ panel.append(heading,scheduleMessage,dateLabel,dateInput,notesLabel,notes,book,result);
+ el("doctorList").prepend(panel);
+
+ const today=new Date();
+ const localToday=[today.getFullYear(),String(today.getMonth()+1).padStart(2,"0"),String(today.getDate()).padStart(2,"0")].join("-");
+
+ dateInput.min=localToday;
+ dateInput.value=localToday;
+ dateInput.addEventListener("change",checkSelectedDay);
+ book.addEventListener("click",bookAppointment);
+
+ const {data,error}=await db.from("doctor_schedules")
+  .select("day_of_week,start_time,end_time,is_available,unlimited_daily,max_daily_patients")
+  .eq("doctor_id",doctor.id)
+  .eq("is_available",true);
+
+ if(error){
+  scheduleMessage.textContent="تعذر تحميل الدوام: "+error.message;
+  return;
+ }
+
+ selectedSchedules=data||[];
+
+ if(selectedSchedules.length===0){
+  scheduleMessage.textContent="الطبيب لم يحدد أوقات دوام متاحة حالياً.";
+  book.disabled=true;
+  return;
+ }
+
+ checkSelectedDay();
+}
+
+function checkSelectedDay(){
+ const date=el("appointmentDate").value;
+ if(!date)return;
+
+ const day=new Date(date+"T12:00:00").getDay();
+ const schedule=selectedSchedules.find(s=>Number(s.day_of_week)===day);
+
+ if(!schedule){
+  el("scheduleMessage").textContent="لا يوجد دوام متاح للطبيب في هذا اليوم.";
+  el("bookButton").disabled=true;
+  return;
+ }
+
+ const cap=schedule.unlimited_daily===false?("الحد اليومي: "+schedule.max_daily_patients+" مراجع"):"العدد اليومي غير محدد";
+ el("scheduleMessage").textContent="دوام الطبيب من "+schedule.start_time.slice(0,5)+" إلى "+schedule.end_time.slice(0,5)+" — "+cap+". سيحدد الطبيب ساعة الحضور عند الموافقة.";
+ el("bookButton").disabled=false;
+}
+
+async function bookAppointment(){
+ if(!selectedDoctor)return;
+ const date=el("appointmentDate").value;
+ const notes=el("appointmentNotes").value.trim();
+ if(!date){el("bookingMessage").textContent="اختر يوم المراجعة.";return;}
+ const day=new Date(date+"T12:00:00").getDay();
+ if(!selectedSchedules.some(s=>Number(s.day_of_week)===day)){el("bookingMessage").textContent="لا يوجد دوام للطبيب في هذا اليوم.";return;}
+ const {data:{user},error:authError}=await db.auth.getUser();
+ if(authError||!user){el("bookingMessage").textContent="انتهت جلسة الدخول. سجل الدخول مجدداً.";return;}
+ const button=el("bookButton");button.disabled=true;el("bookingMessage").textContent="جارٍ إرسال طلب الحجز...";
+ const {data,error}=await db.rpc("patient_request_doctor_appointment",{p_doctor_id:selectedDoctor.id,p_requested_date:date,p_notes:notes||null});
+ button.disabled=false;
+ if(error||!data?.success){el("bookingMessage").textContent="تعذر إرسال طلب الحجز: "+(error?.message||"تعذر التحقق من السعة اليومية");return;}
+ el("bookingMessage").textContent="تم إرسال طلبك. سيحدد الطبيب ساعة الحضور عند الموافقة.";
+ await loadMyAppointments();
+}
+async function loadMyAppointments(){
+ const {data:{user}}=await db.auth.getUser();if(!user)return;
+ const list=el("myAppointmentsList");list.textContent="جاري تحميل الحجوزات...";
+ const [oldResult,centerResult]=await Promise.all([
+  db.from("appointments").select("id,requested_date,appointment_at,status,notes,rejection_reason,doctors(profile_id)").eq("patient_id",user.id).order("requested_date",{ascending:true}),
+  db.from("center_appointments").select("id,requested_date,appointment_at,status,notes,rejection_reason,center_doctors(full_name,specialty),medical_centers(name)").eq("patient_id",user.id).order("requested_date",{ascending:true})
+ ]);
+ if(oldResult.error){list.textContent="تعذر تحميل حجوزات الأطباء المستقلين: "+oldResult.error.message;return;}
+ if(centerResult.error){list.textContent="تعذر تحميل حجوزات المراكز الطبية: "+centerResult.error.message;return;}
+ const oldRows=oldResult.data||[],centerRows=centerResult.data||[];
+ const profileIds=oldRows.map(a=>a.doctors?.profile_id).filter(Boolean);
+ let profiles=[];
+ if(profileIds.length){const p=await db.from("profiles").select("id,full_name").in("id",profileIds);if(!p.error)profiles=p.data||[];}
+ if(!oldRows.length&&!centerRows.length){list.textContent="ليس لديك حجوزات حالياً.";return;}
+ list.innerHTML="";
+ oldRows.forEach(a=>{
+  const card=document.createElement("article");card.className="doctor";
+  const doc=profiles.find(p=>p.id===a.doctors?.profile_id);
+  const title=document.createElement("strong");title.textContent="طبيب مستقل: "+(doc?.full_name||"غير معروف");
+  const date=document.createElement("p");date.textContent="اليوم المطلوب: "+(a.requested_date||"غير محدد")+(a.appointment_at?" | ساعة الحضور: "+new Date(a.appointment_at).toLocaleString("ar-IQ",{dateStyle:"medium",timeStyle:"short"}):" | بانتظار تحديد الساعة");
+  const status=document.createElement("p");status.textContent="حالة الحجز: "+appointmentStatus(a.status);
+  card.append(title,date,status);
+  if(a.rejection_reason){const reason=document.createElement("p");reason.textContent="سبب الرفض: "+a.rejection_reason;card.append(reason);}
+  if(["pending","approved","confirmed"].includes(a.status)){
+   const cancel=document.createElement("button");cancel.type="button";cancel.className="secondary";cancel.textContent="إلغاء الطلب";
+   cancel.onclick=()=>cancelIndependentAppointment(a.id,cancel);card.append(cancel);
+  }
+  list.append(card);
+ });
+ centerRows.forEach(a=>{
+  const card=document.createElement("article");card.className="doctor";
+  const title=document.createElement("strong");title.textContent="مركز طبي: "+(a.medical_centers?.name||"غير معروف")+" — "+(a.center_doctors?.full_name||"الطبيب");
+  const date=document.createElement("p");date.textContent="اليوم المطلوب: "+(a.requested_date||"غير محدد")+(a.appointment_at?" | ساعة الحضور: "+new Date(a.appointment_at).toLocaleTimeString("ar-IQ",{hour:"2-digit",minute:"2-digit"}):" | بانتظار تحديد ساعة الحضور");
+  const status=document.createElement("p");status.textContent="حالة الطلب: "+appointmentStatus(a.status);
+  card.append(title,date,status);
+  if(a.rejection_reason){const reason=document.createElement("p");reason.className="status-box status-rejected";reason.textContent="سبب الرفض: "+a.rejection_reason;card.append(reason);}
+  if(["pending","approved","confirmed"].includes(a.status)){
+   const cancel=document.createElement("button");cancel.type="button";cancel.className="secondary";cancel.textContent="إلغاء الطلب";
+   cancel.onclick=()=>cancelCenterAppointment(a.id,cancel);card.append(cancel);
+  }
+  list.append(card);
+ });
+}
+
+async function cancelIndependentAppointment(id,button){
+ if(!confirm("هل تريد إلغاء طلب الموعد؟"))return;
+ button.disabled=true;
+ const {data,error}=await db.rpc("doctor_decide_appointment",{p_appointment_id:id,p_action:"cancel",p_appointment_at:null,p_rejection_reason:null});
+ if(error||!data?.success){button.disabled=false;alert("تعذر إلغاء الطلب: "+(error?.message||"لم يتم التأكيد"));return;}
+ await loadMyAppointments();
+}
+async function cancelCenterAppointment(id,button){
+ if(!confirm("هل تريد إلغاء هذا الطلب؟"))return;
+ button.disabled=true;
+ const {data,error}=await db.rpc("center_decide_appointment",{p_appointment_id:id,p_action:"cancel",p_appointment_at:null,p_rejection_reason:null});
+ if(error||!data?.success){button.disabled=false;alert("تعذر إلغاء الطلب: "+(error?.message||"لم يتم التأكيد"));return;}
+ await loadMyAppointments();
+}
+
+function appointmentStatus(status){
+ const labels={
+  pending:"قيد الانتظار",
+  approved:"مقبول",
+  confirmed:"مؤكد",
+  rejected:"مرفوض",
+  cancelled:"ملغي",
+  completed:"مكتمل"
+ };
+ return labels[status]||status||"غير محدد";
+}
+
+function openMyAppointments(){
+ previousView=currentCenterId?"centerDoctors":
+  (el("centers").classList.contains("hidden")?"portals":"centers");
+
+ el("portalChoices").classList.add("hidden");
+ el("centers").classList.add("hidden");
+ el("doctors").classList.add("hidden");
+ el("myAppointments").classList.remove("hidden");
+ el("myBookingsButton").classList.add("hidden");
+
+ loadMyAppointments();
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function backToPrevious(){
+ el("myAppointments").classList.add("hidden");
+
+ if(previousView==="centerDoctors"){
+  el("doctors").classList.remove("hidden");
+ }else if(previousView==="centers"){
+  el("centers").classList.remove("hidden");
+ }else{
+  el("portalChoices").classList.remove("hidden");
+ }
+
+ el("myBookingsButton").classList.remove("hidden");
+}
+
+function escapeHTML(value){
+ return String(value).replace(/[&<>"']/g,char=>({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ }[char]));
+}
+
+async function refreshPortal(){
+ if(portalRefreshBusy)return;
+ portalRefreshBusy=true;
+
+ try{
+  const {data:{session}}=await db.auth.getSession();
+  if(!session){
+   el("portalTopbar").classList.add("hidden");
+   el("myBookingsButton").classList.add("hidden");
+   return;
+  }
+
+  const {data:profile,error}=await db.from("profiles")
+   .select("role,approval_status")
+   .eq("id",session.user.id).maybeSingle();
+
+  if(error)throw error;
+
+  if(profile?.role==="patient"&&profile?.approval_status==="approved"){
+   await loadMyAppointments();
+   if(!el("centers").classList.contains("hidden"))await loadMedicalCenters();
+  }else{
+   await loadAccount();
+  }
+ }catch(e){
+  console.warn("Portal refresh:",e);
+ }finally{
+  portalRefreshBusy=false;
+ }
+}
+
+async function logout(){
+ await db.auth.signOut();
+ location.reload();
+}
+
+el("doctorSearch").addEventListener("input",filterDoctors);
+
+db.auth.getSession().then(({data})=>{
+ if(data.session)loadAccount();
+});
+
+setInterval(refreshPortal,20000);
+</script>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));}</script></body>
+</html>

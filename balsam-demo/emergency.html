@@ -1,0 +1,587 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>بوابة طبيب الطوارئ | بلسم</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2"></script>
+<style>
+:root {
+  --blue:#159bd7;
+  --blue-dark:#087db8;
+  --pale:#eaf7fd;
+  --bg:#f5faff;
+  --text:#173449;
+  --muted:#718596;
+  --border:#e1edf4;
+  --white:#fff;
+  --green:#16a477;
+  --red:#dc5252;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Tahoma,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+button,input,textarea{font:inherit}
+button{cursor:pointer}
+.topbar{
+  background:#fff;
+  border-bottom:1px solid var(--border);
+  padding:15px 5%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.brand{font-size:21px;font-weight:bold;color:var(--blue-dark)}
+.brand small{display:block;font-size:11px;color:var(--muted);margin-top:4px}
+.top-actions{display:flex;gap:8px;align-items:center}
+.btn{
+  border:0;border-radius:10px;padding:11px 16px;
+  background:var(--blue);color:#fff;font-weight:bold;
+}
+.btn:hover{background:var(--blue-dark)}
+.btn-light{background:var(--pale);color:var(--blue-dark)}
+.btn-light:hover{background:#d8effb}
+.btn-red{background:#fff0f0;color:var(--red)}
+.container{max-width:1250px;margin:28px auto;padding:0 16px}
+.hero{
+  background:linear-gradient(120deg,#e9f7ff,#fff);
+  border:1px solid #d9edf8;border-radius:18px;
+  padding:23px;margin-bottom:20px;
+}
+.hero h1{margin:0 0 8px;font-size:23px}
+.hero p{margin:0;color:var(--muted);line-height:1.8}
+.status{
+  display:inline-flex;align-items:center;gap:7px;
+  color:var(--green);background:#e9f8f2;
+  padding:7px 11px;border-radius:30px;font-size:12px;
+}
+.login-card{
+  max-width:430px;margin:65px auto;background:#fff;
+  border:1px solid var(--border);border-radius:20px;
+  padding:30px;box-shadow:0 12px 35px #17415b0b;
+}
+.login-card h2{margin-top:0}
+.field{margin:17px 0}
+.field label{display:block;font-size:13px;font-weight:bold;margin-bottom:8px}
+.field input{
+  width:100%;padding:14px;border:1px solid var(--border);
+  border-radius:11px;outline:none;background:#fbfdff;
+}
+.field input:focus,.composer textarea:focus{border-color:var(--blue)}
+.error{color:var(--red);font-size:13px;line-height:1.7;margin-top:12px}
+.hidden{display:none!important}
+.dashboard{
+  display:grid;grid-template-columns:340px minmax(0,1fr);
+  gap:17px;min-height:590px;
+}
+.panel{
+  background:#fff;border:1px solid var(--border);
+  border-radius:17px;overflow:hidden;
+}
+.panel-head{
+  padding:17px;border-bottom:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.panel-head h3{margin:0;font-size:16px}
+.chat-list{max-height:650px;overflow-y:auto}
+.chat-item{
+  padding:16px;border-bottom:1px solid #edf3f7;
+  cursor:pointer;transition:.15s;
+}
+.chat-item:hover,.chat-item.active{background:#eef8fd}
+.chat-item strong{display:block;margin-bottom:7px}
+.chat-meta{font-size:11px;color:var(--muted);display:flex;justify-content:space-between}
+.chat-status{font-size:11px;color:var(--green)}
+.chat-status.closed{color:var(--red)}
+.chat-window{display:flex;flex-direction:column;min-height:590px}
+.chat-title{
+  padding:16px 20px;border-bottom:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+}
+.chat-title h3{margin:0 0 5px;font-size:16px}
+.chat-title small{color:var(--muted)}
+.messages{
+  padding:20px;flex:1;min-height:350px;max-height:520px;
+  overflow-y:auto;background:#fbfdff;
+}
+.message{
+  max-width:78%;padding:12px 14px;border-radius:14px;
+  margin-bottom:13px;line-height:1.8;overflow-wrap:anywhere;
+  white-space:pre-wrap;
+}
+.message.visitor{
+  background:#eaf5fb;border:1px solid #dceef8;margin-left:auto;
+  border-bottom-right-radius:4px;
+}
+.message.doctor{
+  background:#dff5eb;border:1px solid #ccecdf;margin-right:auto;
+  border-bottom-left-radius:4px;
+}
+.message small{display:block;color:#718596;font-size:10px;margin-top:5px}
+.composer{
+  padding:15px;border-top:1px solid var(--border);
+  display:flex;gap:10px;align-items:flex-end;
+}
+.composer textarea{
+  flex:1;resize:vertical;min-height:48px;max-height:130px;
+  padding:13px;border:1px solid var(--border);
+  border-radius:11px;outline:none;
+}
+.empty{
+  padding:45px 15px;text-align:center;color:var(--muted);
+  line-height:2;font-size:14px;
+}
+.footer{text-align:center;padding:25px;color:var(--muted);font-size:12px}
+.notice{
+  background:#fff8e8;color:#8b681b;border:1px solid #f2e5bf;
+  border-radius:11px;padding:12px;font-size:12px;line-height:1.8;
+}
+@media(max-width:800px){
+  .dashboard{grid-template-columns:1fr}
+  .chat-list{max-height:270px}
+  .chat-window{min-height:500px}
+  .messages{min-height:300px}
+  .topbar{padding:13px 4%}
+  .brand{font-size:18px}
+  .container{margin:18px auto}
+}
+
+:root{--sky:#087f83;--dark:#12656c;--line:#dcebea;--pale:#e8f7f5;--blue:#087f83;--blue-dark:#12656c;--bg:#f4faf9;--border:#dcebea}
+body{background:radial-gradient(ellipse at top right,#def3f0,transparent 45%),#f4faf9;font-family:"Segoe UI",Tahoma,Arial,sans-serif}
+.attachment{flex:1 1 100%;border:1px solid #dcebea;background:#f5fbfa;border-radius:14px;padding:12px;min-width:0}
+.attachment input{max-width:100%;font-size:13px}
+.attachment-image{display:block;max-width:min(100%,320px);max-height:240px;object-fit:contain;border-radius:12px;margin:8px 0}
+.attachment-image[hidden]{display:none!important}
+.secondary-image{color:#12656c;background:#e8f7f5;min-height:44px;border:1px solid #cde5e1}
+.image-note{font-size:12px;color:#506d77;line-height:1.7;margin:6px 0}
+.send,.composer{flex-wrap:wrap}.send textarea,.composer textarea{min-width:0}
+button{min-height:44px}
+</style>
+<meta name="application-name" content="بلسم"><meta name="apple-mobile-web-app-title" content="بلسم"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/svg+xml" href="./assets/balsam-icon.svg"><link rel="apple-touch-icon" href="./assets/balsam-192.png"></head>
+<body><div dir="rtl" style="position:sticky;top:0;z-index:99999;padding:9px 12px;background:#fff4d6;color:#6b4610;border-bottom:1px solid #e8c766;text-align:center;font:700 13px/1.5 Arial,sans-serif">⚠️ نسخة بلسم التجريبية — بيانات تدريب فقط، لا تُدخل معلومات مرضى حقيقية</div>
+
+<header class="topbar">
+  <div class="brand">بلسم | BALSAM
+    <small>بوابة طبيب الطوارئ المستقلة</small>
+  </div>
+  <div class="top-actions">
+    <a href="index.html" style="text-decoration:none">
+      <button class="btn btn-light">اللوحة الرئيسية</button>
+    </a>
+    <button id="logoutBtn" class="btn btn-red hidden">تسجيل الخروج</button>
+  </div>
+</header>
+
+<main class="container">
+
+  <section id="loginSection" class="login-card">
+    <div style="font-size:38px;margin-bottom:12px">🩺</div>
+    <h2>دخول طبيب الطوارئ</h2>
+    <p style="color:var(--muted);font-size:13px;line-height:1.8">
+      سجّل الدخول بالحساب المستقل المعتمد لطبيب الطوارئ.
+    </p>
+
+    <form id="loginForm">
+      <div class="field">
+        <label>البريد الإلكتروني</label>
+        <input id="email" type="email" required autocomplete="username" placeholder="البريد الإلكتروني">
+      </div>
+      <div class="field">
+        <label>كلمة المرور</label>
+        <input id="password" type="password" required autocomplete="current-password" placeholder="كلمة المرور">
+      </div>
+      <button id="loginBtn" class="btn" type="submit" style="width:100%;padding:14px">
+        تسجيل الدخول
+      </button>
+      <div id="loginError" class="error"></div>
+    </form>
+  </section>
+
+  <section id="dashboardSection" class="hidden">
+    <div class="hero">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+        <div>
+          <h1>مرحباً، <span id="doctorName">طبيب الطوارئ</span></h1>
+          <p>إدارة المحادثات المباشرة مع المراجعين والرد على رسائلهم.</p>
+        </div>
+        <span class="status">● الحساب متصل ومتحقق منه</span>
+      </div>
+    </div>
+
+    <div class="notice" style="margin-bottom:17px">
+      هذه البوابة مخصصة للمحادثات النصية مع المراجعين فقط. لا تُعد بديلاً عن خدمات الطوارئ الطبية المباشرة.
+    </div>
+
+    <div class="dashboard">
+      <aside class="panel">
+        <div class="panel-head">
+          <h3>المحادثات الواردة</h3>
+          <button id="refreshBtn" class="btn btn-light" type="button">تحديث</button>
+        </div>
+        <div id="chatList" class="chat-list">
+          <div class="empty">جارٍ تحميل المحادثات...</div>
+        </div>
+      </aside>
+
+      <section class="panel chat-window">
+        <div id="chatHeader" class="chat-title">
+          <div>
+            <h3>محادثات الطوارئ</h3>
+            <small>اختر محادثة من القائمة لعرض الرسائل</small>
+          </div>
+        </div>
+
+        <div id="messages" class="messages">
+          <div class="empty">
+            <div style="font-size:35px">💬</div>
+            اختر محادثة من القائمة لبدء التواصل مع المراجع.
+          </div>
+        </div>
+
+        <form id="messageForm" class="composer hidden">
+          <textarea id="messageInput" maxlength="2000" placeholder="اكتب ردك هنا..." required></textarea>
+          <button id="sendBtn" class="btn" type="submit">إرسال</button>
+        </form>
+      </section>
+    </div>
+  </section>
+
+  <div id="globalError" class="error" style="text-align:center"></div>
+</main>
+
+<footer class="footer">BALSAM | بلسم — بوابة طبيب الطوارئ</footer>
+
+<script>
+"use strict";
+
+const SUPABASE_URL = "https://sfaatbfiwwbvobpvhwxo.supabase.co";
+const SUPABASE_KEY = "sb_publishable_CBPPwjIcmVbGK1fr8EHyYg_DlfldbK6";
+const FUNCTION_URL = SUPABASE_URL + "/functions/v1/emergency-chat";
+
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const $ = id => document.getElementById(id);
+
+let currentSession = null;
+let selectedChatId = null;
+let chats = [];
+let listTimer = null;
+let messageTimer = null;
+let loadingMessages = false;
+let sending = false;
+
+function showError(element, message) {
+  $(element).textContent = message || "";
+}
+
+function escapeText(value) {
+  return String(value ?? "");
+}
+
+function formatDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString("ar-IQ", {
+    year:"numeric",month:"2-digit",day:"2-digit",
+    hour:"2-digit",minute:"2-digit"
+  });
+}
+
+async function api(action, extra = {}) {
+  if (!currentSession?.access_token) {
+    throw new Error("انتهت جلسة الدخول. سجّل الدخول مجدداً.");
+  }
+
+  const response = await fetch(FUNCTION_URL, {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "apikey":SUPABASE_KEY,
+      "Authorization":"Bearer " + currentSession.access_token
+    },
+    body:JSON.stringify({action,...extra})
+  });
+
+  let data = {};
+  try { data = await response.json(); } catch (_) {}
+
+  if (!response.ok || data.error) {
+    throw new Error(data.error || "تعذر تنفيذ الطلب.");
+  }
+  return data;
+}
+
+function stopPolling() {
+  if (listTimer) clearInterval(listTimer);
+  if (messageTimer) clearInterval(messageTimer);
+  listTimer = null;
+  messageTimer = null;
+}
+
+async function validateAndOpen(session) {
+  currentSession = session;
+
+  // الدالة تتحقق من الدور والموافقة وحالة تفعيل الحساب من الخادم.
+  const result = await api("doctor_list");
+
+  $("loginSection").classList.add("hidden");
+  $("dashboardSection").classList.remove("hidden");
+  $("logoutBtn").classList.remove("hidden");
+  $("doctorName").textContent = result.doctor_name || "طبيب الطوارئ";
+
+  await loadChats();
+
+  stopPolling();
+  listTimer = setInterval(loadChats, 5000);
+  messageTimer = setInterval(() => {
+    if (selectedChatId) loadMessages(selectedChatId, true);
+  }, 3500);
+}
+
+async function login(event) {
+  event.preventDefault();
+  showError("loginError", "");
+  $("loginBtn").disabled = true;
+  $("loginBtn").textContent = "جارٍ التحقق...";
+
+  try {
+    const email = $("email").value.trim();
+    const password = $("password").value;
+
+    const {data,error} = await db.auth.signInWithPassword({email,password});
+    if (error) throw error;
+    if (!data.session) throw new Error("لم يتم إنشاء جلسة دخول.");
+
+    await validateAndOpen(data.session);
+  } catch (error) {
+    currentSession = null;
+    await db.auth.signOut();
+    showError("loginError", error.message || "تعذر تسجيل الدخول.");
+  } finally {
+    $("loginBtn").disabled = false;
+    $("loginBtn").textContent = "تسجيل الدخول";
+  }
+}
+
+function renderChats() {
+  const list = $("chatList");
+  list.replaceChildren();
+
+  if (!chats.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty";
+    empty.textContent = "لا توجد محادثات واردة حالياً.";
+    list.appendChild(empty);
+    return;
+  }
+
+  chats.forEach(chat => {
+    const item = document.createElement("div");
+    item.className = "chat-item" + (chat.id === selectedChatId ? " active" : "");
+    item.addEventListener("click", () => selectChat(chat.id));
+
+    const name = document.createElement("strong");
+    name.textContent = chat.visitor_name || "مراجع";
+
+    const meta = document.createElement("div");
+    meta.className = "chat-meta";
+
+    const date = document.createElement("span");
+    date.textContent = formatDate(chat.last_message_at || chat.created_at);
+
+    const status = document.createElement("span");
+    status.className = "chat-status" + (chat.status === "closed" ? " closed" : "");
+    status.textContent = chat.status === "closed" ? "مغلقة" : "مفتوحة";
+
+    meta.append(date,status);
+    item.append(name,meta);
+    list.appendChild(item);
+  });
+}
+
+async function loadChats() {
+  try {
+    const result = await api("doctor_list");
+    chats = Array.isArray(result.chats) ? result.chats : [];
+    renderChats();
+
+    if (selectedChatId && !chats.some(c => c.id === selectedChatId)) {
+      selectedChatId = null;
+      showNoSelection();
+    }
+  } catch (error) {
+    showError("globalError", error.message);
+    if (/جلسة|مخوّل|موقوف|تسجيل الدخول/.test(error.message)) {
+      await logout(false);
+      showError("loginError", error.message);
+    }
+  }
+}
+
+function showNoSelection() {
+  $("chatHeader").replaceChildren();
+  const title = document.createElement("h3");
+  title.textContent = "محادثات الطوارئ";
+  $("chatHeader").appendChild(title);
+
+  $("messages").replaceChildren();
+  const empty = document.createElement("div");
+  empty.className = "empty";
+  empty.textContent = "اختر محادثة من القائمة لعرض الرسائل.";
+  $("messages").appendChild(empty);
+  $("messageForm").classList.add("hidden");
+}
+
+async function selectChat(chatId) {
+  selectedChatId = chatId;
+  renderChats();
+  await loadMessages(chatId);
+}
+
+async function loadMessages(chatId, silent = false) {
+  if (loadingMessages || !chatId) return;
+  loadingMessages = true;
+
+  try {
+    const result = await api("doctor_get", {chat_id:chatId});
+    if (selectedChatId !== chatId) return;
+
+    const chat = result.chat || {};
+    $("chatHeader").replaceChildren();
+
+    const info = document.createElement("div");
+    const title = document.createElement("h3");
+    title.textContent = chat.visitor_name || "محادثة المراجع";
+
+    const sub = document.createElement("small");
+    sub.textContent = "تاريخ بدء المحادثة: " + formatDate(chat.created_at);
+    info.append(title,sub);
+
+    const status = document.createElement("span");
+    status.className = chat.status === "closed" ? "chat-status closed" : "chat-status";
+    status.textContent = chat.status === "closed" ? "مغلقة" : "مفتوحة";
+
+    $("chatHeader").append(info,status);
+
+    const box = $("messages");
+    const oldScroll = box.scrollTop;
+    const wasNearBottom = box.scrollHeight - box.clientHeight - oldScroll < 90;
+
+    box.replaceChildren();
+
+    const messages = Array.isArray(result.messages) ? result.messages : [];
+    if (!messages.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty";
+      empty.textContent = "لا توجد رسائل بعد. يمكنك بدء المحادثة بالرد على المراجع.";
+      box.appendChild(empty);
+    }
+
+    messages.forEach(msg => {
+      const bubble = document.createElement("div");
+      bubble.className = "message " + (msg.sender_type === "doctor" ? "doctor" : "visitor");
+
+      const content = document.createElement("div");
+      content.textContent = escapeText(msg.message);
+
+      const meta = document.createElement("small");
+      meta.textContent =
+        (msg.sender_type === "doctor" ? "الطبيب" : "المراجع") +
+        " · " + formatDate(msg.created_at);
+
+      bubble.append(content,meta);
+      box.appendChild(bubble);
+    });
+
+    if (wasNearBottom || !silent) box.scrollTop = box.scrollHeight;
+    else box.scrollTop = oldScroll;
+
+    const isOpen = chat.status === "open";
+    $("messageForm").classList.toggle("hidden", !isOpen);
+    $("messageInput").disabled = !isOpen;
+    $("sendBtn").disabled = !isOpen;
+  } catch (error) {
+    if (!silent) showError("globalError", error.message);
+  } finally {
+    loadingMessages = false;
+  }
+}
+
+async function sendMessage(event) {
+  event.preventDefault();
+  if (sending || !selectedChatId) return;
+
+  const message = $("messageInput").value.trim();
+  if (!message) return;
+
+  sending = true;
+  $("sendBtn").disabled = true;
+
+  try {
+    await api("doctor_send", {
+      chat_id:selectedChatId,
+      message
+    });
+    $("messageInput").value = "";
+    await loadMessages(selectedChatId);
+    await loadChats();
+  } catch (error) {
+    showError("globalError", error.message);
+  } finally {
+    sending = false;
+    $("sendBtn").disabled = false;
+  }
+}
+
+async function logout(showLogin = true) {
+  stopPolling();
+  selectedChatId = null;
+  chats = [];
+  currentSession = null;
+
+  await db.auth.signOut();
+
+  $("dashboardSection").classList.add("hidden");
+  $("logoutBtn").classList.add("hidden");
+
+  if (showLogin) {
+    $("loginSection").classList.remove("hidden");
+    showError("loginError", "");
+    showError("globalError", "");
+  }
+}
+
+$("loginForm").addEventListener("submit", login);
+$("messageForm").addEventListener("submit", sendMessage);
+$("logoutBtn").addEventListener("click", () => logout(true));
+$("refreshBtn").addEventListener("click", loadChats);
+
+(async function init() {
+  try {
+    const {data,error} = await db.auth.getSession();
+    if (error) throw error;
+
+    if (data.session) {
+      try {
+        await validateAndOpen(data.session);
+      } catch (error) {
+        await db.auth.signOut();
+        currentSession = null;
+        $("loginSection").classList.remove("hidden");
+        showError("loginError", error.message);
+      }
+    }
+  } catch (error) {
+    showError("loginError", error.message || "تعذر التحقق من جلسة الدخول.");
+  }
+})();
+</script>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));}</script></body>
+</html>
