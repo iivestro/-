@@ -195,3 +195,39 @@ footer,.footer{color:#789196}
 @media(prefers-reduced-motion:reduce){
   *,*:before,*:after{scroll-behavior:auto!important;transition:none!important}
 }
+/* Balsam unified portal refinement */
+:root{
+  --bs-ink:#173b45;--bs-muted:#66818a;--bs-teal:#087f83;--bs-deep:#075c65;
+  --bs-bright:#18a69d;--bs-mint:#e4f5f1;--bs-paper:#f5faf9;
+  --bs-line:#dcebe8;--bs-shadow:0 18px 48px rgba(18,74,78,.09);
+}
+body{
+  color:var(--bs-ink)!important;
+  background:
+    radial-gradient(ellipse at 92% 0%,rgba(32,166,157,.12),transparent 34rem),
+    radial-gradient(ellipse at 0% 80%,rgba(75,177,190,.08),transparent 28rem),
+    var(--bs-paper)!important;
+  font-family:system-ui,"Segoe UI",Tahoma,Arial,sans-serif!important;
+}
+[hidden]{display:none!important}
+a{transition:color .18s ease,background .18s ease,transform .18s ease}
+button:active,.btn:active{transform:translateY(0) scale(.985)}
+input::placeholder,textarea::placeholder{color:#91a7a8}
+select:disabled,input:disabled,textarea:disabled{background:#f2f7f6!important;color:#758c8e!important}
+:where(.card,.panel,.section-card,.login-box,.authCard,.auth-card,.workspace-panel,.chart-card,.doctor-card,.appointment,.info-box,.center-grid,.queue-card,.service-card,.message-card){
+  border-color:var(--bs-line)!important;
+  box-shadow:var(--bs-soft-shadow)!important;
+}
+:where(.error,.error-message,.alert-error,.danger,.status-error){color:#9f3438}
+:where(.success,.success-message,.alert-success,.status-success){color:#176d53}
+:where(.badge,.pill,.chip){border-radius:999px}
+:where(.modal,.dialog,.drawer){border:1px solid var(--bs-line);border-radius:22px;box-shadow:0 24px 70px rgba(18,74,78,.2)}
+:where(.chat,.chat-panel,.conversation,.messages){border-color:var(--bs-line)}
+:where(.message,.chat-message){overflow-wrap:anywhere}
+@media(max-width:760px){
+  body{background-color:var(--bs-paper)!important}
+  input,select,textarea,button{max-width:100%}
+}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+}
