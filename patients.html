@@ -164,6 +164,15 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
 .top-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .top-actions button{margin:0;font-size:13px;padding:8px 12px}
 @media(max-width:600px){.top-actions{width:100%}.top-actions button{flex:1}.tabs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.medical-records{margin:20px 0;background:linear-gradient(145deg,#fff,#f2faf9);border:1px solid #dcebea;border-radius:18px;padding:20px}
+.medical-records h3{margin:0 0 6px;color:#12656c}
+.medical-record-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:15px 0}
+.medical-record-list{display:grid;gap:10px;margin-top:14px}
+.medical-record-item{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border:1px solid #dcebea;border-radius:13px;background:white;padding:13px}
+.medical-record-item a{color:#087f83;font-weight:700;text-decoration:none}
+.medical-record-item .record-meta{color:#60798a;font-size:13px}
+@media(max-width:600px){.medical-records{padding:15px}.medical-record-form{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -271,6 +280,18 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
  <section id="myAppointments" class="card hidden">
   <button type="button" class="secondary portal-back" onclick="backToPrevious()">← العودة</button>
   <h2>حجوزاتي</h2>
+  <section class="medical-records card" aria-labelledby="medicalRecordsTitle">
+   <h3 id="medicalRecordsTitle">السجل الطبي وتقاريري</h3>
+   <p class="muted">ارفع التحاليل والتقارير والوصفات الطبية. تبقى الملفات خاصة، ويستطيع الطبيب الذي لديك معه طلب أو موعد الاطلاع عليها.</p>
+   <div class="medical-record-form">
+    <div><label for="medicalRecordTitle">اسم التقرير</label><input id="medicalRecordTitle" type="text" maxlength="180" placeholder="مثال: تحليل الدم"></div>
+    <div><label for="medicalRecordDate">تاريخ التقرير</label><input id="medicalRecordDate" type="date"></div>
+    <div><label for="medicalRecordFile">ملف التقرير (PDF أو صورة، حتى 10 MB)</label><input id="medicalRecordFile" type="file" accept="application/pdf,image/jpeg,image/png,image/webp"></div>
+   </div>
+   <button id="uploadMedicalRecordButton" type="button" onclick="uploadMedicalRecord()">إضافة إلى سجلي الطبي</button>
+   <p id="medicalRecordMessage" class="msg" aria-live="polite"></p>
+   <div id="medicalRecordsList" class="medical-record-list">جاري تحميل التقارير...</div>
+  </section>
   <div id="myAppointmentsList" class="msg">جاري تحميل الحجوزات...</div>
  </section>
 </main>
@@ -792,6 +813,9 @@ async function bookAppointment(){
 }
 async function loadMyAppointments(){
  const {data:{user}}=await db.auth.getUser();if(!user)return;
+ const dateInput=el("medicalRecordDate");
+ if(dateInput&&!dateInput.value){const now=new Date();dateInput.value=[now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");}
+ await loadMedicalRecords();
  const list=el("myAppointmentsList");list.textContent="جاري تحميل الحجوزات...";
  const [oldResult,centerResult]=await Promise.all([
   db.from("appointments").select("id,requested_date,appointment_at,status,notes,rejection_reason,doctors(profile_id)").eq("patient_id",user.id).order("requested_date",{ascending:true}),
@@ -832,6 +856,63 @@ async function loadMyAppointments(){
   }
   list.append(card);
  });
+}
+
+async function loadMedicalRecords(){
+ const container=el("medicalRecordsList");if(!container)return;
+ container.textContent="جاري تحميل التقارير...";
+ const {data:{user}}=await db.auth.getUser();if(!user)return;
+ const {data,error}=await db.from("patient_medical_records").select("id,title,record_date,file_name,file_path,mime_type,file_size,created_at").eq("patient_id",user.id).order("record_date",{ascending:false}).order("created_at",{ascending:false});
+ if(error){container.textContent="تعذر تحميل السجل الطبي: "+error.message;return;}
+ if(!data?.length){container.textContent="لم تضف تقارير إلى سجلك الطبي بعد.";return;}
+ container.innerHTML="";
+ for(const record of data){
+  const row=document.createElement("article");row.className="medical-record-item";
+  const details=document.createElement("div");
+  const title=document.createElement("strong");title.textContent=record.title;
+  const meta=document.createElement("div");meta.className="record-meta";meta.textContent="تاريخ التقرير: "+record.record_date+" · "+record.file_name;
+  details.append(title,meta);
+  const actions=document.createElement("div");
+  const {data:signed,error:signedError}=await db.storage.from("patient-medical-records").createSignedUrl(record.file_path,300);
+  if(!signedError&&signed?.signedUrl){const link=document.createElement("a");link.href=signed.signedUrl;link.target="_blank";link.rel="noopener noreferrer";link.textContent="فتح التقرير";actions.append(link);}
+  const remove=document.createElement("button");remove.type="button";remove.className="secondary";remove.textContent="حذف";remove.onclick=()=>deleteMedicalRecord(record,remove);actions.append(remove);
+  row.append(details,actions);container.append(row);
+ }
+}
+
+async function uploadMedicalRecord(){
+ const fileInput=el("medicalRecordFile"),file=fileInput.files?.[0];
+ const title=el("medicalRecordTitle").value.trim()||file?.name||"";
+ const recordDate=el("medicalRecordDate").value;
+ const allowed=["application/pdf","image/jpeg","image/png","image/webp"];
+ if(!file){el("medicalRecordMessage").textContent="اختر ملف التقرير أولاً.";return;}
+ if(!allowed.includes(file.type)||file.size>10*1024*1024){el("medicalRecordMessage").textContent="الملف يجب أن يكون PDF أو JPG أو PNG أو WEBP وبحجم لا يتجاوز 10 MB.";return;}
+ if(!recordDate){el("medicalRecordMessage").textContent="حدد تاريخ التقرير.";return;}
+ const {data:{user},error:authError}=await db.auth.getUser();
+ if(authError||!user){el("medicalRecordMessage").textContent="انتهت الجلسة. سجل الدخول مجدداً.";return;}
+ const button=el("uploadMedicalRecordButton");button.disabled=true;el("medicalRecordMessage").textContent="جارٍ رفع التقرير بشكل خاص...";
+ const extension=(file.name.split(".").pop()||"file").toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,8)||"file";
+ const filePath=user.id+"/"+crypto.randomUUID()+"."+extension;
+ try{
+  const {error:uploadError}=await db.storage.from("patient-medical-records").upload(filePath,file,{contentType:file.type,upsert:false});
+  if(uploadError)throw uploadError;
+  const {error:rowError}=await db.from("patient_medical_records").insert({patient_id:user.id,title:title.slice(0,180),record_date:recordDate,file_name:file.name,file_path:filePath,mime_type:file.type,file_size:file.size});
+  if(rowError){await db.storage.from("patient-medical-records").remove([filePath]);throw rowError;}
+  el("medicalRecordMessage").textContent="تمت إضافة التقرير إلى سجلك الطبي الخاص.";
+  el("medicalRecordTitle").value="";fileInput.value="";
+  await loadMedicalRecords();
+ }catch(error){el("medicalRecordMessage").textContent="تعذر إضافة التقرير: "+error.message;}
+ finally{button.disabled=false;}
+}
+
+async function deleteMedicalRecord(record,button){
+ if(!confirm("هل تريد حذف هذا التقرير من سجلك الطبي؟"))return;
+ button.disabled=true;
+ const {error:removeError}=await db.storage.from("patient-medical-records").remove([record.file_path]);
+ if(removeError){button.disabled=false;alert("تعذر حذف الملف: "+removeError.message);return;}
+ const {error}=await db.from("patient_medical_records").delete().eq("id",record.id);
+ if(error){button.disabled=false;alert("حُذف الملف لكن تعذر حذف بياناته: "+error.message);return;}
+ await loadMedicalRecords();
 }
 
 async function cancelIndependentAppointment(id,button){
