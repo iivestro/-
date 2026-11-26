@@ -70,6 +70,8 @@ h2:before{
  margin-left:9px;vertical-align:middle;border-radius:5px;background:var(--sky)
 }
 .muted{color:var(--muted);font-size:12px}
+.rep-appointment-notice{display:none;margin:14px 0;padding:14px 16px;border:1px solid #b8e8d9;background:#e9f8f3;color:#0c6251;border-radius:14px;line-height:1.7;font-weight:700}
+.rep-appointment-notice.visible{display:block}
 .profile-grid,.stats,.doctor-grid{
  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px
 }
@@ -167,6 +169,8 @@ label{display:block;font-size:12px;font-weight:bold;margin:9px 0 5px}
   </div>
  </section>
 
+ <div id="repAppointmentNotice" class="rep-appointment-notice" role="status" aria-live="polite" hidden></div>
+
  <section class="stats">
   <div class="stat"><small>المواعيد المتاحة</small><strong id="availableCount">0</strong></div>
   <div class="stat"><small>حجوزاتي</small><strong id="bookingCount">0</strong></div>
@@ -223,8 +227,42 @@ let currentRep=null;
 let doctorMap={};
 let loadingBookings=false;
 let refreshTimer=null;
+let repRealtimeChannel=null;
 
 const el=id=>document.getElementById(id);
+
+function showRepresentativeNotification(item){
+ const box=el("repAppointmentNotice");
+ if(!box||!item)return;
+ box.textContent=(item.title||"موعد زيارة المندوب")+" — "+(item.message||"تم تحديد وقت دخول زيارتك.");
+ box.hidden=false;
+ box.classList.add("visible");
+}
+
+async function loadLatestRepresentativeNotification(){
+ if(!currentUser)return;
+ const since=new Date(Date.now()-7*24*60*60*1000).toISOString();
+ const {data,error}=await db.from("notifications").select("id,title,message,created_at")
+  .eq("user_id",currentUser.id).eq("title","موعد زيارة المندوب")
+  .gte("created_at",since).order("created_at",{ascending:false}).limit(1);
+ if(error){console.warn("تعذر تحميل إشعار موعد المندوب:",error.message);return;}
+ if(data&&data[0])showRepresentativeNotification(data[0]);
+}
+
+function subscribeToRepresentativeUpdates(){
+ if(!currentUser)return;
+ repRealtimeChannel=db.channel("rep-appointment-updates-"+currentUser.id)
+  .on("postgres_changes",{event:"UPDATE",schema:"public",table:"rep_appointments",filter:"rep_profile_id=eq."+currentUser.id},()=>{
+   loadBookings().catch(error=>console.warn("تعذر تحديث حجوزات المندوب:",error.message));
+  })
+  .on("postgres_changes",{event:"INSERT",schema:"public",table:"notifications",filter:"user_id=eq."+currentUser.id},payload=>{
+   if(payload.new&&payload.new.title==="موعد زيارة المندوب"){
+    showRepresentativeNotification(payload.new);
+    message("وصل إشعار بموعد دخول جديد من الطبيب.");
+    loadBookings().catch(error=>console.warn("تعذر تحديث حجوزات المندوب:",error.message));
+   }
+  }).subscribe();
+}
 
 function escapeHTML(value){
  return String(value??"").replace(/[&<>"']/g,c=>({
@@ -340,6 +378,7 @@ async function initialize(){
   el("app").classList.remove("hidden");
 
   await refreshAll();
+  subscribeToRepresentativeUpdates();
   refreshTimer=setInterval(refreshAll,60000);
 
  }catch(error){
@@ -544,6 +583,7 @@ async function refreshAll(){
   message("جارٍ تحديث البيانات...");
   await loadDoctorsAndSlots();
   await loadBookings();
+  await loadLatestRepresentativeNotification();
   message("تم تحديث البيانات.");
  }catch(error){
   console.error(error);
@@ -553,6 +593,7 @@ async function refreshAll(){
 
 async function logout(){
  if(refreshTimer)clearInterval(refreshTimer);
+ if(repRealtimeChannel)await db.removeChannel(repRealtimeChannel);
  await db.auth.signOut();
  window.location.href="representatives.html";
 }
