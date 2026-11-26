@@ -39,7 +39,7 @@ BEGIN
  IF f IS NULL OR NOT EXISTS(SELECT 1 FROM private.v2_visit_feature_switches WHERE feature=f AND enabled) THEN RAISE EXCEPTION 'Feature disabled' USING ERRCODE='42501';END IF;
  isadmin:=r='admin';
  IF p_action='visit_notifications' THEN
- SELECT coalesce(jsonb_agg(to_jsonb(x)),'[]'::jsonb) INTO result FROM (SELECT title,message,created_at FROM public.notifications WHERE user_id=u AND title IN('تذكير بموعدك','الدور الإلكتروني','حان دورك','رد الدعم الفني') AND created_at>now()-interval '7 days' ORDER BY created_at DESC LIMIT 50)x;
+ SELECT coalesce(jsonb_agg(to_jsonb(x)),'[]'::jsonb) INTO result FROM (SELECT title,message,created_at FROM public.notifications WHERE user_id=u AND title IN('تذكير بموعدك','الدور الإلكتروني','حان دورك','رد الدعم الفني','موعد زيارة المندوب') AND created_at>now()-interval '7 days' ORDER BY created_at DESC LIMIT 50)x;
  ELSIF p_action='visit_reminders' AND r='patient' THEN
  SELECT coalesce(jsonb_agg(to_jsonb(x)),'[]'::jsonb) INTO result FROM (
  SELECT b.id AS booking_id,'doctor'::text AS kind,b.appointment_at AS appointment_at,f.full_name AS provider_name
