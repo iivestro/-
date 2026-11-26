@@ -113,8 +113,20 @@ Deno.serve(async (req: Request) => {
 
   try {
     const url = Deno.env.get("SUPABASE_URL");
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SERVICE_ROLE_KEY");
+    let anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+    let serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SERVICE_ROLE_KEY") || "";
+    try {
+      if (!anonKey) {
+        const raw = Deno.env.get("SUPABASE_PUBLISHABLE_KEYS");
+        if (raw) anonKey = JSON.parse(raw).default || "";
+      }
+    } catch { /* fall through to the clear configuration error below */ }
+    try {
+      if (!serviceKey) {
+        const raw = Deno.env.get("SUPABASE_SECRET_KEYS");
+        if (raw) serviceKey = JSON.parse(raw).default || "";
+      }
+    } catch { /* fall through to the clear configuration error below */ }
     if (!url || !anonKey || !serviceKey) return json(req, { error: "إعدادات الخدمة غير مكتملة." }, 500);
     const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
 
