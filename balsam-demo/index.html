@@ -84,7 +84,8 @@ h1{font-size:clamp(30px,4.5vw,46px);line-height:1.28;letter-spacing:-1px;margin:
 @media(max-width:360px){.portal-grid{grid-template-columns:1fr}.portal{min-height:120px}}
 @media(prefers-reduced-motion:reduce){.portal:active{transform:none}}
 </style>
-<meta name="application-name" content="بلسم"><meta name="apple-mobile-web-app-title" content="بلسم"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/svg+xml" href="./assets/balsam-icon.svg"><link rel="apple-touch-icon" href="./assets/balsam-192.png"></head>
+<meta name="application-name" content="بلسم"><meta name="apple-mobile-web-app-title" content="بلسم"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/svg+xml" href="./assets/balsam-icon.svg"><link rel="apple-touch-icon" href="./assets/balsam-192.png"><link rel="stylesheet" href="./balsam-theme.css?v=20261126a">
+</head>
 <body><div dir="rtl" style="position:sticky;top:0;z-index:99999;padding:9px 12px;background:#fff4d6;color:#6b4610;border-bottom:1px solid #e8c766;text-align:center;font:700 13px/1.5 Arial,sans-serif">⚠️ نسخة بلسم التجريبية — بيانات تدريب فقط، لا تُدخل معلومات مرضى حقيقية</div>
 <div class="page-shell">
 <header class="topbar">
@@ -100,9 +101,15 @@ h1{font-size:clamp(30px,4.5vw,46px);line-height:1.28;letter-spacing:-1px;margin:
    <div class="hero-kicker"><span></span> رعاية صحية أقرب وأسهل</div>
    <h1 id="welcome-title">أهلاً بك في بلسم</h1>
    <p>منصة واحدة تجمع المراجعين والأطباء والمراكز الطبية ومقدمي الرعاية المنزلية والمندوبين، لتصل إلى البوابة المناسبة بخطوات واضحة وسهلة.</p>
+   <div class="hero-actions"><a class="hero-primary" href="patients.html">ابدأ من بوابة المراجع <span aria-hidden="true">←</span></a><a class="hero-secondary" href="visit-services.html">استكشف خدمات بلسم</a></div>
   </div>
-  <div class="hero-art" aria-hidden="true"><svg viewBox="0 0 100 100"><path d="M50 12v76M12 50h76" stroke-width="8"/><path d="M8 54h22l9-18 13 32 10-20h30" stroke-width="2.4"/></svg></div>
+  <div class="hero-art" aria-hidden="true"><img src="./assets/balsam-care.svg" alt=""></div>
  </section>
+ <div class="benefit-strip" aria-label="مزايا بلسم">
+  <div class="benefit"><span class="benefit-icon"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/></svg></span><span><strong>بوابات واضحة</strong><small>اختر الخدمة المناسبة بخطوة واحدة</small></span></div>
+  <div class="benefit"><span class="benefit-icon"><svg viewBox="0 0 24 24"><path d="M4 6h16v14H4zM8 3v6M16 3v6M4 11h16"/></svg></span><span><strong>متابعة مرتبة</strong><small>مواعيدك وخدماتك في مكان واحد</small></span></div>
+  <div class="benefit"><span class="benefit-icon"><svg viewBox="0 0 24 24"><path d="M12 21s8-4 8-11V5l-8-3-8 3v5c0 7 8 11 8 11Z"/><path d="m9 12 2 2 4-4"/></svg></span><span><strong>تصميم عربي مريح</strong><small>واجهة واضحة على الهاتف والكمبيوتر</small></span></div>
+ </div>
  <section aria-labelledby="portals-title">
   <div class="section-heading">
    <div><h2 id="portals-title">اختر بوابتك</h2><p>حدد القسم الذي تريد الدخول إليه للمتابعة.</p></div>
