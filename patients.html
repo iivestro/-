@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#f5fbff">
-<title>بيشنت | PATIENT - بوابة المراجعين</title>
+<title>بلسم | BALSAM - بوابة المراجعين</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2"></script>
 <style>
 *{box-sizing:border-box}
@@ -53,7 +53,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .booking-status-label{display:inline-block;padding:4px 12px;border-radius:20px;background:#eaf8ff;font-weight:bold}
 @media(max-width:600px){main{padding:15px 12px 90px}.hero{padding:25px 20px}.card{padding:17px}.portal-grid,.tabs{grid-template-columns:1fr}.topbar-inner{flex-wrap:wrap}.brand{font-size:14px}.top-actions button{font-size:11px;padding:8px}}
 
-/* PATIENT Signature Medical UI */
+/* BALSAM Signature Medical UI */
 :root{--primary:#0e9f9a;--dark:#123b55;--light:#e8f7f5;--page:#f3f8fa;--text:#183447;--muted:#60798a;--border:#d8e7eb;--navy:#102f46;--shadow:0 16px 42px rgba(16,47,70,.08)}
 body{background:radial-gradient(ellipse at 8% 0%,rgba(14,159,154,.10),transparent 34%),radial-gradient(ellipse at 94% 18%,rgba(44,126,180,.08),transparent 30%),var(--page);color:var(--text);font-family:"Segoe UI",Tahoma,Arial,sans-serif}
 .topbar{background:rgba(255,255,255,.88);backdrop-filter:blur(18px);border-bottom:1px solid rgba(216,231,235,.9);box-shadow:0 5px 24px rgba(16,47,70,.04)}
@@ -125,7 +125,7 @@ label{display:block;margin:10px 0 5px;color:#355568;font-weight:700;font-size:13
 }
 
 
-/* PATIENT — unified medical identity */
+/* BALSAM — unified medical identity */
 :root{--primary:#087f83;--dark:#12656c;--light:#e8f7f5;--page:#f4faf9;--text:#173e4a;--muted:#506d77;--border:#dcebea;--navy:#153b49;--shadow:0 12px 32px rgba(16,74,78,.08)}
 body{margin:0;min-height:100vh;font-family:"Segoe UI",Tahoma,Arial,sans-serif;color:var(--text);background:radial-gradient(ellipse at 95% 0%,#def3f0 0,transparent 38%),#f4faf9;line-height:1.75}
 .topbar{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--border);box-shadow:0 4px 20px #123b4909}
@@ -174,12 +174,13 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
 .medical-record-item .record-meta{color:#60798a;font-size:13px}
 @media(max-width:600px){.medical-records{padding:15px}.medical-record-form{grid-template-columns:1fr}}
 </style>
+<link rel="stylesheet" href="balsam-demo/balsam-theme.css?v=20261126-balsam">
 </head>
 <body>
 
 <header class="topbar">
  <div class="topbar-inner">
-  <div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16 4v24M4 16h24" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><path d="M2 17h7l3-6 5 11 3-6h10" stroke="#baf8eb" stroke-width="1.8" fill="none" stroke-linejoin="round"/></svg></span><span>بيشنت | PATIENT<span class="brand-sub">بوابة المراجع</span></span></div>
+  <div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16 4v24M4 16h24" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><path d="M2 17h7l3-6 5 11 3-6h10" stroke="#baf8eb" stroke-width="1.8" fill="none" stroke-linejoin="round"/></svg></span><span>بلسم | BALSAM<span class="brand-sub">بوابة المراجع</span></span></div>
   <a class="top-link" href="index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10l9-7 9 7M5 9v12h14V9M10 21v-7h4v7"/></svg>اللوحة الرئيسية</a><a class="top-link" href="visit-services.html">الخدمات والدعم</a>
   <div id="portalTopbar" class="top-actions hidden">
    <button type="button" class="secondary" onclick="refreshPortal()">تحديث الحجوزات</button>
@@ -190,7 +191,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
 
 <main>
  <div class="hero">
-  <h1>بيشنت | PATIENT</h1>
+  <h1>بلسم | BALSAM</h1>
   <p>رعايتك الطبية تبدأ من هنا</p>
   <p>اكتشف الأطباء والمراكز الطبية واحجز موعدك بسهولة.</p>
  </div>
