@@ -44,12 +44,130 @@ main{max-width:1050px}
 #form button{width:100%;margin:8px 0 0}
 section,article{border-color:var(--border)}
 #notice:not(:empty){background:#e9f7f5;border-color:#cde5e1}
-</style><header class="topbar"><div class="topbar-inner"><div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16 4v24M4 16h24" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><path d="M2 17h7l3-6 5 11 3-6h10" stroke="#baf8eb" stroke-width="1.8" fill="none" stroke-linejoin="round"/></svg></span><span>بلسم | BALSAM<span class="brand-sub">الرعاية المنزلية</span></span></div><a class="top-link" href="index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10l9-7 9 7M5 9v12h14V9M10 21v-7h4v7"/></svg>اللوحة الرئيسية</a><a class="top-link" href="visit-services.html">الخدمات والدعم</a></div></header><main><div class="hero"><div class="hero-content"><span class="hero-tag">خدمات الرعاية المنزلية</span><h1>بوابة مقدم الخدمة المنزلية</h1><p>إدارة طلبات المختبرات والتمريض ومتابعة الزيارات.</p></div><div class="hero-art" aria-hidden="true"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M5 21 24 5l19 16M9 18v25h30V18M24 23v13M17.5 29.5h13"/></svg></div></div><p id="notice" role="status"></p><section id="login" class="card"><h2>تسجيل الدخول</h2><p class="intro">ادخل إلى حسابك لمتابعة الطلبات والخدمات.</p><form id="form"><label for="email">البريد الإلكتروني</label><input id="email" type="email" autocomplete="username" placeholder="البريد الإلكتروني" required><label for="password">كلمة المرور</label><input id="password" type="password" autocomplete="current-password" placeholder="كلمة المرور" required><button>تسجيل الدخول</button></form></section><section id="dashboard" hidden><h2 id="name"></h2><button id="refresh">تحديث الطلبات</button> <button id="logout" class="secondary">تسجيل الخروج</button><div id="requests"></div></section></main><script>
+</style><header class="topbar"><div class="topbar-inner"><div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16 4v24M4 16h24" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><path d="M2 17h7l3-6 5 11 3-6h10" stroke="#baf8eb" stroke-width="1.8" fill="none" stroke-linejoin="round"/></svg></span><span>بلسم | BALSAM<span class="brand-sub">الرعاية المنزلية</span></span></div><a class="top-link" href="index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10l9-7 9 7M5 9v12h14V9M10 21v-7h4v7"/></svg>اللوحة الرئيسية</a><a class="top-link" href="visit-services.html">الخدمات والدعم</a></div></header><main><div class="hero"><div class="hero-content"><span class="hero-tag">خدمات الرعاية المنزلية</span><h1>بوابة مقدم الخدمة المنزلية</h1><p>إدارة طلبات المختبرات والتمريض ومتابعة الزيارات.</p></div><div class="hero-art" aria-hidden="true"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M5 21 24 5l19 16M9 18v25h30V18M24 23v13M17.5 29.5h13"/></svg></div></div><p id="notice" role="status"></p><section id="login" class="card"><h2>تسجيل الدخول</h2><p class="intro">ادخل إلى حسابك لمتابعة الطلبات والخدمات.</p><form id="form"><label for="email">البريد الإلكتروني</label><input id="email" type="email" autocomplete="username" placeholder="البريد الإلكتروني" required><label for="password">كلمة المرور</label><input id="password" type="password" autocomplete="current-password" placeholder="كلمة المرور" required><button>تسجيل الدخول</button></form></section><section id="dashboard" hidden><h2 id="name"></h2><button id="refresh">تحديث الطلبات</button> <button id="logout" class="secondary">تسجيل الخروج</button><div id="requests"></div></section></main><style>
+.request-contact{margin:12px 0;padding:14px 16px;border:1px solid #d9e9eb;border-radius:14px;background:#f7fbfb;line-height:1.8}
+.request-contact strong{color:#123b55}
+.request-contact p{margin:4px 0}
+.request-contact a{color:#087f83;font-weight:700;text-decoration:none}
+.arrival-time-label{display:block;font-weight:700;margin:10px 0 5px}
+</style>
+<script>
 const db=supabase.createClient("https://oejkeqlqkwdfropylxsv.supabase.co","sb_publishable_Ue8nsJFsLpDLFUgSTB24cw_rckeqWag");const el=id=>document.getElementById(id);const say=t=>el('notice').textContent=t;let provider;
 const labels={pending:'جديد',quoted:'بانتظار قبول المراجع',confirmed:'مؤكد',en_route:'في الطريق',arrived:'وصل',completed:'مكتمل',results_ready:'النتائج جاهزة',cancelled:'ملغي'};
 async function action(id,status,price=null,time=null){const {error}=await db.rpc('home_service_progress',{p_request:id,p_status:status,p_price:price,p_time:time});say(error?error.message:'تم تحديث الطلب');await load()}
 async function documents(container,id,folder,upload,publish=false){const bucket=db.storage.from('home-service-documents');const prefix=id+'/'+folder;const {data,error}=await bucket.list(prefix);if(!error)for(const file of data||[]){if(!file.id)continue;const b=document.createElement('button');b.textContent=folder==='result'?'عرض نتيجة التحليل':'عرض الوصفة';b.onclick=async()=>{const {data,error}=await bucket.download(prefix+'/'+file.name);if(error){say(error.message);return}const url=URL.createObjectURL(data);const a=document.createElement('a');a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),60000)};container.append(b)}if(upload){const input=document.createElement('input');input.type='file';input.accept='application/pdf,image/jpeg,image/png';input.setAttribute('aria-label',folder==='result'?'ملف نتيجة التحليل':'صورة الوصفة');const b=document.createElement('button');b.textContent=folder==='result'?'رفع النتيجة':'رفع الوصفة';b.onclick=async()=>{const f=input.files[0];if(!f||f.size>10485760||!['application/pdf','image/jpeg','image/png'].includes(f.type)){say('اختر ملف PDF أو صورة لا تتجاوز 10 ميغابايت');return}b.disabled=true;try{const ext={'application/pdf':'pdf','image/jpeg':'jpg','image/png':'png'}[f.type];const {error}=await bucket.upload(prefix+'/'+crypto.randomUUID()+'.'+ext,f,{contentType:f.type});if(error)throw error;say('تم رفع الملف');await load()}catch(e){say(e.message)}finally{b.disabled=false}};container.append(input,b)}if(publish){const b=document.createElement('button');b.textContent='إتاحة النتائج للمراجع';b.onclick=async()=>{const {error}=await db.rpc('home_service_publish_results',{p_request:id});say(error?error.message:'تم إتاحة النتائج');await load()};container.append(b)}}
-async function load(){if(!provider)return;const {data,error}=await db.from('home_service_requests').select('id,description,status,quoted_price,scheduled_at').eq('provider_id',provider.id).order('created_at',{ascending:false});if(error){say(error.message);return}el('requests').replaceChildren();for(const r of data){const a=document.createElement('article');const p=document.createElement('p');p.textContent=r.description+' — '+(labels[r.status]||r.status);a.append(p);if(r.scheduled_at){const q=document.createElement('p');q.textContent=r.quoted_price+' د.ع — '+new Date(r.scheduled_at).toLocaleString('ar-IQ',{timeZone:'Asia/Baghdad'});a.append(q)}if(r.status==='pending'){const f=document.createElement('form');const price=document.createElement('input');price.type='number';price.min='0';price.step='1';price.required=true;price.setAttribute('aria-label','السعر بالدينار');price.placeholder='السعر بالدينار';const time=document.createElement('input');time.type='datetime-local';time.required=true;time.setAttribute('aria-label','موعد الزيارة بتوقيت بغداد');const l=document.createElement('label');l.textContent='موعد الزيارة بتوقيت بغداد';const b=document.createElement('button');b.textContent='إرسال العرض';f.append(price,l,time,b);f.onsubmit=async e=>{e.preventDefault();b.disabled=true;try{await action(r.id,'quoted',Number(price.value),new Date(time.value+':00+03:00').toISOString())}finally{b.disabled=false}};a.append(f)}const next={confirmed:['en_route','الانطلاق'],en_route:['arrived','تم الوصول'],arrived:['completed','إكمال الزيارة']}[r.status];if(next){const b=document.createElement('button');b.textContent=next[1];b.onclick=async()=>{b.disabled=true;try{await action(r.id,next[0])}finally{b.disabled=false}};a.append(b);const {data:loc}=await db.from('home_service_locations').select('latitude,longitude,address').eq('request_id',r.id).maybeSingle();if(loc?.address){const address=document.createElement('p');address.textContent='عنوان الزيارة: '+loc.address;a.append(address)}if(loc&&loc.latitude!==null&&loc.longitude!==null){const q=document.createElement('a');q.textContent=' فتح موقع الزيارة';q.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(loc.latitude+','+loc.longitude);q.target='_blank';q.rel='noopener noreferrer';a.append(q)}}await documents(a,r.id,'prescription',false);if(provider.kind==='laboratory'&&['completed','results_ready'].includes(r.status))await documents(a,r.id,'result',r.status==='completed',r.status==='completed');el('requests').append(a)}}
-async function boot(){const {data:{session}}=await db.auth.getSession();if(!session)return;const {data,error}=await db.from('home_service_providers').select('id,kind,display_name,approved,subscription_expires_at').eq('account_id',session.user.id).maybeSingle();if(error||!data?.approved){say('الحساب غير معتمد كمقدم خدمة');return}provider=data;el('login').hidden=true;el('dashboard').hidden=false;el('name').textContent=data.display_name;if(!data.subscription_expires_at||new Date(data.subscription_expires_at)<=new Date())say('الاشتراك منتهٍ؛ يمكنك متابعة الطلبات السابقة وفق الصلاحيات');await load()}
+async function load(){
+ if(!provider)return;
+ const {data:requests,error}=await db.rpc('home_service_provider_requests');
+ if(error){say(error.message);return}
+ el('requests').replaceChildren();
+ for(const r of requests||[]){
+  const card=document.createElement('article');
+  const summary=document.createElement('p');
+  summary.textContent=r.description+' — '+(labels[r.status]||r.status);
+  card.append(summary);
+
+  const contact=document.createElement('div');
+  contact.className='request-contact';
+  const patient=document.createElement('p');
+  const patientLabel=document.createElement('strong');
+  patientLabel.textContent='اسم المراجع: ';
+  patient.append(patientLabel,document.createTextNode(r.patient_name||'غير مسجل'));
+  contact.append(patient);
+
+  const phone=document.createElement('p');
+  const phoneLabel=document.createElement('strong');
+  phoneLabel.textContent='رقم المراجع: ';
+  phone.append(phoneLabel);
+  const phoneNumber=String(r.patient_phone||'').trim();
+  if(phoneNumber){
+   const link=document.createElement('a');
+   link.href='tel:'+phoneNumber.replace(/[^0-9+]/g,'');
+   link.textContent=phoneNumber;
+   phone.append(link);
+  }else{
+   phone.append(document.createTextNode('لم يُسجّل رقم تواصل'));
+  }
+  contact.append(phone);
+
+  const visit=document.createElement('p');
+  const visitLabel=document.createElement('strong');
+  visitLabel.textContent='موقع الزيارة: ';
+  visit.append(visitLabel);
+  if(r.visit_address){
+   visit.append(document.createTextNode(r.visit_address));
+  }else if(r.latitude!==null&&r.longitude!==null){
+   visit.append(document.createTextNode('الموقع محدد على الخريطة'));
+  }else{
+   visit.append(document.createTextNode('لم يُسجّل عنوان نصي'));
+  }
+  contact.append(visit);
+
+  if(r.latitude!==null&&r.longitude!==null){
+   const map=document.createElement('a');
+   map.textContent='فتح موقع الزيارة على الخريطة';
+   map.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(r.latitude+','+r.longitude);
+   map.target='_blank';
+   map.rel='noopener noreferrer';
+   contact.append(map);
+  }else if(r.visit_address){
+   const map=document.createElement('a');
+   map.textContent='البحث عن العنوان على الخريطة';
+   map.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(r.visit_address);
+   map.target='_blank';
+   map.rel='noopener noreferrer';
+   contact.append(map);
+  }
+  card.append(contact);
+
+  if(r.quoted_price!==null){
+   const offer=document.createElement('p');
+   const time=r.arrival_time?String(r.arrival_time).slice(0,5):'';
+   offer.textContent=Number(r.quoted_price).toLocaleString('ar-IQ')+' د.ع'+(time?' — وقت الوصول: '+time:'');
+   card.append(offer);
+  }
+
+  if(r.status==='pending'){
+   const form=document.createElement('form');
+   const price=document.createElement('input');
+   price.type='number';price.min='0';price.step='1';price.required=true;
+   price.setAttribute('aria-label','السعر بالدينار');price.placeholder='السعر بالدينار';
+
+   const time=document.createElement('input');
+   time.type='time';time.required=true;
+   time.setAttribute('aria-label','وقت الوصول');
+
+   const label=document.createElement('label');
+   label.className='arrival-time-label';
+   label.textContent='وقت الوصول';
+   form.append(price,label,time);
+
+   const send=document.createElement('button');
+   send.textContent='إرسال العرض';
+   form.append(send);
+   form.onsubmit=async event=>{
+    event.preventDefault();
+    send.disabled=true;
+    try{await action(r.id,'quoted',Number(price.value),time.value)}
+    finally{send.disabled=false}
+   };
+   card.append(form);
+  }
+
+  const next={confirmed:['en_route','الانطلاق'],en_route:['arrived','تم الوصول'],arrived:['completed','إكمال الزيارة']}[r.status];
+  if(next){
+   const button=document.createElement('button');
+   button.textContent=next[1];
+   button.onclick=async()=>{button.disabled=true;try{await action(r.id,next[0])}finally{button.disabled=false}};
+   card.append(button);
+  }
+
+  await documents(card,r.id,'prescription',false);
+  if(provider.kind==='laboratory'&&['completed','results_ready'].includes(r.status))
+   await documents(card,r.id,'result',r.status==='completed',r.status==='completed');
+
+  el('requests').append(card);
+ }
+}async function boot(){const {data:{session}}=await db.auth.getSession();if(!session)return;const {data,error}=await db.from('home_service_providers').select('id,kind,display_name,approved,subscription_expires_at').eq('account_id',session.user.id).maybeSingle();if(error||!data?.approved){say('الحساب غير معتمد كمقدم خدمة');return}provider=data;el('login').hidden=true;el('dashboard').hidden=false;el('name').textContent=data.display_name;if(!data.subscription_expires_at||new Date(data.subscription_expires_at)<=new Date())say('الاشتراك منتهٍ؛ يمكنك متابعة الطلبات السابقة وفق الصلاحيات');await load()}
 el('form').onsubmit=async e=>{e.preventDefault();const {error}=await db.auth.signInWithPassword({email:el('email').value,password:el('password').value});if(error)say('تعذر تسجيل الدخول');else await boot()};el('refresh').onclick=load;el('logout').onclick=async()=>{await db.auth.signOut();location.reload()};boot();
 </script></html>
