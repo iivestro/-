@@ -53,6 +53,15 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .booking-status-label{display:inline-block;padding:4px 12px;border-radius:20px;background:#eaf8ff;font-weight:bold}
 @media(max-width:600px){main{padding:15px 12px 90px}.hero{padding:25px 20px}.card{padding:17px}.portal-grid,.tabs{grid-template-columns:1fr}.topbar-inner{flex-wrap:wrap}.brand{font-size:14px}.top-actions button{font-size:11px;padding:8px}}
 
+.emergency-entry-gold{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:18px;padding:20px 22px;background:linear-gradient(115deg,#fff9e9,#fff0cc);border:1px solid #ead6a0;border-radius:20px;box-shadow:0 10px 26px rgba(151,113,36,.10)}
+.emergency-entry-copy{display:flex;align-items:center;gap:15px}
+.emergency-entry-copy h3{margin:0 0 3px;color:#72571e}
+.emergency-entry-copy p{margin:0;color:#897447;font-size:14px}
+.emergency-entry-icon{flex:none;width:48px;height:48px;display:grid;place-items:center;border-radius:15px;background:#f4dfad;color:#9b762b;font-size:27px}
+.emergency-entry-button{flex:none;background:linear-gradient(135deg,#b99243,#94702c);color:#fff9e9;box-shadow:0 7px 16px rgba(151,113,36,.18)}
+.emergency-entry-button:hover{box-shadow:0 10px 22px rgba(151,113,36,.24)}
+@media(max-width:600px){.emergency-entry-gold{align-items:stretch;flex-direction:column;padding:17px}.emergency-entry-button{width:100%}.emergency-entry-copy p{font-size:13px}}
+
 #patientEmergencyMessages{height:min(55vh,520px);min-height:260px;overflow:auto;background:#f6fbfb;border:1px solid var(--border);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:11px}
 .emergency-bubble{max-width:86%;padding:11px 14px;border-radius:15px;overflow-wrap:anywhere;line-height:1.7}
 .emergency-bubble.patient{align-self:flex-start;background:#e6f5f4;color:#174b60;border-bottom-left-radius:4px}
@@ -259,10 +268,6 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
   <p class="muted">اختر الخدمة الصحية المناسبة لك.</p>
   <div class="portal-grid">
 
-   <button type="button" class="portal-card" onclick="openEmergencyChat()">
-    <strong>🚨 تواصل مع طبيب الطوارئ</strong>
-    <span>ابدأ محادثة مباشرة، واكتب رسالتك أو أرفق صورة للطبيب.</span>
-   </button>
    <button type="button" class="portal-card" onclick="openDoctorsPortal()">
     <strong>🩺 بوابة الأطباء</strong>
     <span>عرض جميع الأطباء المعتمدين والبحث حسب الاسم والاختصاص.</span>
@@ -273,6 +278,16 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
    </button>
    <button type="button" class="portal-card" onclick="location.href='home-services.html?kind=laboratory'"><strong>🔬 بوابة المختبرات الطبية</strong><span>اختيار المختبر وطلب سحب العينات من المنزل واستلام النتائج.</span></button>
    <button type="button" class="portal-card" onclick="location.href='home-services.html?kind=male'"><strong>💙 بوابة التمريض</strong><span>اختيار ممرض أو ممرضة وطلب الرعاية التمريضية المنزلية.</span></button>
+  </div>
+  <div class="emergency-entry-gold">
+   <div class="emergency-entry-copy">
+    <span class="emergency-entry-icon" aria-hidden="true">✚</span>
+    <div>
+     <h3>تحدث مع طبيبي</h3>
+     <p>تواصل مع طبيب الطوارئ برسالة مباشرة، وأرفق صورة عند الحاجة.</p>
+    </div>
+   </div>
+   <button type="button" class="emergency-entry-button" onclick="openEmergencyChat()">فتح محادثة الطوارئ <span aria-hidden="true">←</span></button>
   </div>
  </section>
 
