@@ -207,8 +207,6 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
    <h3>إنشاء حساب مراجع جديد</h3>
    <label>الاسم الكامل</label>
    <input id="name" maxlength="150" placeholder="الاسم الكامل">
-   <label>رقم الهاتف</label>
-   <input id="phone" type="tel" inputmode="numeric" maxlength="11" placeholder="07XXXXXXXXX">
    <label>العمر</label>
    <input id="age" type="number" min="1" max="120" placeholder="العمر">
    <label>المحافظة</label>
@@ -216,19 +214,18 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
     <option value="">اختر المحافظة</option>
     <option>بغداد</option><option>نينوى</option><option>البصرة</option><option>النجف</option><option>كربلاء</option><option>بابل</option><option>القادسية</option><option>المثنى</option><option>ذي قار</option><option>ميسان</option><option>واسط</option><option>ديالى</option><option>صلاح الدين</option><option>كركوك</option><option>الأنبار</option><option>أربيل</option><option>السليمانية</option><option>دهوك</option><option>حلبجة</option>
    </select>
-   <label>البريد الإلكتروني</label>
-   <input id="signupEmail" type="email" placeholder="البريد الإلكتروني">
    <label>كلمة المرور</label>
-   <input id="signupPassword" type="password" placeholder="6 أحرف على الأقل">
+   <input id="signupPassword" type="password" minlength="8" autocomplete="new-password" placeholder="8 أحرف على الأقل">
+   <p class="muted">لا تحتاج إلى بريد أو رقم هاتف. احتفظ بكلمة المرور لأن استعادتها غير متاحة حالياً.</p>
    <button type="button" onclick="signup()">إنشاء الحساب</button>
   </div>
 
   <div id="loginPanel" class="hidden">
    <h3>تسجيل الدخول</h3>
-   <label>البريد الإلكتروني</label>
-   <input id="email" type="email" placeholder="البريد الإلكتروني">
+   <label>الاسم الكامل</label>
+   <input id="loginName" maxlength="150" autocomplete="username" placeholder="الاسم الذي سجلت به">
    <label>كلمة المرور</label>
-   <input id="password" type="password" placeholder="كلمة المرور">
+   <input id="password" type="password" autocomplete="current-password" placeholder="كلمة المرور">
    <button type="button" onclick="login()">تسجيل الدخول</button>
   </div>
   <p id="message" class="msg"></p>
@@ -331,38 +328,50 @@ function showAuthTab(tab){
  message("");
 }
 
+async function patientAuthRequest(payload){
+ const {data,error}=await db.functions.invoke("patient-auth",{body:payload});
+ if(error){
+  let details="";
+  try{details=(await error.context?.json())?.error||"";}catch{}
+  throw new Error(details||"تعذر إكمال الطلب. حاول مرة أخرى.");
+ }
+ if(!data?.session)throw new Error(data?.error||"تعذر إنشاء جلسة الدخول.");
+ const {error:sessionError}=await db.auth.setSession(data.session);
+ if(sessionError)throw new Error("تم إنشاء الحساب لكن تعذر فتح الجلسة. حاول تسجيل الدخول.");
+}
+
 async function signup(){
- const full_name=el("name").value.trim();
- const phone=el("phone").value.trim();
+ const full_name=el("name").value.trim().replace(/\s+/g," ");
  const age=Number(el("age").value);
  const governorate=el("governorate").value;
- const email=el("signupEmail").value.trim();
  const password=el("signupPassword").value;
 
- if(!full_name||!/^07[0-9]{9}$/.test(phone)||!age||age<1||age>120||!governorate||!email||password.length<6){
-  message("أكمل الحقول وتأكد من رقم الهاتف والعمر وكلمة المرور.");
+ if(full_name.length<2||!age||age<1||age>120||!governorate||password.length<8){
+  message("أكمل الاسم والعمر والمحافظة، واجعل كلمة المرور 8 أحرف على الأقل.");
   return;
  }
 
  message("جاري إنشاء الحساب...");
- const {error}=await db.auth.signUp({
-  email,password,
-  options:{data:{full_name,phone,age:String(age),governorate}}
- });
-
- if(error){message("تعذر إنشاء الحساب: "+error.message);return;}
- message("تم إنشاء الحساب دون انتظار موافقة الإدارة. تحقق من بريدك الإلكتروني إذا طُلب تأكيده، ثم سجل الدخول.");
+ try{
+  await patientAuthRequest({mode:"signup",full_name,age,governorate,password});
+  await loadAccount();
+ }catch(error){
+  message(error.message||"تعذر إنشاء الحساب. حاول مرة أخرى.");
+ }
 }
 
 async function login(){
- const email=el("email").value.trim();
+ const full_name=el("loginName").value.trim().replace(/\s+/g," ");
  const password=el("password").value;
- if(!email||!password){message("أدخل البريد الإلكتروني وكلمة المرور.");return;}
+ if(!full_name||!password){message("أدخل الاسم الكامل وكلمة المرور.");return;}
 
  message("جاري تسجيل الدخول...");
- const {error}=await db.auth.signInWithPassword({email,password});
- if(error){message("تعذر تسجيل الدخول: "+error.message);return;}
- await loadAccount();
+ try{
+  await patientAuthRequest({mode:"login",full_name,password});
+  await loadAccount();
+ }catch(error){
+  message(error.message||"الاسم أو كلمة المرور غير صحيحة.");
+ }
 }
 
 async function loadAccount(){
