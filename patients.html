@@ -815,7 +815,7 @@ async function loadMyAppointments(){
  const {data:{user}}=await db.auth.getUser();if(!user)return;
  const dateInput=el("medicalRecordDate");
  if(dateInput&&!dateInput.value){const now=new Date();dateInput.value=[now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");}
- await loadMedicalRecords();
+ if(!el("myAppointments").classList.contains("hidden"))await loadMedicalRecords();
  const list=el("myAppointmentsList");list.textContent="جاري تحميل الحجوزات...";
  const [oldResult,centerResult]=await Promise.all([
   db.from("appointments").select("id,requested_date,appointment_at,status,notes,rejection_reason,doctors(profile_id)").eq("patient_id",user.id).order("requested_date",{ascending:true}),
