@@ -584,7 +584,7 @@ async function loadAppointments(){
     actions.appendChild(makeActionButton("تأكيد وتحديد الساعة","",()=>updateAppointment(item.appointment_id,"approved",item.requested_date)));
     actions.appendChild(makeActionButton("رفض الحجز","reject",()=>updateAppointment(item.appointment_id,"rejected")));
    }else if(item.appointment_status==="approved"||item.appointment_status==="confirmed"){
-    actions.appendChild(makeActionButton("تغيير الموعد","secondary",()=>updateAppointment(item.appointment_id,"reschedule")));
+    actions.appendChild(makeActionButton("تغيير الموعد","secondary",()=>updateAppointment(item.appointment_id,"reschedule",item.requested_date)));
     actions.appendChild(makeActionButton("إكمال الزيارة","complete",()=>updateAppointment(item.appointment_id,"completed")));
    }
    card.append(actions);list.appendChild(card);
