@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>بيشنت | PATIENT - لوحة الإدارة</title>
+<title>بلسم | BALSAM - لوحة الإدارة</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2"></script>
 <style>
 *{box-sizing:border-box}
@@ -45,7 +45,7 @@ th{color:var(--blue);white-space:nowrap}
 .approved,.booking-status.completed,.booking-status.approved{background:#e0f7ee;color:#087a53}
 .rejected,.booking-status.cancelled{background:#ffe8eb;color:#b42335}
 .booking-status.pending{background:#fff4d6;color:#8a6415}
-#error,#errorPatients,#doctorError,#dashboardError,#appointmentsError,#manageDoctorsError,#emergencyDoctorError{color:#c62828}
+#error,#errorBalsams,#doctorError,#dashboardError,#appointmentsError,#manageDoctorsError,#emergencyDoctorError{color:#c62828}
 #message,#doctorMessage,#manageDoctorsMessage,#emergencyDoctorMessage{color:#087a53}
 .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
 .chart-card{padding:18px;margin-top:16px}
@@ -96,7 +96,7 @@ main{padding:10px}
 .sidebar-nav{grid-template-columns:1fr 1fr}
 }
 
-/* PATIENT Signature Medical UI */
+/* BALSAM Signature Medical UI */
 :root{--sky:#20b7ad;--blue:#0d8f91;--soft:#edf8f7;--ink:#183447;--line:#d8e7eb}
 body{background:radial-gradient(ellipse at 90% 0%,rgba(32,183,173,.08),transparent 30%),#f3f8fa;color:var(--ink);font-family:"Segoe UI",Tahoma,Arial,sans-serif}
 header{background:rgba(255,255,255,.9);backdrop-filter:blur(16px);border-bottom:1px solid #dce8eb;box-shadow:0 7px 24px rgba(16,47,70,.05)}
@@ -236,12 +236,13 @@ button{min-height:44px;font-family:inherit}
 .secondary,.btn-light{color:#12656c;background:#eaf6f4;border-color:#cde5e1}
 @media(max-width:650px){header{padding:12px 14px}.header-inner{gap:10px}.card{padding:16px}.patient-home-link{font-size:12px;padding:8px 12px}}
 </style>
+<link rel="stylesheet" href="balsam-demo/balsam-theme.css?v=20261126-balsam">
 </head>
 <body>
 
 <header>
  <div>
-  <div class="brand">بيشنت | PATIENT</div>
+  <div class="brand">بلسم | BALSAM</div>
   <p>لوحة الإدارة المركزية</p>
  </div>
  <a class="patient-home-link" href="index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10l9-7 9 7M5 9v12h14V9M10 21v-7h4v7"/></svg>اللوحة الرئيسية</a><a class="patient-home-link" href="visit-services.html">الخدمات والدعم</a>
@@ -284,8 +285,8 @@ button{min-height:44px;font-family:inherit}
       <span class="small">إحصائيات المنصة الإجمالية</span>
      </div>
      <div class="grid">
-      <div class="stat"><span>إجمالي المراجعين المسجلين</span><strong id="totalPatients">—</strong></div>
-      <div class="stat"><span>المراجعون الذين حجزوا</span><strong id="bookedPatients">—</strong></div>
+      <div class="stat"><span>إجمالي المراجعين المسجلين</span><strong id="totalBalsams">—</strong></div>
+      <div class="stat"><span>المراجعون الذين حجزوا</span><strong id="bookedBalsams">—</strong></div>
       <div class="stat"><span>إجمالي الأطباء المسجلين</span><strong id="totalDoctors">—</strong></div>
       <div class="stat"><span>إجمالي الحجوزات</span><strong id="totalAppointments">—</strong></div>
      </div>
@@ -310,10 +311,10 @@ button{min-height:44px;font-family:inherit}
    <section id="patientsSection" class="card hidden">
     <h2>إدارة المراجعين</h2>
     <p class="muted">يمكنك قبول حساب المراجع أو رفضه وتعديل بياناته.</p>
-    <input id="search" placeholder="ابحث بالاسم أو الهاتف أو المحافظة..." oninput="renderPatients()">
-    <button onclick="loadPatients()">تحديث القائمة</button>
+    <input id="search" placeholder="ابحث بالاسم أو الهاتف أو المحافظة..." oninput="renderBalsams()">
+    <button onclick="loadBalsams()">تحديث القائمة</button>
     <p id="message"></p>
-    <p id="errorPatients"></p>
+    <p id="errorBalsams"></p>
     <div class="table-wrap">
      <table>
       <thead>
@@ -564,7 +565,7 @@ async function showDashboard(user){
  document.getElementById("login").classList.add("hidden");
  document.getElementById("dashboard").classList.remove("hidden");
  document.getElementById("topActions").classList.remove("hidden");
- await Promise.all([refreshDashboard(),loadPatients(),loadDoctorOptions(),loadAppointments()]);
+ await Promise.all([refreshDashboard(),loadBalsams(),loadDoctorOptions(),loadAppointments()]);
  if(bookingsRefreshTimer)clearInterval(bookingsRefreshTimer);
  bookingsRefreshTimer=setInterval(async()=>{
   await Promise.all([loadAppointments(),refreshDashboard()]);
@@ -666,7 +667,7 @@ function renderCharts(){
 }
 
 async function refreshAll(){
- await Promise.all([refreshDashboard(),loadPatients(),loadAppointments()]);
+ await Promise.all([refreshDashboard(),loadBalsams(),loadAppointments()]);
  if(!document.getElementById("manageDoctorsSection").classList.contains("hidden"))await loadDoctors();
  if(!document.getElementById("representativesSection").classList.contains("hidden"))await loadRepresentatives();
  if(!document.getElementById("emergencyDoctorSection").classList.contains("hidden"))await loadEmergencyDoctor();
@@ -674,7 +675,7 @@ async function refreshAll(){
 
 async function refreshDashboard(){
  setText("dashboardError","");
- const ids=["totalPatients","bookedPatients","totalDoctors","totalAppointments"];
+ const ids=["totalBalsams","bookedBalsams","totalDoctors","totalAppointments"];
  ids.forEach(id=>setText(id,"..."));
  try{
   const [patients,doctors,appointments]=await Promise.all([
@@ -687,8 +688,8 @@ async function refreshDashboard(){
   if(appointments.error)throw new Error("الحجوزات: "+appointments.error.message);
   const patientRows=patients.data||[],doctorRows=doctors.data||[],appointmentRows=appointments.data||[];
   const booked=new Set(appointmentRows.map(a=>a.patient_id).filter(Boolean));
-  setText("totalPatients",patientRows.length);
-  setText("bookedPatients",booked.size);
+  setText("totalBalsams",patientRows.length);
+  setText("bookedBalsams",booked.size);
   setText("totalDoctors",doctorRows.length);
   setText("totalAppointments",appointmentRows.length);
   chartData={patients:patientRows,doctors:doctorRows,appointments:appointmentRows};
@@ -700,9 +701,9 @@ async function refreshDashboard(){
 }
 
 /* جلب المراجعين وأرقامهم */
-async function loadPatients(){
+async function loadBalsams(){
  const tbody=document.getElementById("patientsTable");
- setText("errorPatients","");
+ setText("errorBalsams","");
  tbody.innerHTML="<tr><td colspan='6'>جارٍ التحميل...</td></tr>";
 
  const {data,error}=await db.from("profiles")
@@ -711,7 +712,7 @@ async function loadPatients(){
 
  if(error){
   tbody.innerHTML="";
-  setText("errorPatients","تعذر تحميل المراجعين: "+error.message);
+  setText("errorBalsams","تعذر تحميل المراجعين: "+error.message);
   return;
  }
 
@@ -721,14 +722,14 @@ async function loadPatients(){
  if(ids.length){
   const result=await db.rpc("admin_get_profile_phones",{p_profile_ids:ids});
   if(result.error){
-   setText("errorPatients","تعذر تحميل أرقام الهواتف: "+result.error.message);
+   setText("errorBalsams","تعذر تحميل أرقام الهواتف: "+result.error.message);
    patientList=patientList.map(p=>({...p,phone:""}));
   }else{
    const phones=new Map((result.data||[]).map(x=>[x.profile_id,x.phone]));
    patientList=patientList.map(p=>({...p,phone:phones.get(p.id)||""}));
   }
  }
- renderPatients();
+ renderBalsams();
 }
 
 function appointmentStatusLabel(status){
@@ -823,7 +824,7 @@ function getStatusLabel(status){
  return labels[status]||status||"غير محدد";
 }
 
-function renderPatients(){
+function renderBalsams(){
  const tbody=document.getElementById("patientsTable");
  const term=document.getElementById("search").value.trim().toLowerCase();
  const filtered=patientList.filter(p=>(p.full_name||"").toLowerCase().includes(term)||(p.phone||"").toLowerCase().includes(term)||(p.governorate||"").toLowerCase().includes(term));
@@ -834,8 +835,8 @@ function renderPatients(){
   let actions="";
   if(status==="pending"){
    actions=`<div class="patient-actions">
-    <button class="approve-btn" onclick="updatePatientStatus('${p.id}','approved',this)">قبول</button>
-    <button class="reject-btn" onclick="updatePatientStatus('${p.id}','rejected',this)">رفض</button>
+    <button class="approve-btn" onclick="updateBalsamStatus('${p.id}','approved',this)">قبول</button>
+    <button class="reject-btn" onclick="updateBalsamStatus('${p.id}','rejected',this)">رفض</button>
    </div>`;
   }
   return `<tr>
@@ -844,12 +845,12 @@ function renderPatients(){
    <td>${escapeHTML(p.governorate||"غير محددة")}</td>
    <td><span class="status ${approved?"approved":rejected?"rejected":""}">${escapeHTML(getStatusLabel(status))}</span>${actions}</td>
    <td>${date}</td>
-   <td><button class="btn-light" onclick="editPatient('${p.id}')">تعديل البيانات</button></td>
+   <td><button class="btn-light" onclick="editBalsam('${p.id}')">تعديل البيانات</button></td>
   </tr>`;
  }).join("");
 }
 
-async function editPatient(id){
+async function editBalsam(id){
  const p=patientList.find(x=>x.id===id);
  if(!p)return;
  const full_name=prompt("اسم المراجع:",p.full_name||"");
@@ -866,27 +867,27 @@ async function editPatient(id){
  const age=ageText.trim()===""?null:Number(ageText);
  if(age!==null&&(!Number.isInteger(age)||age<1||age>120)){alert("العمر يجب أن يكون بين 1 و120.");return;}
  const {error}=await db.from("profiles").update({full_name:full_name.trim(),age,governorate:governorate.trim(),approval_status:approval_status.trim(),updated_at:new Date().toISOString()}).eq("id",id).eq("role","patient");
- if(error){setText("errorPatients","تعذر تعديل بيانات المراجع: "+error.message);return;}
+ if(error){setText("errorBalsams","تعذر تعديل بيانات المراجع: "+error.message);return;}
  const phoneResult=await db.rpc("admin_update_profile_phone",{p_profile_id:id,p_phone:phone.trim()});
- if(phoneResult.error){setText("errorPatients","تم تعديل البيانات، لكن تعذر تحديث رقم الهاتف: "+phoneResult.error.message);await loadPatients();return;}
+ if(phoneResult.error){setText("errorBalsams","تم تعديل البيانات، لكن تعذر تحديث رقم الهاتف: "+phoneResult.error.message);await loadBalsams();return;}
  setText("message","تم تحديث بيانات المراجع ورقم هاتفه بنجاح.");
- await Promise.all([loadPatients(),refreshDashboard()]);
+ await Promise.all([loadBalsams(),refreshDashboard()]);
 }
 
-async function updatePatientStatus(id,newStatus,button){
+async function updateBalsamStatus(id,newStatus,button){
  const isApprove=newStatus==="approved";
  if(!confirm(isApprove?"هل تريد قبول حساب هذا المراجع؟":"هل تريد رفض حساب هذا المراجع؟"))return;
  button.disabled=true;
  setText("message","جارٍ تحديث حالة الحساب...");
- setText("errorPatients","");
+ setText("errorBalsams","");
  const {data,error}=await db.from("profiles").update({approval_status:newStatus,updated_at:new Date().toISOString()}).eq("id",id).eq("role","patient").eq("approval_status","pending").select("id");
  if(error||!data?.length){
   setText("message","");
-  setText("errorPatients",error?"فشل تحديث الحساب: "+error.message:"لم يتم تحديث الحساب. تحقق من صلاحيات RLS أو حالة الحساب.");
+  setText("errorBalsams",error?"فشل تحديث الحساب: "+error.message:"لم يتم تحديث الحساب. تحقق من صلاحيات RLS أو حالة الحساب.");
   button.disabled=false;return;
  }
  setText("message",isApprove?"تم قبول حساب المراجع بنجاح.":"تم رفض حساب المراجع بنجاح.");
- await Promise.all([loadPatients(),refreshDashboard()]);
+ await Promise.all([loadBalsams(),refreshDashboard()]);
 }
 
 /* إدارة الأطباء */
