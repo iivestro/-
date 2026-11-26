@@ -217,15 +217,6 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
   <p>اكتشف الأطباء والمراكز الطبية واحجز موعدك بسهولة.</p>
  </div>
 
- <section class="emergency-access" aria-labelledby="emergencyAccessTitle">
-  <div class="emergency-symbol" aria-hidden="true">✚</div>
-  <div class="emergency-copy">
-   <h2 id="emergencyAccessTitle">تواصل مع طبيب الطوارئ</h2>
-   <p>ابدأ محادثة مباشرة، وأرسل رسالة أو صورة للطبيب عند الحاجة.</p>
-  </div>
-  <a class="emergency-button" href="emergency-chat.html">فتح محادثة الطوارئ <span aria-hidden="true">←</span></a>
- </section>
-
  <section id="auth" class="card">
   <h2>بوابة المراجع</h2>
   <div class="tabs">
@@ -268,7 +259,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
 
  <section id="portalChoices" class="card hidden">
   <h2>اختر البوابة التي تريد الدخول إليها</h2>
-  <p class="muted">اختر إحدى البوابات الأربع للوصول إلى الرعاية الصحية المناسبة لك.</p>
+  <p class="muted">اختر الخدمة المناسبة لحسابك، أو تواصل مع طبيب الطوارئ.</p>
   <div class="portal-grid">
 
    <button type="button" class="portal-card" onclick="openDoctorsPortal()">
@@ -282,6 +273,14 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
    <button type="button" class="portal-card" onclick="location.href='home-services.html?kind=laboratory'"><strong>🔬 بوابة المختبرات الطبية</strong><span>اختيار المختبر وطلب سحب العينات من المنزل واستلام النتائج.</span></button>
    <button type="button" class="portal-card" onclick="location.href='home-services.html?kind=male'"><strong>💙 بوابة التمريض</strong><span>اختيار ممرض أو ممرضة وطلب الرعاية التمريضية المنزلية.</span></button>
   </div>
+  <section class="emergency-access" aria-labelledby="emergencyAccessTitle">
+   <div class="emergency-symbol" aria-hidden="true">✚</div>
+   <div class="emergency-copy">
+    <h2 id="emergencyAccessTitle">تواصل مع طبيب الطوارئ</h2>
+    <p>ابدأ محادثة مباشرة، وأرسل رسالة أو صورة للطبيب عند الحاجة.</p>
+   </div>
+   <a class="emergency-button" href="emergency-chat.html">فتح محادثة الطوارئ <span aria-hidden="true">←</span></a>
+  </section>
  </section>
 
  <section id="centers" class="card hidden">
