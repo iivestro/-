@@ -124,6 +124,8 @@ button{cursor:pointer}
   border-bottom-left-radius:4px;
 }
 .message small{display:block;color:#718596;font-size:10px;margin-top:5px}
+.message img{display:block;max-width:min(260px,72vw);max-height:280px;object-fit:contain;border-radius:12px;margin-top:8px;border:1px solid var(--border);background:#fff}
+
 .composer{
   padding:15px;border-top:1px solid var(--border);
   display:flex;gap:10px;align-items:flex-end;
@@ -490,14 +492,23 @@ async function loadMessages(chatId, silent = false) {
       bubble.className = "message " + (msg.sender_type === "doctor" ? "doctor" : "visitor");
 
       const content = document.createElement("div");
-      content.textContent = escapeText(msg.message);
+      content.textContent = escapeText(msg.message || "");
 
       const meta = document.createElement("small");
       meta.textContent =
         (msg.sender_type === "doctor" ? "الطبيب" : "المراجع") +
         " · " + formatDate(msg.created_at);
 
-      bubble.append(content,meta);
+      if (msg.message) bubble.appendChild(content);
+      if (msg.attachment_url) {
+        const image = document.createElement("img");
+        image.src = msg.attachment_url;
+        image.alt = "صورة مرفقة من المراجع";
+        image.loading = "lazy";
+        image.referrerPolicy = "no-referrer";
+        bubble.appendChild(image);
+      }
+      bubble.appendChild(meta);
       box.appendChild(bubble);
     });
 

@@ -53,6 +53,24 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .booking-status-label{display:inline-block;padding:4px 12px;border-radius:20px;background:#eaf8ff;font-weight:bold}
 @media(max-width:600px){main{padding:15px 12px 90px}.hero{padding:25px 20px}.card{padding:17px}.portal-grid,.tabs{grid-template-columns:1fr}.topbar-inner{flex-wrap:wrap}.brand{font-size:14px}.top-actions button{font-size:11px;padding:8px}}
 
+#patientEmergencyMessages{height:min(55vh,520px);min-height:260px;overflow:auto;background:#f6fbfb;border:1px solid var(--border);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:11px}
+.emergency-bubble{max-width:86%;padding:11px 14px;border-radius:15px;overflow-wrap:anywhere;line-height:1.7}
+.emergency-bubble.patient{align-self:flex-start;background:#e6f5f4;color:#174b60;border-bottom-left-radius:4px}
+.emergency-bubble.doctor{align-self:flex-end;background:#e8f7ed;color:#145c3b;border-bottom-right-radius:4px}
+.emergency-meta{font-size:11px;color:var(--muted);margin-bottom:4px}
+.emergency-attachment{display:block;max-width:min(250px,70vw);max-height:260px;object-fit:contain;border-radius:12px;margin-top:8px;border:1px solid var(--border);background:white}
+.emergency-start{padding:25px;background:linear-gradient(140deg,#f3fbfa,#fff);border:1px solid var(--border);border-radius:20px;text-align:center}
+.emergency-icon{width:54px;height:54px;display:grid;place-items:center;margin:0 auto 10px;border-radius:17px;background:#fff0e8;color:#df7451;font-size:30px}
+.emergency-chat-head{display:flex;justify-content:space-between;gap:12px;padding:12px 4px;color:var(--dark)}
+.emergency-chat-head span{font-size:12px;color:var(--muted)}
+.emergency-composer{margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:16px;background:white}
+.emergency-composer textarea{width:100%;min-height:70px;max-height:150px;resize:vertical}
+.emergency-compose-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.emergency-photo-button{display:inline-flex;align-items:center;min-height:42px;padding:9px 14px;border:1px solid var(--border);border-radius:12px;background:var(--light);color:var(--dark);cursor:pointer}
+.emergency-compose-tools .muted{flex:1}
+.emergency-preview{max-width:150px;max-height:150px;object-fit:contain;border-radius:12px;margin-top:10px}
+
+
 /* BALSAM Signature Medical UI */
 :root{--primary:#0e9f9a;--dark:#123b55;--light:#e8f7f5;--page:#f3f8fa;--text:#183447;--muted:#60798a;--border:#d8e7eb;--navy:#102f46;--shadow:0 16px 42px rgba(16,47,70,.08)}
 body{background:radial-gradient(ellipse at 8% 0%,rgba(14,159,154,.10),transparent 34%),radial-gradient(ellipse at 94% 18%,rgba(44,126,180,.08),transparent 30%),var(--page);color:var(--text);font-family:"Segoe UI",Tahoma,Arial,sans-serif}
@@ -238,9 +256,13 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
 
  <section id="portalChoices" class="card hidden">
   <h2>اختر البوابة التي تريد الدخول إليها</h2>
-  <p class="muted">اختر إحدى البوابات الأربع للوصول إلى الرعاية الصحية المناسبة لك.</p>
+  <p class="muted">اختر الخدمة الصحية المناسبة لك.</p>
   <div class="portal-grid">
 
+   <button type="button" class="portal-card" onclick="openEmergencyChat()">
+    <strong>🚨 تواصل مع طبيب الطوارئ</strong>
+    <span>ابدأ محادثة مباشرة، واكتب رسالتك أو أرفق صورة للطبيب.</span>
+   </button>
    <button type="button" class="portal-card" onclick="openDoctorsPortal()">
     <strong>🩺 بوابة الأطباء</strong>
     <span>عرض جميع الأطباء المعتمدين والبحث حسب الاسم والاختصاص.</span>
@@ -251,6 +273,33 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
    </button>
    <button type="button" class="portal-card" onclick="location.href='home-services.html?kind=laboratory'"><strong>🔬 بوابة المختبرات الطبية</strong><span>اختيار المختبر وطلب سحب العينات من المنزل واستلام النتائج.</span></button>
    <button type="button" class="portal-card" onclick="location.href='home-services.html?kind=male'"><strong>💙 بوابة التمريض</strong><span>اختيار ممرض أو ممرضة وطلب الرعاية التمريضية المنزلية.</span></button>
+  </div>
+ </section>
+
+ <section id="emergencyChat" class="card hidden">
+  <button type="button" class="secondary portal-back" onclick="backToPortals()">← العودة إلى البوابات</button>
+  <h2>تواصل مع طبيب الطوارئ</h2>
+  <p class="muted">اكتب رسالتك للطبيب وأرفق صورة عند الحاجة. للحالات الحرجة، اتصل بخدمات الطوارئ المحلية مباشرةً.</p>
+  <div id="patientEmergencyNotice" class="status-box hidden" aria-live="polite"></div>
+  <div id="patientEmergencyStart" class="emergency-start">
+   <div class="emergency-icon">✚</div>
+   <h3>محادثة خاصة مع طبيب الطوارئ</h3>
+   <p class="muted">سيبدأ التواصل باسم حسابك، وتبقى المحادثة مرتبطة بهذه الجلسة.</p>
+   <button type="button" id="patientEmergencyStartButton" onclick="startPatientEmergencyChat()">فتح محادثة الطوارئ</button>
+  </div>
+  <div id="patientEmergencyConversation" class="hidden">
+   <div class="emergency-chat-head"><strong id="patientEmergencyChatTitle">محادثة الطوارئ</strong><span id="patientEmergencyConnection">متصل</span></div>
+   <div id="patientEmergencyMessages" aria-live="polite"></div>
+   <form id="patientEmergencyForm" class="emergency-composer">
+    <textarea id="patientEmergencyText" maxlength="2000" placeholder="اكتب رسالتك للطبيب..." aria-label="رسالة إلى طبيب الطوارئ"></textarea>
+    <div class="emergency-compose-tools">
+     <label class="emergency-photo-button" for="patientEmergencyPhoto">📷 إرفاق صورة</label>
+     <input id="patientEmergencyPhoto" class="hidden" type="file" accept="image/jpeg,image/png,image/webp">
+     <span id="patientEmergencyPhotoName" class="muted">JPG أو PNG أو WebP، حتى 5 ميغابايت</span>
+     <button id="patientEmergencySendButton" type="submit">إرسال</button>
+    </div>
+    <img id="patientEmergencyPreview" class="emergency-preview hidden" alt="معاينة الصورة المرفقة">
+   </form>
   </div>
  </section>
 
@@ -309,6 +358,15 @@ let currentCenterId=null;
 let medicalCentersCache=[];
 let previousView="portals";
 let portalRefreshBusy=false;
+let currentPatientId="";
+let currentPatientName="";
+let patientEmergencyChatId="";
+let patientEmergencyAccessToken="";
+let patientEmergencyPoll=null;
+let patientEmergencyBusy=false;
+let patientEmergencyRefreshBusy=false;
+let patientEmergencyPreviewUrl="";
+let patientEmergencyMessagesSignature="";
 
 const DEFAULT_DOCTOR_PHOTO="data:image/svg+xml;charset=UTF-8,"+encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160">
@@ -405,6 +463,8 @@ async function loadAccount(){
   el("statusText").textContent="هذا الحساب ليس حساب مراجع.";
   return;
  }
+ currentPatientId=user.id;
+ currentPatientName=profile.full_name||"المراجع";
 
  if(profile.approval_status==="rejected"){
   el("statusText").innerHTML='<div class="status-box status-rejected">تم رفض طلب الحساب. يرجى التواصل مع الإدارة.</div>';
@@ -422,13 +482,237 @@ async function loadAccount(){
  await loadMyAppointments();
 }
 
+function patientEmergencyNotice(text,error=true){
+ const box=el("patientEmergencyNotice");
+ box.textContent=text||"";
+ box.classList.toggle("hidden",!text);
+ box.classList.toggle("status-rejected",Boolean(error&&text));
+ box.classList.toggle("status-pending",Boolean(!error&&text));
+}
+
+async function patientEmergencyApi(payload){
+ const {data,error}=await db.functions.invoke("emergency-chat",{body:payload});
+ if(error){
+  let details="";
+  try{details=(await error.context?.json())?.error||"";}catch{}
+  throw new Error(details||"تعذر الاتصال بمحادثة الطوارئ.");
+ }
+ if(data?.error)throw new Error(data.error);
+ return data||{};
+}
+
+function patientEmergencyStorageKey(){
+ return "balsam_patient_emergency_chat_"+currentPatientId;
+}
+
+function stopPatientEmergencyPolling(){
+ if(patientEmergencyPoll)clearInterval(patientEmergencyPoll);
+ patientEmergencyPoll=null;
+}
+
+function showPatientEmergencyConversation(chat){
+ el("patientEmergencyStart").classList.add("hidden");
+ el("patientEmergencyConversation").classList.remove("hidden");
+ el("patientEmergencyChatTitle").textContent="محادثة "+(chat.visitor_name||currentPatientName||"المراجع");
+ patientEmergencyNotice("");
+}
+
+async function openEmergencyChat(){
+ hideAllViews();
+ el("emergencyChat").classList.remove("hidden");
+ patientEmergencyNotice("");
+ const savedKey=patientEmergencyStorageKey();
+ try{
+  const saved=JSON.parse(sessionStorage.getItem(savedKey)||"null");
+  if(saved?.chat_id&&saved?.access_token&&saved?.patient_id===currentPatientId){
+   patientEmergencyChatId=saved.chat_id;
+   patientEmergencyAccessToken=saved.access_token;
+   showPatientEmergencyConversation({visitor_name:saved.visitor_name});
+   await refreshPatientEmergencyMessages();
+   patientEmergencyPoll=setInterval(refreshPatientEmergencyMessages,4000);
+   return;
+  }
+ }catch{}
+ sessionStorage.removeItem(savedKey);
+ patientEmergencyChatId="";
+ patientEmergencyAccessToken="";
+ el("patientEmergencyStart").classList.remove("hidden");
+ el("patientEmergencyConversation").classList.add("hidden");
+}
+
+async function startPatientEmergencyChat(){
+ if(!currentPatientId){patientEmergencyNotice("سجّل الدخول إلى حساب المراجع أولاً.");return;}
+ const button=el("patientEmergencyStartButton");
+ button.disabled=true;
+ button.textContent="جارٍ فتح المحادثة...";
+ try{
+  const result=await patientEmergencyApi({
+   action:"create_chat",
+   name:currentPatientName,
+   patient_id:currentPatientId
+  });
+  patientEmergencyChatId=result.chat.id;
+  patientEmergencyAccessToken=result.access_token;
+  sessionStorage.setItem(patientEmergencyStorageKey(),JSON.stringify({
+   chat_id:patientEmergencyChatId,
+   access_token:patientEmergencyAccessToken,
+   patient_id:currentPatientId,
+   visitor_name:result.chat.visitor_name
+  }));
+  patientEmergencyMessagesSignature="";
+  showPatientEmergencyConversation(result.chat);
+  await refreshPatientEmergencyMessages();
+  stopPatientEmergencyPolling();
+  patientEmergencyPoll=setInterval(refreshPatientEmergencyMessages,4000);
+ }catch(error){
+  patientEmergencyNotice(error.message||"تعذر فتح المحادثة.");
+ }finally{
+  button.disabled=false;
+  button.textContent="فتح محادثة الطوارئ";
+ }
+}
+
+async function refreshPatientEmergencyMessages(){
+ if(!patientEmergencyChatId||!patientEmergencyAccessToken||patientEmergencyRefreshBusy||el("emergencyChat").classList.contains("hidden"))return;
+ patientEmergencyRefreshBusy=true;
+ try{
+  const result=await patientEmergencyApi({
+   action:"visitor_get",
+   chat_id:patientEmergencyChatId,
+   access_token:patientEmergencyAccessToken
+  });
+  renderPatientEmergencyMessages(result.messages||[]);
+  if(result.chat?.status==="closed"){
+   el("patientEmergencyConnection").textContent="المحادثة مغلقة";
+   el("patientEmergencyForm").classList.add("hidden");
+   stopPatientEmergencyPolling();
+  }
+ }catch(error){
+  patientEmergencyNotice(error.message||"تعذر تحديث المحادثة.");
+ }finally{
+  patientEmergencyRefreshBusy=false;
+ }
+}
+
+function renderPatientEmergencyMessages(messages){
+ const signature=messages.map(item=>item.id).join("|");
+ if(signature===patientEmergencyMessagesSignature)return;
+ patientEmergencyMessagesSignature=signature;
+ const box=el("patientEmergencyMessages");
+ const nearBottom=box.scrollHeight-box.clientHeight-box.scrollTop<100;
+ box.replaceChildren();
+ if(!messages.length){
+  const empty=document.createElement("p");
+  empty.className="muted";
+  empty.textContent="أرسل رسالتك للطبيب لبدء المحادثة.";
+  box.appendChild(empty);
+ }
+ messages.forEach(item=>{
+  const bubble=document.createElement("article");
+  bubble.className="emergency-bubble "+(item.sender_type==="doctor"?"doctor":"patient");
+  const meta=document.createElement("div");
+  meta.className="emergency-meta";
+  meta.textContent=(item.sender_type==="doctor"?"طبيب الطوارئ":"أنت")+" · "+new Date(item.created_at).toLocaleTimeString("ar-IQ",{hour:"2-digit",minute:"2-digit"});
+  bubble.appendChild(meta);
+  if(item.message){
+   const content=document.createElement("div");
+   content.textContent=item.message;
+   bubble.appendChild(content);
+  }
+  if(item.attachment_url){
+   const img=document.createElement("img");
+   img.className="emergency-attachment";
+   img.src=item.attachment_url;
+   img.alt="صورة مرفقة في محادثة الطوارئ";
+   img.loading="lazy";
+   img.referrerPolicy="no-referrer";
+   bubble.appendChild(img);
+  }
+  box.appendChild(bubble);
+ });
+ if(nearBottom)box.scrollTop=box.scrollHeight;
+}
+
+function clearPatientEmergencyPhoto(){
+ const input=el("patientEmergencyPhoto");
+ input.value="";
+ el("patientEmergencyPhotoName").textContent="JPG أو PNG أو WebP، حتى 5 ميغابايت";
+ el("patientEmergencyPreview").classList.add("hidden");
+ if(patientEmergencyPreviewUrl)URL.revokeObjectURL(patientEmergencyPreviewUrl);
+ patientEmergencyPreviewUrl="";
+}
+
+el("patientEmergencyPhoto").addEventListener("change",()=>{
+ const file=el("patientEmergencyPhoto").files?.[0];
+ if(!file){clearPatientEmergencyPhoto();return;}
+ const allowed=["image/jpeg","image/png","image/webp"];
+ if(!allowed.includes(file.type)||file.size>5*1024*1024){
+  clearPatientEmergencyPhoto();
+  patientEmergencyNotice("اختر صورة JPG أو PNG أو WebP لا يتجاوز حجمها 5 ميغابايت.");
+  return;
+ }
+ patientEmergencyNotice("");
+ el("patientEmergencyPhotoName").textContent=file.name;
+ const preview=el("patientEmergencyPreview");
+ if(patientEmergencyPreviewUrl)URL.revokeObjectURL(patientEmergencyPreviewUrl);
+ patientEmergencyPreviewUrl=URL.createObjectURL(file);
+ preview.src=patientEmergencyPreviewUrl;
+ preview.classList.remove("hidden");
+});
+
+el("patientEmergencyForm").addEventListener("submit",async event=>{
+ event.preventDefault();
+ if(patientEmergencyBusy||!patientEmergencyChatId)return;
+ const message=el("patientEmergencyText").value.trim();
+ const file=el("patientEmergencyPhoto").files?.[0]||null;
+ if(!message&&!file){patientEmergencyNotice("اكتب رسالة أو أرفق صورة.");return;}
+ if(message.length>2000){patientEmergencyNotice("يجب ألا تتجاوز الرسالة 2000 حرف.");return;}
+ patientEmergencyBusy=true;
+ el("patientEmergencySendButton").disabled=true;
+ try{
+  let attachment_path="";
+  if(file){
+   const upload=await patientEmergencyApi({
+    action:"visitor_upload_url",
+    chat_id:patientEmergencyChatId,
+    access_token:patientEmergencyAccessToken,
+    content_type:file.type
+   });
+   const {error:uploadError}=await db.storage.from("emergency-chat-attachments")
+    .uploadToSignedUrl(upload.path,upload.token,file,{contentType:file.type});
+   if(uploadError)throw new Error("تعذر رفع الصورة. حاول بصورة أصغر أو بصيغة JPG أو PNG أو WebP.");
+   attachment_path=upload.path;
+  }
+  await patientEmergencyApi({
+   action:"visitor_send",
+   chat_id:patientEmergencyChatId,
+   access_token:patientEmergencyAccessToken,
+   message,
+   attachment_path
+  });
+  el("patientEmergencyText").value="";
+  clearPatientEmergencyPhoto();
+  patientEmergencyNotice("تم إرسال رسالتك للطبيب.",false);
+  patientEmergencyMessagesSignature="";
+  await refreshPatientEmergencyMessages();
+ }catch(error){
+  patientEmergencyNotice(error.message||"تعذر إرسال الرسالة.");
+ }finally{
+  patientEmergencyBusy=false;
+  el("patientEmergencySendButton").disabled=false;
+ }
+});
+
 function hideAllViews(){
- ["status","portalChoices","centers","doctors","myAppointments"].forEach(id=>el(id).classList.add("hidden"));
+ stopPatientEmergencyPolling();
+ ["status","portalChoices","emergencyChat","centers","doctors","myAppointments"].forEach(id=>el(id).classList.add("hidden"));
  el("myBookingsButton").classList.add("hidden");
 }
 
 function backToPortals(){
+ stopPatientEmergencyPolling();
  currentCenterId=null;
+ el("emergencyChat").classList.add("hidden");
  el("centers").classList.add("hidden");
  el("doctors").classList.add("hidden");
  el("myAppointments").classList.add("hidden");

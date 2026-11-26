@@ -34,6 +34,18 @@ async function enforceRateLimit(
   return data === true;
 }
 
+async function attachSignedUrls(admin: ReturnType<typeof createClient>, messages: Record<string, unknown>[]) {
+  const paths = [...new Set(messages.map((message) => String(message.attachment_path || "")).filter(Boolean))];
+  if (!paths.length) return messages;
+  const { data, error } = await admin.storage.from("emergency-chat-attachments").createSignedUrls(paths, 3600);
+  if (error) throw new Error("تعذر تجهيز عرض الصور.");
+  const urls = new Map((data || []).map((item) => [item.path, item.signedUrl]));
+  return messages.map((message) => ({
+    ...message,
+    attachment_url: message.attachment_path ? urls.get(String(message.attachment_path)) || null : null,
+  }));
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -107,8 +119,25 @@ Deno.serve(async (req: Request) => {
       if (!(await enforceRateLimit(admin, "create:" + clientIp, 4, 600))) {
         return json({ error: "تم تجاوز عدد محاولات فتح المحادثة. حاول بعد عدة دقائق." }, 429);
       }
-      const name = String(body.name || "").trim().replace(/\s+/g, " ");
-      if (name.length < 2 || name.length > 80) return json({ error: "اكتب اسمك بشكل صحيح (من حرفين إلى 80 حرفاً)." }, 400);
+      let name = String(body.name || "").trim().replace(/\s+/g, " ");
+      const patientId = String(body.patient_id || "");
+      if (patientId) {
+        const authHeader = req.headers.get("Authorization") || "";
+        if (!authHeader.toLowerCase().startsWith("bearer ")) return json({ error: "سجّل الدخول إلى حساب المراجع أولاً." }, 401);
+        const patientClient = createClient(url, anonKey, {
+          global: { headers: { Authorization: authHeader } },
+          auth: { autoRefreshToken: false, persistSession: false },
+        });
+        const { data: userData, error: userError } = await patientClient.auth.getUser();
+        if (userError || !userData.user || userData.user.id !== patientId) return json({ error: "جلسة المراجع غير صالحة." }, 401);
+        const { data: profile, error: profileError } = await admin.from("profiles")
+          .select("full_name,role,approval_status").eq("id", patientId).maybeSingle();
+        if (profileError || profile?.role !== "patient" || profile?.approval_status !== "approved") {
+          return json({ error: "يلزم حساب مراجع مفعّل لبدء المحادثة." }, 403);
+        }
+        name = String(profile.full_name || "").trim().replace(/\s+/g, " ");
+      }
+      if (name.length < 2 || name.length > 80) return json({ error: "تعذر استخدام اسم الحساب لبدء المحادثة." }, 400);
 
       const { data: account, error: accountError } = await admin
         .from("emergency_doctor_accounts")
@@ -133,13 +162,13 @@ Deno.serve(async (req: Request) => {
       return json({ chat, access_token: accessToken });
     }
 
-    if (action === "visitor_get" || action === "visitor_send") {
+    if (action === "visitor_get" || action === "visitor_send" || action === "visitor_upload_url") {
       const chatId = String(body.chat_id || "");
       const token = String(body.access_token || "");
       if (!chatId || !token || token.length > 100) return json({ error: "بيانات المحادثة غير مكتملة." }, 400);
 
       const visitorKey = await sha256(token);
-      const visitorLimit = action === "visitor_send" ? 20 : 30;
+      const visitorLimit = action === "visitor_send" ? 20 : action === "visitor_upload_url" ? 8 : 30;
       if (!(await enforceRateLimit(admin, action + ":" + visitorKey, visitorLimit, 60))) {
         return json({ error: "طلبات كثيرة خلال وقت قصير. انتظر قليلاً ثم حاول مجدداً." }, 429);
       }
@@ -155,30 +184,61 @@ Deno.serve(async (req: Request) => {
       }
       if (chat.status !== "open") return json({ error: "هذه المحادثة مغلقة." }, 403);
 
+      if (action === "visitor_upload_url") {
+        const mime = String(body.content_type || "");
+        const extension = mime === "image/jpeg" ? "jpg" : mime === "image/png" ? "png" : mime === "image/webp" ? "webp" : "";
+        if (!extension) return json({ error: "ارفع صورة بصيغة JPG أو PNG أو WebP." }, 400);
+        const path = chatId + "/visitor/" + crypto.randomUUID() + "." + extension;
+        const { data, error } = await admin.storage.from("emergency-chat-attachments").createSignedUploadUrl(path);
+        if (error || !data?.token) return json({ error: "تعذر تجهيز رفع الصورة." }, 500);
+        return json({ path, token: data.token });
+      }
+
       if (action === "visitor_send") {
         const message = String(body.message || "").trim();
-        if (!message || message.length > 2000) return json({ error: "الرسالة مطلوبة ويجب ألا تتجاوز 2000 حرف." }, 400);
+        const attachmentPath = String(body.attachment_path || "");
+        if ((!message && !attachmentPath) || message.length > 2000) return json({ error: "اكتب رسالة أو أرفق صورة، وبحد أقصى 2000 حرف." }, 400);
+
+        let attachmentMime: string | null = null;
+        if (attachmentPath) {
+          const parts = attachmentPath.split("/");
+          const match = parts.length === 3 && parts[0] === chatId && parts[1] === "visitor"
+            ? parts[2].match(/^[0-9a-f-]{36}\.(jpg|png|webp)$/i)
+            : null;
+          if (!match) return json({ error: "مسار الصورة غير صالح." }, 400);
+          const extension = match[1].toLowerCase();
+          attachmentMime = extension === "jpg" ? "image/jpeg" : extension === "png" ? "image/png" : "image/webp";
+          const { data: objects, error: objectError } = await admin.storage.from("emergency-chat-attachments")
+            .list(chatId + "/visitor", { search: parts[2], limit: 10 });
+          if (objectError || !objects?.some((object) => object.name === parts[2])) {
+            return json({ error: "لم يكتمل رفع الصورة. أعد المحاولة." }, 400);
+          }
+        }
 
         const { error: insertError } = await admin.from("emergency_chat_messages").insert({
           chat_id: chatId,
           sender_type: "visitor",
           sender_name: chat.visitor_name,
-          message,
+          message: message || "أرفق المراجع صورة.",
+          attachment_path: attachmentPath || null,
+          attachment_mime: attachmentMime,
         });
         if (insertError) return json({ error: "تعذر إرسال الرسالة." }, 500);
-        await admin.from("emergency_chats").update({ updated_at: new Date().toISOString(), last_message_at: new Date().toISOString() }).eq("id", chatId);
+        const now = new Date().toISOString();
+        await admin.from("emergency_chats").update({ updated_at: now, last_message_at: now }).eq("id", chatId);
         return json({ success: true });
       }
 
       const { data: messages, error: messagesError } = await admin
         .from("emergency_chat_messages")
-        .select("id, sender_type, sender_name, message, created_at")
+        .select("id, sender_type, sender_name, message, created_at, attachment_path, attachment_mime")
         .eq("chat_id", chatId)
         .order("created_at", { ascending: true })
         .limit(300);
 
       if (messagesError) return json({ error: "تعذر تحميل الرسائل." }, 500);
-      return json({ chat: { id: chat.id, visitor_name: chat.visitor_name, status: chat.status, created_at: chat.created_at }, messages: messages || [] });
+      const withAttachments = await attachSignedUrls(admin, messages || []);
+      return json({ chat: { id: chat.id, visitor_name: chat.visitor_name, status: chat.status, created_at: chat.created_at }, messages: withAttachments });
     }
 
     if (action === "doctor_list" || action === "doctor_get" || action === "doctor_send") {
@@ -227,12 +287,13 @@ Deno.serve(async (req: Request) => {
 
       const { data: messages, error: messagesError } = await admin
         .from("emergency_chat_messages")
-        .select("id, sender_type, sender_name, message, created_at")
+        .select("id, sender_type, sender_name, message, created_at, attachment_path, attachment_mime")
         .eq("chat_id", chatId)
         .order("created_at", { ascending: true })
         .limit(300);
       if (messagesError) return json({ error: "تعذر تحميل الرسائل." }, 500);
-      return json({ chat, messages: messages || [] });
+      const withAttachments = await attachSignedUrls(admin, messages || []);
+      return json({ chat, messages: withAttachments });
     }
 
     return json({ error: "الإجراء غير معروف." }, 400);
