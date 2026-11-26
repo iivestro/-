@@ -530,6 +530,30 @@ if(doctorFee===null||doctorFee===undefined||doctorFee==="")revenue.textContent="
 else revenue.textContent=(completed.length*Number(doctorFee)).toLocaleString("en-US")+" د.ع";
 }
 
+function addPatientMedicalRecordsButton(card,patientId){
+ if(!patientId)return;
+ const button=makeActionButton("عرض تقارير المراجع","secondary",async()=>{
+  button.disabled=true;button.textContent="جارٍ تحميل التقارير...";
+  let panel=card.querySelector(".patient-records-panel");
+  if(panel){panel.remove();button.textContent="عرض تقارير المراجع";button.disabled=false;return;}
+  panel=document.createElement("div");panel.className="status patient-records-panel";panel.textContent="جارٍ تحميل التقارير الطبية...";card.append(panel);
+  const {data,error}=await db.from("patient_medical_records").select("id,title,record_date,file_name,file_path").eq("patient_id",patientId).order("record_date",{ascending:false});
+  if(error){panel.textContent="تعذر تحميل التقارير: "+error.message;button.textContent="إعادة تحميل التقارير";button.disabled=false;return;}
+  if(!data?.length){panel.textContent="لم يرفق المراجع تقارير طبية.";button.textContent="إخفاء التقارير";button.disabled=false;return;}
+  panel.innerHTML="";
+  for(const record of data){
+   const row=document.createElement("p");row.style.margin="8px 0";
+   const {data:signed,error:signedError}=await db.storage.from("patient-medical-records").createSignedUrl(record.file_path,300);
+   const label=record.title+" · "+record.record_date;
+   if(signedError||!signed?.signedUrl){row.textContent=label+" — تعذر فتح الملف";}
+   else{const link=document.createElement("a");link.href=signed.signedUrl;link.target="_blank";link.rel="noopener noreferrer";link.textContent=label;link.style.color="#087f83";link.style.fontWeight="700";row.append(link);}
+   panel.append(row);
+  }
+  button.textContent="إخفاء التقارير";button.disabled=false;
+ });
+ card.append(button);
+}
+
 async function loadAppointments(){
  if((!currentDoctorId&&!currentCenterDoctorId)||appointmentsLoading)return;
  if(isCenterDoctor){await loadCenterDoctorAppointments();return;}
@@ -553,10 +577,11 @@ async function loadAppointments(){
    const notes=document.createElement("p");notes.textContent="ملاحظات: "+(item.appointment_notes||"لا توجد ملاحظات");
    const status=document.createElement("span");status.className="tag";status.textContent=statusArabic(item.appointment_status);
    card.append(title,date,patient,notes,status);
+   addPatientMedicalRecordsButton(card,item.patient_id);
    if(item.rejection_reason){const reason=document.createElement("p");reason.textContent="سبب الرفض: "+item.rejection_reason;card.append(reason);}
    const actions=document.createElement("div");actions.className="actions";
    if(item.appointment_status==="pending"){
-    actions.appendChild(makeActionButton("تأكيد وتحديد الساعة","",()=>updateAppointment(item.appointment_id,"approved")));
+    actions.appendChild(makeActionButton("تأكيد وتحديد الساعة","",()=>updateAppointment(item.appointment_id,"approved",item.requested_date)));
     actions.appendChild(makeActionButton("رفض الحجز","reject",()=>updateAppointment(item.appointment_id,"rejected")));
    }else if(item.appointment_status==="approved"||item.appointment_status==="confirmed"){
     actions.appendChild(makeActionButton("تغيير الموعد","secondary",()=>updateAppointment(item.appointment_id,"reschedule")));
@@ -589,6 +614,7 @@ async function loadCenterDoctorAppointments(){
    const notes=document.createElement("p");notes.textContent="ملاحظات: "+(item.appointment_notes||"لا توجد");
    const status=document.createElement("span");status.className="tag";status.textContent=statusArabic(item.appointment_status);
    card.append(title,date,patient,notes,status);
+   addPatientMedicalRecordsButton(card,item.patient_id);
    if(item.rejection_reason){const reason=document.createElement("p");reason.textContent="سبب الرفض: "+item.rejection_reason;card.append(reason);}
    const actions=document.createElement("div");actions.className="actions";
    if(item.appointment_status==="pending"){
@@ -659,12 +685,12 @@ button.addEventListener("click",callback);
 return button;
 }
 
-async function updateAppointment(appointmentId,newStatus){
+async function updateAppointment(appointmentId,newStatus,requestedDate=""){
  if(!currentDoctorId)return;
  const action=newStatus==="approved"?"confirm":newStatus==="rejected"?"reject":newStatus==="completed"?"complete":newStatus;
  let appointmentAt=null,rejectionReason=null;
  if(action==="confirm"||action==="reschedule"){
-  const picked=await openAppointmentDateTimePicker("","09:00");
+  const picked=await openAppointmentDateTimePicker(requestedDate,"09:00");
   if(!picked)return;
   appointmentAt=picked.iso;
  }else if(action==="reject"){
@@ -871,8 +897,9 @@ const visitDate=document.createElement("p");
 visitDate.textContent="موعد الزيارة: "+formatRepDate(item.visit_date);
 
 const visitTime=document.createElement("p");
-visitTime.textContent="الوقت: "+
-formatRepTime(item.start_time)+" إلى "+formatRepTime(item.end_time);
+visitTime.textContent=item.visit_at
+ ?"وقت دخول المندوب: "+new Date(item.visit_at).toLocaleTimeString("ar-IQ",{timeZone:"Asia/Baghdad",hour:"2-digit",minute:"2-digit"})
+ :"الفترة المتاحة: "+formatRepTime(item.start_time)+" إلى "+formatRepTime(item.end_time);
 
 const notes=document.createElement("p");
 notes.textContent="ملاحظات المندوب: "+(item.notes||"لا توجد ملاحظات");
@@ -885,15 +912,14 @@ const actions=document.createElement("div");
 actions.className="actions";
 
 if(item.status==="pending"){
-actions.appendChild(makeActionButton("قبول الطلب","complete",
-()=>updateRepAppointment(item.appointment_id,"approved")));
+actions.appendChild(makeActionButton("قبول وتحديد وقت الدخول","complete",
+()=>updateRepAppointment(item,"approved")));
 actions.appendChild(makeActionButton("رفض الطلب","reject",
-()=>updateRepAppointment(item.appointment_id,"rejected")));
+()=>updateRepAppointment(item,"rejected")));
 }else if(item.status==="approved"||item.status==="confirmed"){
 actions.appendChild(makeActionButton("تسجيل الزيارة مكتملة","complete",
-()=>updateRepAppointment(item.appointment_id,"completed")));
-actions.appendChild(makeActionButton("رفض الطلب","reject",
-()=>updateRepAppointment(item.appointment_id,"rejected")));
+()=>updateRepAppointment(item,"completed")));
+
 }
 
 card.append(title,age,company,type,governorate,visitDate,visitTime,notes,status,actions);
@@ -901,16 +927,43 @@ container.appendChild(card);
 });
 }
 
-async function updateRepAppointment(appointmentId,newStatus){
+async function openRepVisitTimePicker(date,startValue,endValue){
+ return new Promise(resolve=>{
+  const overlay=document.createElement("div");overlay.className="appointment-picker-overlay";
+  overlay.innerHTML='<form class="appointment-picker" role="dialog" aria-modal="true"><div class="appointment-picker-head"><div class="appointment-picker-icon">◷</div><div><h3>تحديد وقت دخول المندوب</h3><p>اختر ساعة ضمن فترة الاستقبال التي حددتها</p></div></div><label>تاريخ الزيارة</label><input type="date" disabled><label for="repVisitPickerTime">ساعة الدخول</label><input id="repVisitPickerTime" type="time" required><p class="appointment-picker-error" aria-live="polite"></p><div class="appointment-picker-actions"><button type="submit">قبول الزيارة</button><button type="button" class="picker-cancel">إلغاء</button></div></form>';
+  const form=overlay.querySelector("form"),dateInput=form.querySelector('input[type="date"]'),timeInput=overlay.querySelector("#repVisitPickerTime"),error=overlay.querySelector(".appointment-picker-error");
+  dateInput.value=date;timeInput.min=formatRepTime(startValue);timeInput.max=formatRepTime(endValue);timeInput.value=formatRepTime(startValue);
+  const close=value=>{overlay.remove();resolve(value);};
+  form.addEventListener("submit",event=>{
+   event.preventDefault();const time=timeInput.value;
+   if(!time||time<formatRepTime(startValue)||time>=formatRepTime(endValue)){error.textContent="اختر ساعة داخل فترة الاستقبال المحددة.";return;}
+   const localDate=new Date(date+"T"+time+":00");if(Number.isNaN(localDate.getTime())){error.textContent="تعذر قراءة التاريخ والوقت.";return;}
+   if(localDate<=new Date()){error.textContent="اختر وقتاً مستقبلياً.";return;}
+   close(localDate.toISOString());
+  });
+  form.querySelector(".picker-cancel").addEventListener("click",()=>close(null));
+  overlay.addEventListener("click",event=>{if(event.target===overlay)close(null);});
+  document.body.append(overlay);timeInput.focus();
+ });
+}
+
+async function updateRepAppointment(item,newStatus){
 if(!currentDoctorId)return;
+let visitAt=null;
+if(newStatus==="approved"){
+ const picked=await openRepVisitTimePicker(item.visit_date,item.start_time,item.end_time);
+ if(!picked)return;
+ visitAt=picked;
+}
 const labels={approved:"قبول طلب الزيارة",rejected:"رفض طلب الزيارة",completed:"تسجيل الزيارة كمكتملة"};
 if(!labels[newStatus])return;
-if(!confirm("هل تريد "+labels[newStatus]+"؟"))return;
+if(!confirm(newStatus==="approved"?"هل تريد قبول الزيارة وتحديد وقت الدخول المعروض؟":"هل تريد "+labels[newStatus]+"؟"))return;
 
 showMessage("repBookingsStatus","جارٍ تحديث حالة الطلب...");
 const {data,error}=await db.rpc("doctor_update_rep_appointment",{
-p_appointment_id:appointmentId,
-p_new_status:newStatus
+p_appointment_id:item.appointment_id,
+p_new_status:newStatus,
+p_visit_at:visitAt
 });
 if(error){
 showMessage("repBookingsStatus","تعذر تحديث الطلب: "+error.message);
