@@ -947,13 +947,24 @@ async function openRepVisitTimePicker(date,startValue,endValue){
   const overlay=document.createElement("div");overlay.className="appointment-picker-overlay";
   overlay.innerHTML='<form class="appointment-picker" role="dialog" aria-modal="true"><div class="appointment-picker-head"><div class="appointment-picker-icon">◷</div><div><h3>تحديد وقت دخول المندوب</h3><p>اختر ساعة ضمن فترة الاستقبال التي حددتها</p></div></div><label>تاريخ الزيارة</label><input type="date" disabled><label for="repVisitPickerTime">ساعة الدخول</label><input id="repVisitPickerTime" type="time" required><p class="appointment-picker-error" aria-live="polite"></p><div class="appointment-picker-actions"><button type="submit">قبول الزيارة</button><button type="button" class="picker-cancel">إلغاء</button></div></form>';
   const form=overlay.querySelector("form"),dateInput=form.querySelector('input[type="date"]'),timeInput=overlay.querySelector("#repVisitPickerTime"),error=overlay.querySelector(".appointment-picker-error");
-  dateInput.value=date;timeInput.min=formatRepTime(startValue);timeInput.max=formatRepTime(endValue);timeInput.value=formatRepTime(startValue);
+  const endTime=formatRepTime(endValue);
+  const baghdadParts=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Baghdad",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date()).reduce((parts,item)=>(parts[item.type]=item.value,parts),{});
+  const baghdadToday=baghdadParts.year+"-"+baghdadParts.month+"-"+baghdadParts.day;
+  let minTime=formatRepTime(startValue);
+  if(date===baghdadToday){
+   const futureParts=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Baghdad",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date(Date.now()+60000)).reduce((parts,item)=>(parts[item.type]=item.value,parts),{});
+   const futureTime=futureParts.hour+":"+futureParts.minute;
+   if(futureTime>minTime)minTime=futureTime;
+  }
+  dateInput.value=date;timeInput.min=minTime;timeInput.max=endTime;timeInput.value=minTime;
+  const submitButton=form.querySelector('button[type="submit"]');
+  if(minTime>=endTime){error.textContent="لا توجد ساعة مستقبلية ضمن فترة الاستقبال المحددة.";submitButton.disabled=true;}
   const close=value=>{overlay.remove();resolve(value);};
   form.addEventListener("submit",event=>{
    event.preventDefault();const time=timeInput.value;
-   if(!time||time<formatRepTime(startValue)||time>=formatRepTime(endValue)){error.textContent="اختر ساعة داخل فترة الاستقبال المحددة.";return;}
-   const localDate=new Date(date+"T"+time+":00");if(Number.isNaN(localDate.getTime())){error.textContent="تعذر قراءة التاريخ والوقت.";return;}
-   if(localDate<=new Date()){error.textContent="اختر وقتاً مستقبلياً.";return;}
+   if(!time||time<minTime||time>=endTime){error.textContent="اختر ساعة مستقبلية داخل فترة الاستقبال المحددة.";return;}
+   const localDate=new Date(date+"T"+time+":00+03:00");if(Number.isNaN(localDate.getTime())){error.textContent="تعذر قراءة التاريخ والوقت.";return;}
+   if(localDate<=new Date()){error.textContent="اختر وقتاً مستقبلياً داخل فترة الاستقبال.";return;}
    close(localDate.toISOString());
   });
   form.querySelector(".picker-cancel").addEventListener("click",()=>close(null));
@@ -972,7 +983,7 @@ if(newStatus==="approved"){
 }
 const labels={approved:"قبول طلب الزيارة",rejected:"رفض طلب الزيارة",completed:"تسجيل الزيارة كمكتملة"};
 if(!labels[newStatus])return;
-if(!confirm(newStatus==="approved"?"هل تريد قبول الزيارة وتحديد وقت الدخول المعروض؟":"هل تريد "+labels[newStatus]+"؟"))return;
+if(newStatus!=="approved"&&!confirm("هل تريد "+labels[newStatus]+"؟"))return;
 
 showMessage("repBookingsStatus","جارٍ تحديث حالة الطلب...");
 const {data,error}=await db.rpc("doctor_update_rep_appointment",{
