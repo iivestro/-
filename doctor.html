@@ -641,7 +641,7 @@ async function openAppointmentDateTimePicker(initialDate,initialTime="09:00"){
   const form=overlay.querySelector("form"),dateInput=overlay.querySelector("#appointmentPickerDate"),timeInput=overlay.querySelector("#appointmentPickerTime"),error=overlay.querySelector(".appointment-picker-error");
   dateInput.min=todayText;dateInput.value=startDate;timeInput.value=initialTime||"09:00";
   const baghdadMinimumTime=()=>{
-   const p=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Baghdad",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date(Date.now()+16*60000)).reduce((parts,item)=>(parts[item.type]=item.value,parts),{});
+   const p=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Baghdad",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date(Date.now()+60000)).reduce((parts,item)=>(parts[item.type]=item.value,parts),{});
    return p.hour+":"+p.minute;
   };
   const enforceFutureTime=()=>{
@@ -665,7 +665,7 @@ async function openAppointmentDateTimePicker(initialDate,initialTime="09:00"){
    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)){error.textContent="يرجى اختيار ساعة صحيحة.";return;}
    const localDate=new Date(date+"T"+time+":00+03:00");
    if(Number.isNaN(localDate.getTime())){error.textContent="تعذر قراءة التاريخ والوقت. أعد الاختيار.";return;}
-   if(localDate.getTime()<Date.now()+15*60000){error.textContent="اختر موعداً بعد 15 دقيقة على الأقل لتأكيده.";enforceFutureTime();return;}
+   if(localDate<=new Date()){error.textContent="اختر وقتاً مستقبلياً.";enforceFutureTime();return;}
    close({date,time,iso:localDate.toISOString()});
   });
   form.querySelector(".picker-cancel").addEventListener("click",()=>close(null));
