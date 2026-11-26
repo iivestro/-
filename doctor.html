@@ -640,13 +640,13 @@ async function openAppointmentDateTimePicker(initialDate,initialTime="09:00"){
   overlay.innerHTML='<form class="appointment-picker" role="dialog" aria-modal="true" aria-labelledby="appointmentPickerTitle"><div class="appointment-picker-head"><div class="appointment-picker-icon">▦</div><div><h3 id="appointmentPickerTitle">تحديد موعد المراجع</h3><p>اختر اليوم من التقويم ثم حدد ساعة الحضور</p></div></div><label for="appointmentPickerDate">تاريخ الحضور</label><input id="appointmentPickerDate" type="date" required><label for="appointmentPickerTime">ساعة الحضور</label><input id="appointmentPickerTime" type="time" required><p class="appointment-picker-error" aria-live="polite"></p><div class="appointment-picker-actions"><button type="submit">تأكيد الموعد</button><button type="button" class="picker-cancel">إلغاء</button></div></form>';
   const form=overlay.querySelector("form"),dateInput=overlay.querySelector("#appointmentPickerDate"),timeInput=overlay.querySelector("#appointmentPickerTime"),error=overlay.querySelector(".appointment-picker-error");
   dateInput.min=todayText;dateInput.value=startDate;timeInput.value=initialTime||"09:00";
-  const baghdadTimeAfterOneMinute=()=>{
-   const p=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Baghdad",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date(Date.now()+60000)).reduce((parts,item)=>(parts[item.type]=item.value,parts),{});
+  const baghdadMinimumTime=()=>{
+   const p=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Baghdad",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date(Date.now()+16*60000)).reduce((parts,item)=>(parts[item.type]=item.value,parts),{});
    return p.hour+":"+p.minute;
   };
   const enforceFutureTime=()=>{
    if(dateInput.value===todayText){
-    const minTime=baghdadTimeAfterOneMinute();
+    const minTime=baghdadMinimumTime();
     timeInput.min=minTime;
     if(!timeInput.value||timeInput.value<minTime)timeInput.value=minTime;
    }else timeInput.min="";
@@ -665,7 +665,7 @@ async function openAppointmentDateTimePicker(initialDate,initialTime="09:00"){
    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)){error.textContent="يرجى اختيار ساعة صحيحة.";return;}
    const localDate=new Date(date+"T"+time+":00+03:00");
    if(Number.isNaN(localDate.getTime())){error.textContent="تعذر قراءة التاريخ والوقت. أعد الاختيار.";return;}
-   if(localDate<=new Date()){error.textContent="اختر ساعة قادمة؛ لا يمكن تحديد وقت مضى.";enforceFutureTime();return;}
+   if(localDate.getTime()<Date.now()+15*60000){error.textContent="اختر موعداً بعد 15 دقيقة على الأقل لتأكيده.";enforceFutureTime();return;}
    close({date,time,iso:localDate.toISOString()});
   });
   form.querySelector(".picker-cancel").addEventListener("click",()=>close(null));
