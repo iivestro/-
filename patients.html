@@ -233,7 +233,9 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
   <div id="signupPanel">
    <h3>إنشاء حساب مراجع جديد</h3>
    <label>الاسم الكامل</label>
-   <input id="name" maxlength="150" placeholder="الاسم الكامل">
+   <input id="name" maxlength="150" autocomplete="name" placeholder="الاسم الكامل">
+   <label>رقم الهاتف</label>
+   <input id="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="16" placeholder="07xxxxxxxxx" aria-label="رقم الهاتف العراقي">
    <label>العمر</label>
    <input id="age" type="number" min="1" max="120" placeholder="العمر">
    <label>المحافظة</label>
@@ -243,7 +245,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
    </select>
    <label>كلمة المرور</label>
    <input id="signupPassword" type="password" minlength="8" autocomplete="new-password" placeholder="8 أحرف على الأقل">
-   <p class="muted">لا تحتاج إلى بريد أو رقم هاتف. احتفظ بكلمة المرور لأن استعادتها غير متاحة حالياً.</p>
+   <p class="muted">أدخل رقم هاتف عراقي للتواصل. تسجيل الدخول يبقى بالاسم وكلمة المرور.</p>
    <button type="button" onclick="signup()">إنشاء الحساب</button>
   </div>
 
@@ -413,20 +415,27 @@ async function patientAuthRequest(payload){
  if(sessionError)throw new Error("تم إنشاء الحساب لكن تعذر فتح الجلسة. حاول تسجيل الدخول.");
 }
 
+function normalizeIraqiPhone(value){
+ let digits=String(value||"").replace(/\D/g,"");
+ if(/^9647\d{9}$/.test(digits))digits="0"+digits.slice(3);
+ return /^07\d{9}$/.test(digits)?digits:"";
+}
+
 async function signup(){
  const full_name=el("name").value.trim().replace(/\s+/g," ");
+ const phone=normalizeIraqiPhone(el("phone").value);
  const age=Number(el("age").value);
  const governorate=el("governorate").value;
  const password=el("signupPassword").value;
 
- if(full_name.length<2||!age||age<1||age>120||!governorate||password.length<8){
-  message("أكمل الاسم والعمر والمحافظة، واجعل كلمة المرور 8 أحرف على الأقل.");
+ if(full_name.length<2||!phone||!age||age<1||age>120||!governorate||password.length<8){
+  message("أكمل الاسم ورقم الهاتف العراقي الصحيح والعمر والمحافظة، واجعل كلمة المرور 8 أحرف على الأقل.");
   return;
  }
 
  message("جاري إنشاء الحساب...");
  try{
-  await patientAuthRequest({mode:"signup",full_name,age,governorate,password});
+  await patientAuthRequest({mode:"signup",full_name,phone,age,governorate,password});
   await loadAccount();
  }catch(error){
   message(error.message||"تعذر إنشاء الحساب. حاول مرة أخرى.");
