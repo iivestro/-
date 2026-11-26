@@ -498,7 +498,7 @@ async function loadBookings(){
  try{
   const {data,error}=await db
    .from("rep_appointments")
-   .select("id,doctor_id,slot_id,status,notes,created_at,rep_visit_slots(visit_date,start_time,end_time)")
+   .select("id,doctor_id,slot_id,status,notes,created_at,visit_at,rep_visit_slots(visit_date,start_time,end_time)")
    .eq("rep_profile_id",currentUser.id)
    .order("created_at",{ascending:false});
 
@@ -527,7 +527,7 @@ async function loadBookings(){
      <span class="badge ${statusClass(item.status)}">${escapeHTML(statusText(item.status))}</span>
     </div>
     <p>التاريخ: ${escapeHTML(slot?.visit_date?formatDate(slot.visit_date):"غير متوفر")}</p>
-    <p>الوقت: ${escapeHTML(slot?.start_time?formatTime(slot.start_time):"")} ${slot?.end_time?"- "+escapeHTML(formatTime(slot.end_time)):""}</p>
+    <p>وقت الدخول: ${escapeHTML(item.visit_at?new Date(item.visit_at).toLocaleTimeString("ar-IQ",{timeZone:"Asia/Baghdad",hour:"2-digit",minute:"2-digit"}):(slot?.start_time?"بانتظار تحديد الطبيب ("+formatTime(slot.start_time)+" - "+formatTime(slot.end_time)+")":"بانتظار تحديد الطبيب"))}</p>
     <p>ملاحظتك: ${escapeHTML(item.notes||"لا توجد ملاحظات")}</p>
    `;
    list.appendChild(card);
