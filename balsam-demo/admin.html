@@ -444,7 +444,7 @@ button{min-height:44px;font-family:inherit}
       <div><label>رقم الهاتف *</label><input id="doctorPhone" required maxlength="30" inputmode="tel"></div>
       <div><label>البريد الإلكتروني *</label><input id="doctorEmail" type="email" required></div>
       <div><label>كلمة المرور الأولية *</label><input id="doctorPassword" type="password" required minlength="10"></div>
-      <div><label>التخصص (يمكن إضافته لاحقاً)</label><select id="specialty"><option value="">اتركه فارغاً لإضافته لاحقاً</option></select></div>
+      <div><label for="specialty">التخصص (اختياري)</label><input id="specialty" type="text" maxlength="100" placeholder="اكتب تخصص الطبيب أو اتركه فارغاً" autocomplete="off"></div>
       <div><label>اسم العيادة *</label><input id="clinicName" required maxlength="160" placeholder="اكتب اسم العيادة هنا"></div>
       <div><label>عنوان العيادة بالتفصيل *</label><input id="clinicAddress" required maxlength="300" placeholder="المحافظة، المنطقة، الشارع، أقرب نقطة دالة"></div>
       <div><label>موقع العيادة على Google Maps *</label><input id="clinicMapsUrl" type="url" required maxlength="1000" placeholder="https://maps.app.goo.gl/..."></div>
@@ -565,7 +565,7 @@ async function showDashboard(user){
  document.getElementById("login").classList.add("hidden");
  document.getElementById("dashboard").classList.remove("hidden");
  document.getElementById("topActions").classList.remove("hidden");
- await Promise.all([refreshDashboard(),loadPatients(),loadDoctorOptions(),loadAppointments()]);
+ await Promise.all([refreshDashboard(),loadPatients(),loadAppointments()]);
  if(bookingsRefreshTimer)clearInterval(bookingsRefreshTimer);
  bookingsRefreshTimer=setInterval(async()=>{
   await Promise.all([loadAppointments(),refreshDashboard()]);
@@ -976,18 +976,6 @@ async function renewDoctorSubscription(id){
  await Promise.all([loadDoctors(),refreshDashboard()]);
 }
 
-async function loadDoctorOptions(){
- const specialtySelect=document.getElementById("specialty");
- specialtySelect.innerHTML='<option value="">اتركه فارغاً لإضافته لاحقاً</option>';
- const {data,error}=await db.from("specialties").select("id,name_ar").eq("is_active",true).order("name_ar");
- if(error){setText("doctorError","تعذر تحميل التخصصات: "+error.message);return;}
- (data||[]).forEach(row=>{
-  const option=document.createElement("option");
-  option.value=row.id;option.textContent=row.name_ar||"تخصص";
-  specialtySelect.appendChild(option);
- });
-}
-
 async function findOrCreateClinic(clinicName,clinicAddress,clinicMapsUrl){
  const cleanName=clinicName.trim(),cleanAddress=clinicAddress.trim(),cleanMapsUrl=clinicMapsUrl.trim();
  if(!cleanName)throw new Error("يرجى كتابة اسم العيادة.");
@@ -1032,7 +1020,7 @@ document.getElementById("doctorForm").addEventListener("submit",async event=>{
    phone:document.getElementById("doctorPhone").value.trim(),
    email:document.getElementById("doctorEmail").value.trim(),
    password:document.getElementById("doctorPassword").value,
-   specialty_id:document.getElementById("specialty").value,
+   specialty_name:document.getElementById("specialty").value.trim(),
    clinic_id:clinicId,
    qualification:document.getElementById("qualification").value.trim(),
    experience_years:Number(document.getElementById("experience").value||0),
@@ -1046,7 +1034,7 @@ document.getElementById("doctorForm").addEventListener("submit",async event=>{
   });
   const result=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error(result.error||"فشل الطلب، رمز الحالة: "+response.status);
-  let successMessage="تم إنشاء حساب الطبيب وحفظ عنوان وموقع العيادة بنجاح. يمكنك إضافة التخصص لاحقاً.";
+  let successMessage=payload.specialty_name?"تم إنشاء حساب الطبيب وحفظ التخصص وبيانات العيادة بنجاح.":"تم إنشاء حساب الطبيب ويمكن إضافة التخصص لاحقاً.";
   if(photoFile){
    setText("doctorMessage","تم إنشاء الحساب. جارٍ رفع صورة الطبيب...");
    try{await uploadNewDoctorPhoto(result.doctor_id,photoFile);successMessage="تم إنشاء حساب الطبيب ورفع صورته وحفظ بيانات العيادة بنجاح.";}
