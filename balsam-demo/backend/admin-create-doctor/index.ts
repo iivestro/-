@@ -138,6 +138,8 @@ Deno.serve(async (req: Request) => {
   const password = typeof input.password === "string" ? input.password : "";
   const specialtyId =
     typeof input.specialty_id === "string" ? input.specialty_id.trim() : "";
+  const specialtyName =
+    typeof input.specialty_name === "string" ? input.specialty_name.trim() : "";
   const clinicId = typeof input.clinic_id === "string" ? input.clinic_id : "";
   const qualification =
     typeof input.qualification === "string" ? input.qualification.trim() : "";
@@ -160,8 +162,8 @@ Deno.serve(async (req: Request) => {
   if (password.length < 10) {
     return reply({ error: "Initial password must be at least 10 characters" }, 400);
   }
-  if ((specialtyId && !uuidPattern.test(specialtyId)) || !uuidPattern.test(clinicId)) {
-    return reply({ error: "Choose a valid clinic and, when provided, a valid specialty" }, 400);
+  if (specialtyName.length > 100 || (specialtyId && !uuidPattern.test(specialtyId)) || !uuidPattern.test(clinicId)) {
+    return reply({ error: "Enter a specialty up to 100 characters and choose a valid clinic" }, 400);
   }
   if (!Number.isInteger(experience) || experience < 0 || experience > 70) {
     return reply({ error: "Invalid experience years" }, 400);
@@ -215,9 +217,40 @@ Deno.serve(async (req: Request) => {
     return reply({ error: "Could not create doctor profile: " + insertProfileError.message }, 500);
   }
 
+  let resolvedSpecialtyId: string | null = specialtyId || null;
+  if (!resolvedSpecialtyId && specialtyName) {
+    const { data: existingSpecialty, error: specialtyLookupError } = await adminClient
+      .from("specialties")
+      .select("id")
+      .eq("name_ar", specialtyName)
+      .eq("is_active", true)
+      .limit(1)
+      .maybeSingle();
+    if (specialtyLookupError) {
+      await adminClient.from("profiles").delete().eq("id", userId);
+      await adminClient.auth.admin.deleteUser(userId);
+      return reply({ error: "Could not check the specialty" }, 500);
+    }
+    if (existingSpecialty?.id) {
+      resolvedSpecialtyId = existingSpecialty.id;
+    } else {
+      const { data: createdSpecialty, error: specialtyCreateError } = await adminClient
+        .from("specialties")
+        .insert({ name_ar: specialtyName, is_active: true })
+        .select("id")
+        .single();
+      if (specialtyCreateError || !createdSpecialty?.id) {
+        await adminClient.from("profiles").delete().eq("id", userId);
+        await adminClient.auth.admin.deleteUser(userId);
+        return reply({ error: "Could not save the specialty" }, 500);
+      }
+      resolvedSpecialtyId = createdSpecialty.id;
+    }
+  }
+
   const { error: insertDoctorError } = await adminClient.from("doctors").insert({
     profile_id: userId,
-    specialty_id: specialtyId || null,
+    specialty_id: resolvedSpecialtyId,
     clinic_id: clinicId,
     qualification: qualification || null,
     experience_years: experience,
