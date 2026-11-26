@@ -231,3 +231,67 @@ select:disabled,input:disabled,textarea:disabled{background:#f2f7f6!important;co
 @media(prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
 }
+
+/* Stronger Balsam visual identity */
+body{font-size:16px!important}
+.topbar{position:sticky;top:0;z-index:50}
+.brand{font-size:20px!important;font-weight:900;letter-spacing:-.03em}
+.brand-mark{width:52px;height:52px;border-radius:18px;background:linear-gradient(145deg,#19b8aa,#086b70);box-shadow:0 12px 26px rgba(8,127,131,.25)}
+main{padding-block:22px 56px}
+.hero{
+  min-height:238px;padding:clamp(28px,5vw,56px)!important;
+  display:flex;align-items:center;gap:24px;
+  background:
+    radial-gradient(circle at 12% 18%,rgba(255,255,255,.18),transparent 8rem),
+    radial-gradient(circle at 82% 120%,rgba(42,210,190,.25),transparent 17rem),
+    linear-gradient(120deg,#064e59 0%,#087f83 48%,#16a69c 100%)!important;
+}
+.hero:before{inset:auto auto -270px -110px;width:560px;height:560px;border-color:rgba(255,255,255,.2);box-shadow:0 0 0 34px rgba(255,255,255,.045),0 0 0 78px rgba(255,255,255,.03)}
+.hero:after{
+  content:"✚";position:absolute;z-index:-1;inset:20px 24px auto auto;
+  display:grid;place-items:center;width:66px;height:66px;border-radius:22px;
+  color:rgba(255,255,255,.22);font-size:42px;font-weight:900;
+  border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.07);
+  transform:rotate(8deg)
+}
+.hero h1{font-size:clamp(30px,4vw,48px)!important;font-weight:900!important;line-height:1.25}
+.hero p{font-size:17px!important;max-width:58ch}
+.section-heading h2{font-size:clamp(23px,3vw,32px);font-weight:900}
+:where(.card,.login-box,.authCard,.auth-card,.workspace-panel,.chart-card,.doctor-card,.appointment,.info-box,.center-grid,.section-card){
+  position:relative;overflow:hidden;padding:clamp(20px,3vw,32px)!important;
+  border-radius:24px!important;background:linear-gradient(145deg,#fff 55%,#f3fbf8)!important;
+  box-shadow:0 16px 42px rgba(15,74,78,.075)!important;
+}
+:where(.card,.login-box,.authCard,.auth-card,.workspace-panel,.chart-card,.doctor-card,.appointment,.info-box,.center-grid,.section-card):before{
+  content:"";position:absolute;inset:0 0 auto;height:4px;
+  background:linear-gradient(90deg,#1fc4b4,#08777e 58%,#d3eee7)
+}
+.tabs{margin-block:14px 22px}
+.tabs button,.tabs [role=tab]{min-height:46px}
+.portal-grid{gap:16px!important;margin-block:18px}
+.portal,.portal-card{
+  min-height:142px!important;padding:20px!important;border-radius:22px!important;
+  text-align:right!important;background:linear-gradient(145deg,#fff,#f0faf7)!important;
+  border:1px solid #cfe7e1!important;box-shadow:0 11px 28px rgba(17,84,84,.07)!important
+}
+.portal-card{display:flex!important;flex-direction:column;align-items:flex-start;justify-content:center;gap:8px}
+.portal-card:hover{background:linear-gradient(145deg,#fff,#e6f7f2)!important}
+input,select,textarea{min-height:50px!important}
+label{display:block;margin:8px 0 5px}
+button,.btn{min-height:46px}
+.emergency-access{
+  position:relative;overflow:hidden;padding:24px!important;border:1px solid #f0d5bf!important;
+  border-radius:24px!important;background:linear-gradient(120deg,#fffaf4,#fff 65%,#fff1e6)!important;
+  box-shadow:0 14px 32px rgba(115,72,32,.08)!important
+}
+.emergency-symbol{box-shadow:0 8px 22px rgba(208,103,55,.15)}
+.table-wrap{border-radius:20px!important}
+th{padding-block:15px}
+@media(max-width:760px){
+ main{padding-block:14px 36px}
+ .hero{min-height:205px;padding:26px!important}
+ .hero p{font-size:15px!important}
+ :where(.card,.login-box,.authCard,.auth-card,.workspace-panel,.chart-card,.doctor-card,.appointment,.info-box,.center-grid,.section-card){padding:20px!important}
+ .portal-grid{grid-template-columns:1fr!important}
+ .portal,.portal-card{min-height:110px!important}
+}
