@@ -282,6 +282,10 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
     <strong>🏥 بوابة المراكز الطبية</strong>
     <span>استعراض المراكز الطبية واختيار الأطباء الموجودين في كل مركز.</span>
    </button>
+   <button type="button" class="portal-card medical-record-portal-card" onclick="openPatientMedicalRecord()">
+    <strong>📋 سجلي الطبي</strong>
+    <span>اكتب حالتك الصحية وارفع تقاريرك الطبية في ملف مستقل عن الحجوزات.</span>
+   </button>
    <button type="button" class="portal-card" onclick="location.href='home-services.html?kind=laboratory'"><strong>🔬 بوابة المختبرات الطبية</strong><span>اختيار المختبر وطلب سحب العينات من المنزل واستلام النتائج.</span></button>
    <button type="button" class="portal-card" onclick="location.href='home-services.html?kind=male'"><strong>💙 بوابة التمريض</strong><span>اختيار ممرض أو ممرضة وطلب الرعاية التمريضية المنزلية.</span></button>
   </div>
@@ -348,9 +352,13 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
  <section id="myAppointments" class="card hidden">
   <button type="button" class="secondary portal-back" onclick="backToPrevious()">← العودة</button>
   <h2>حجوزاتي</h2>
-  <section class="medical-records card" aria-labelledby="medicalRecordsTitle">
-   <h3 id="medicalRecordsTitle">سجلي الطبي</h3>
-   <p class="muted">اكتب الأمراض المزمنة والحالة أو الأعراض التي تعاني منها. يستطيع الطبيب المرتبط بطلب أو موعد معك الاطلاع عليها، وارفع تقاريرك الطبية أدناه.</p>
+  
+  <div id="myAppointmentsList" class="msg">جاري تحميل الحجوزات...</div>
+ </section>
+<section id="patientMedicalRecord" class="medical-records card hidden" aria-labelledby="medicalRecordsTitle">
+   <button type="button" class="secondary portal-back" onclick="backFromMedicalRecord()">← العودة</button>
+   <h2 id="medicalRecordsTitle">سجلي الطبي</h2>
+   <p class="muted">احفظ الأمراض المزمنة والحالة الصحية وارفع تقاريرك الطبية هنا. يبقى هذا السجل مستقلاً عن طلبات الحجز، ويظهر للطبيب المرتبط بطلبك أو موعدك.</p>
    <div class="medical-history-form">
     <div><label for="chronicConditions">الأمراض المزمنة</label><textarea id="chronicConditions" rows="4" maxlength="8000" placeholder="مثال: السكري، ارتفاع ضغط الدم، الربو..."></textarea></div>
     <div><label for="currentComplaints">ما الذي تعاني منه حالياً؟</label><textarea id="currentComplaints" rows="4" maxlength="8000" placeholder="اكتب الأعراض أو الحالة الصحية الحالية..."></textarea></div>
@@ -369,8 +377,6 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
    <p id="medicalRecordMessage" class="msg" aria-live="polite"></p>
    <div id="medicalRecordsList" class="medical-record-list">جاري تحميل التقارير...</div>
   </section>
-  <div id="myAppointmentsList" class="msg">جاري تحميل الحجوزات...</div>
- </section>
 </main>
 
 <button id="myBookingsButton" class="hidden" type="button" onclick="openMyAppointments()">▤ حجوزاتي</button>
@@ -742,7 +748,7 @@ el("patientEmergencyForm").addEventListener("submit",async event=>{
 
 function hideAllViews(){
  stopPatientEmergencyPolling();
- ["status","portalChoices","emergencyChat","centers","doctors","myAppointments"].forEach(id=>el(id).classList.add("hidden"));
+ ["status","portalChoices","emergencyChat","centers","doctors","myAppointments","patientMedicalRecord"].forEach(id=>el(id).classList.add("hidden"));
  el("myBookingsButton").classList.add("hidden");
 }
 
@@ -753,8 +759,27 @@ function backToPortals(){
  el("centers").classList.add("hidden");
  el("doctors").classList.add("hidden");
  el("myAppointments").classList.add("hidden");
+ el("patientMedicalRecord").classList.add("hidden");
  el("portalChoices").classList.remove("hidden");
  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function openPatientMedicalRecord(){
+ currentCenterId=null;
+ el("portalChoices").classList.add("hidden");
+ el("emergencyChat").classList.add("hidden");
+ el("centers").classList.add("hidden");
+ el("doctors").classList.add("hidden");
+ el("myAppointments").classList.add("hidden");
+ el("patientMedicalRecord").classList.remove("hidden");
+ const dateInput=el("medicalRecordDate");
+ if(dateInput&&!dateInput.value)dateInput.value=baghdadDateOffset(0);
+ Promise.all([loadMedicalHistory(),loadMedicalRecords()]);
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+function backFromMedicalRecord(){
+ el("patientMedicalRecord").classList.add("hidden");
+ backToPortals();
 }
 
 function openDoctorsPortal(){
@@ -1046,12 +1071,17 @@ async function selectDoctor(doctor,name){
  el("doctorList").prepend(panel);
  dateInput.addEventListener("change",checkSelectedDay);book.addEventListener("click",bookAppointment);
  const {data,error}=await db.from("doctor_schedules").select("day_of_week,start_time,end_time,is_available,unlimited_daily,max_daily_patients")
-  .eq("doctor_id",doctor.id).eq("is_available",true);
- if(error){scheduleMessage.textContent="تعذر تحميل الدوام: "+error.message;return;}
+  .eq("doctor_id",doctor.id);
+ if(error){scheduleMessage.textContent="تعذر تحميل الدوام: "+error.message;book.disabled=true;return;}
  selectedSchedules=data||[];
- if(!selectedSchedules.some(s=>Number(s.day_of_week)===new Date(dateInput.value+"T12:00:00").getDay())&&
-    selectedSchedules.some(s=>Number(s.day_of_week)===new Date(baghdadDateOffset(1)+"T12:00:00").getDay()))dateInput.value=baghdadDateOffset(1);
- if(!selectedSchedules.length){scheduleMessage.textContent="الطبيب لم يحدد أوقات دوام متاحة حالياً.";book.disabled=true;return;}
+ const activeSchedules=selectedSchedules.filter(s=>s.is_available===true);
+ if(!activeSchedules.some(s=>Number(s.day_of_week)===new Date(dateInput.value+"T12:00:00").getDay())&&
+    activeSchedules.some(s=>Number(s.day_of_week)===new Date(baghdadDateOffset(1)+"T12:00:00").getDay()))dateInput.value=baghdadDateOffset(1);
+ if(!selectedSchedules.length){
+  scheduleMessage.textContent="لم يحدد الطبيب ساعات دوام منشورة بعد. يمكنك إرسال طلب، وسيحدد الطبيب موعد الحضور عند الموافقة.";
+  book.disabled=false;
+  return;
+ }
  checkSelectedDay();
 }
 function baghdadDateOffset(offset=0){
@@ -1084,11 +1114,16 @@ function checkSelectedDay(){
  if(!date)return;
 
  const day=new Date(date+"T12:00:00").getDay();
- const schedule=selectedSchedules.find(s=>Number(s.day_of_week)===day);
+ const schedule=selectedSchedules.find(s=>Number(s.day_of_week)===day&&s.is_available===true);
 
  if(!schedule){
-  el("scheduleMessage").textContent="لا يوجد دوام متاح للطبيب في هذا اليوم.";
-  el("bookButton").disabled=true;
+  if(selectedSchedules.length===0){
+   el("scheduleMessage").textContent="لم يحدد الطبيب ساعات دوام منشورة بعد. يمكنك إرسال طلب، وسيحدد الطبيب موعد الحضور عند الموافقة.";
+   el("bookButton").disabled=false;
+  }else{
+   el("scheduleMessage").textContent="لا يوجد دوام متاح للطبيب في هذا اليوم.";
+   el("bookButton").disabled=true;
+  }
   return;
  }
 
@@ -1103,7 +1138,7 @@ async function bookAppointment(){
  const notes=el("appointmentNotes").value.trim();
  if(!date){el("bookingMessage").textContent="اختر يوم المراجعة.";return;}
  const day=new Date(date+"T12:00:00").getDay();
- if(!selectedSchedules.some(s=>Number(s.day_of_week)===day)){el("bookingMessage").textContent="لا يوجد دوام للطبيب في هذا اليوم.";return;}
+ if(selectedSchedules.length&&!selectedSchedules.some(s=>Number(s.day_of_week)===day&&s.is_available===true)){el("bookingMessage").textContent="لا يوجد دوام للطبيب في هذا اليوم.";return;}
  const {data:{user},error:authError}=await db.auth.getUser();
  if(authError||!user){el("bookingMessage").textContent="انتهت جلسة الدخول. سجل الدخول مجدداً.";return;}
  const button=el("bookButton");button.disabled=true;el("bookingMessage").textContent="جارٍ إرسال طلب الحجز...";
@@ -1115,9 +1150,6 @@ async function bookAppointment(){
 }
 async function loadMyAppointments(){
  const {data:{user}}=await db.auth.getUser();if(!user)return;
- const dateInput=el("medicalRecordDate");
- if(dateInput&&!dateInput.value){const now=new Date();dateInput.value=[now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");}
- if(!el("myAppointments").classList.contains("hidden"))await Promise.all([loadMedicalHistory(),loadMedicalRecords()]);
  const list=el("myAppointmentsList");list.textContent="جاري تحميل الحجوزات...";
  const [oldResult,centerResult,queueResult]=await Promise.all([
   db.from("appointments").select("id,requested_date,appointment_at,status,notes,rejection_reason,doctors(profile_id)").eq("patient_id",user.id).order("requested_date",{ascending:true}),
@@ -1297,6 +1329,7 @@ function openMyAppointments(){
  el("portalChoices").classList.add("hidden");
  el("centers").classList.add("hidden");
  el("doctors").classList.add("hidden");
+ el("patientMedicalRecord").classList.add("hidden");
  el("myAppointments").classList.remove("hidden");
  el("myBookingsButton").classList.add("hidden");
 
@@ -1345,6 +1378,7 @@ async function refreshPortal(){
   if(profile?.role==="patient"&&profile?.approval_status==="approved"){
    await loadMyAppointments();
    if(!el("centers").classList.contains("hidden"))await loadMedicalCenters();
+   if(!el("patientMedicalRecord").classList.contains("hidden"))await Promise.all([loadMedicalHistory(),loadMedicalRecords()]);
   }else{
    await loadAccount();
   }
