@@ -574,7 +574,8 @@ async function showDashboard(user){
  document.getElementById("login").classList.add("hidden");
  document.getElementById("dashboard").classList.remove("hidden");
  document.getElementById("topActions").classList.remove("hidden");
- await Promise.all([refreshDashboard(),loadBalsams(),loadDoctorOptions(),loadAppointments()]);
+ // Start with the visible dashboard only; load large tables when their section opens.
+ await refreshDashboard();
  if(bookingsRefreshTimer)clearInterval(bookingsRefreshTimer);
  bookingsRefreshTimer=setInterval(async()=>{
   if(document.hidden)return;
@@ -610,10 +611,13 @@ function showSection(id,button){
  if(button)button.classList.add("active");
 
  if(id==="homeSection")renderCharts();
+ if(id==="patientsSection")loadBalsams();
  if(id==="bookingsSection")loadAppointments();
+ if(id==="doctorsSection")loadDoctorOptions();
  if(id==="manageDoctorsSection")loadDoctors();
  if(id==="representativesSection")loadRepresentatives();
  if(id==="emergencyDoctorSection")loadEmergencyDoctor();
+ if(id==="medicalCentersAdminSection")loadMedicalCenters();
 }
 
 function dateKey(value){
@@ -682,12 +686,20 @@ function renderCharts(){
 }
 
 async function refreshAll(){
- await Promise.all([refreshDashboard(),loadBalsams(),loadAppointments()]);
- if(!document.getElementById("manageDoctorsSection").classList.contains("hidden"))await loadDoctors();
- if(!document.getElementById("representativesSection").classList.contains("hidden"))await loadRepresentatives();
- if(!document.getElementById("emergencyDoctorSection").classList.contains("hidden"))await loadEmergencyDoctor();
+ const visible=id=>{
+  const section=document.getElementById(id);
+  return Boolean(section&&!section.classList.contains("hidden"));
+ };
+ const jobs=[refreshDashboard()];
+ if(visible("patientsSection"))jobs.push(loadBalsams());
+ if(visible("bookingsSection"))jobs.push(loadAppointments());
+ if(visible("doctorsSection"))jobs.push(loadDoctorOptions());
+ if(visible("manageDoctorsSection"))jobs.push(loadDoctors());
+ if(visible("representativesSection"))jobs.push(loadRepresentatives());
+ if(visible("emergencyDoctorSection"))jobs.push(loadEmergencyDoctor());
+ if(visible("medicalCentersAdminSection"))jobs.push(loadMedicalCenters());
+ await Promise.all(jobs);
 }
-
 async function refreshDashboard(){
  setText("dashboardError","");
  const ids=["totalBalsams","bookedBalsams","totalDoctors","totalAppointments"];
