@@ -1000,16 +1000,10 @@ async function loadDoctors(centerId=null){
  const list=el("doctorList");
  list.textContent="جاري تحميل الأطباء...";
  const {data:doctors,error}=await db.from("doctors")
-  .select("id,profile_id,qualification,experience_years,consultation_fee,bio,photo_url,specialties(name_ar),clinics(name,address,phone,maps_url,latitude,longitude)");
+  .select("id,profile_id,qualification,experience_years,consultation_fee,bio,photo_url,profiles!doctors_profile_id_fkey(full_name,role,approval_status),specialties(name_ar),clinics(name,address,phone,maps_url,latitude,longitude)");
  if(error){list.textContent="تعذر تحميل الأطباء: "+error.message;return;}
  if(!doctors||doctors.length===0){list.textContent="لا توجد سجلات أطباء حالياً.";return;}
- const profileIds=doctors.map(d=>d.profile_id).filter(Boolean);
- const {data:profiles,error:profileError}=await db.from("profiles")
-  .select("id,full_name,role,approval_status,phone").in("id",profileIds);
- if(profileError){list.textContent="تعذر تحميل أسماء الأطباء: "+profileError.message;return;}
- const approved=(profiles||[]).filter(p=>p.role==="doctor"&&p.approval_status==="approved");
- const ids=new Set(approved.map(p=>p.id));
- const visible=doctors.filter(d=>ids.has(d.profile_id));
+ const visible=doctors.filter(d=>d.profiles?.role==="doctor"&&d.profiles?.approval_status==="approved");
  if(!visible.length){list.textContent="لا يوجد أطباء معتمدون للعرض حالياً.";return;}
  let locatedCount=0;
  if(patientLocation){
@@ -1027,7 +1021,7 @@ async function loadDoctors(centerId=null){
  }
  list.innerHTML="";
  visible.forEach(d=>{
-  const profile=approved.find(p=>p.id===d.profile_id);
+  const profile=d.profiles;
   const item=document.createElement("article");item.className="doctor";
   item.dataset.name=normalizeSearch(profile.full_name||"");
   item.dataset.specialty=normalizeSearch(d.specialties?.name_ar||"");
@@ -1058,16 +1052,11 @@ async function loadDoctors(centerId=null){
 async function loadCenterDoctors(centerId){
  const list=el("doctorList");list.textContent="جاري تحميل أطباء المركز...";
  const {data:doctors,error}=await db.from("center_doctors")
-  .select("id,center_id,profile_id,full_name,specialty,qualification,experience_years,consultation_fee,bio,photo_url,is_active")
+  .select("id,center_id,profile_id,full_name,specialty,qualification,experience_years,consultation_fee,bio,photo_url,is_active,profiles!center_doctors_profile_id_fkey(role,approval_status)")
   .eq("center_id",centerId).eq("is_active",true).order("full_name");
  if(error){list.textContent="تعذر تحميل أطباء المركز: "+error.message;return;}
  if(!doctors?.length){list.textContent="لا يوجد أطباء نشطون في هذا المركز حالياً.";return;}
- const ids=doctors.map(d=>d.profile_id).filter(Boolean);
- if(!ids.length){list.textContent="لا يوجد أطباء مرتبطون بحسابات معتمدة في هذا المركز حالياً.";return;}
- const {data:profiles,error:pe}=await db.from("profiles").select("id,role,approval_status").in("id",ids);
- if(pe){list.textContent="تعذر التحقق من اعتماد الأطباء: "+pe.message;return;}
- const approved=new Set((profiles||[]).filter(p=>p.role==="doctor"&&p.approval_status==="approved").map(p=>p.id));
- const visible=doctors.filter(d=>d.profile_id&&approved.has(d.profile_id));
+ const visible=doctors.filter(d=>d.profile_id&&d.profiles?.role==="doctor"&&d.profiles?.approval_status==="approved");
  if(!visible.length){list.textContent="لا يوجد أطباء معتمدون للعرض حالياً.";return;}
  list.innerHTML="";
  for(const d of visible){
