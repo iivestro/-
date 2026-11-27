@@ -448,6 +448,15 @@ button{min-height:44px;font-family:inherit}
       <div><label>اسم العيادة *</label><input id="clinicName" required maxlength="160" placeholder="اكتب اسم العيادة هنا"></div>
       <div><label>عنوان العيادة بالتفصيل *</label><input id="clinicAddress" required maxlength="300" placeholder="المحافظة، المنطقة، الشارع، أقرب نقطة دالة"></div>
       <div><label>موقع العيادة على Google Maps *</label><input id="clinicMapsUrl" type="url" required maxlength="1000" placeholder="https://maps.app.goo.gl/..."></div>
+      <div>
+       <label>إحداثيات العيادة لتحديد الأقرب (اختياري)</label>
+       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+        <input id="clinicLatitude" type="number" step="any" min="-90" max="90" placeholder="خط العرض" aria-label="خط العرض">
+        <input id="clinicLongitude" type="number" step="any" min="-180" max="180" placeholder="خط الطول" aria-label="خط الطول">
+       </div>
+       <p id="clinicLocationCaptureMessage" class="muted" aria-live="polite">أضف إحداثيات موقع العيادة؛ تجدها في تفاصيل الموقع داخل Google Maps.</p>
+       <button type="button" class="btn-light" onclick="captureClinicLocation()">استخدم موقعي الحالي للعيادة</button>
+      </div>
       <div><label>المؤهل العلمي</label><input id="qualification"></div>
       <div><label>سنوات الخبرة</label><input id="experience" type="number" min="0" max="70" value="0"></div>
       <div><label>أجرة الكشف</label><input id="fee" type="number" min="0" value="0"></div>
@@ -903,7 +912,7 @@ async function loadDoctors(){
  setText("manageDoctorsError","");
  tbody.innerHTML='<div class="admin-empty">جارٍ تحميل الأطباء...</div>';
  const {data,error}=await db.from("doctors")
- .select("id,profile_id,specialty_id,clinic_id,qualification,experience_years,consultation_fee,is_active,admin_is_active,created_at,subscription_started_at,subscription_expires_at,photo_url,bio,specialties(name_ar),clinics(name,address,phone,maps_url)")
+ .select("id,profile_id,specialty_id,clinic_id,qualification,experience_years,consultation_fee,is_active,admin_is_active,created_at,subscription_started_at,subscription_expires_at,photo_url,bio,specialties(name_ar),clinics(name,address,phone,maps_url,latitude,longitude)")
  .order("created_at",{ascending:false});
  if(error){setText("manageDoctorsError","تعذر تحميل الأطباء: "+error.message);tbody.innerHTML='<div class="admin-empty">تعذر تحميل الأطباء.</div>';return;}
  managedDoctors=data||[];
@@ -926,8 +935,41 @@ async function loadDoctors(){
   const adminActive=d.admin_is_active!==false,subscriptionDate=d.subscription_expires_at?new Date(d.subscription_expires_at):null,validDate=subscriptionDate&&!Number.isNaN(subscriptionDate.getTime()),expired=!validDate||subscriptionDate<=new Date();
   let statusLabel="نشط",statusClass="approved";if(!adminActive){statusLabel="موقوف إدارياً";statusClass="rejected";}else if(expired){statusLabel="منتهي الاشتراك";statusClass="rejected";}
   const dateOptions={year:"numeric",month:"long",day:"numeric",timeZone:"Asia/Baghdad"},startDate=d.subscription_started_at?new Date(d.subscription_started_at):null,startLabel=startDate&&!Number.isNaN(startDate.getTime())?startDate.toLocaleDateString("ar-IQ",dateOptions):"غير محدد",expiryLabel=validDate?subscriptionDate.toLocaleDateString("ar-IQ",dateOptions):"غير محدد",name=d.profile.full_name||"طبيب";
-  return `<article class="admin-record-card"><div class="admin-record-head"><div class="admin-avatar">${d.photo_url?`<img src="${escapeHTML(d.photo_url)}" alt="">`:`<span>${escapeHTML(name.trim().slice(0,1)||"ط")}</span>`}</div><div class="admin-record-title"><strong>${escapeHTML(name)}</strong><span>${escapeHTML(d.specialties?.name_ar||"تخصص غير محدد")}</span></div></div><div class="admin-record-details"><div class="admin-detail"><small>العيادة</small><strong>${escapeHTML(d.clinics?.name||"غير محددة")}</strong></div><div class="admin-detail"><small>حالة الحساب</small><strong><span class="status ${statusClass}">${statusLabel}</span></strong></div><div class="admin-detail"><small>تاريخ الاشتراك</small><strong>${escapeHTML(startLabel)}</strong></div><div class="admin-detail"><small>تاريخ انتهاء الاشتراك</small><strong>${escapeHTML(expiryLabel)}</strong></div></div><div class="admin-record-foot"><span class="small">${expired?"يحتاج إلى تجديد":"الاشتراك فعال"}</span><div class="admin-card-actions"><button class="btn-light" onclick="editDoctor('${d.id}')">تعديل البيانات</button><button class="${adminActive?"reject-btn":"approve-btn"}" onclick="toggleDoctorActive('${d.id}',${adminActive})">${adminActive?"إيقاف إدارياً":"رفع الإيقاف"}</button><button onclick="renewDoctorSubscription('${d.id}')">تجديد الاشتراك</button></div></div></article>`;
+  return `<article class="admin-record-card"><div class="admin-record-head"><div class="admin-avatar">${d.photo_url?`<img src="${escapeHTML(d.photo_url)}" alt="">`:`<span>${escapeHTML(name.trim().slice(0,1)||"ط")}</span>`}</div><div class="admin-record-title"><strong>${escapeHTML(name)}</strong><span>${escapeHTML(d.specialties?.name_ar||"تخصص غير محدد")}</span></div></div><div class="admin-record-details"><div class="admin-detail"><small>العيادة</small><strong>${escapeHTML(d.clinics?.name||"غير محددة")}</strong></div><div class="admin-detail"><small>حالة الحساب</small><strong><span class="status ${statusClass}">${statusLabel}</span></strong></div><div class="admin-detail"><small>تاريخ الاشتراك</small><strong>${escapeHTML(startLabel)}</strong></div><div class="admin-detail"><small>تاريخ انتهاء الاشتراك</small><strong>${escapeHTML(expiryLabel)}</strong></div></div><div class="admin-record-foot"><span class="small">${expired?"يحتاج إلى تجديد":"الاشتراك فعال"}</span><div class="admin-card-actions"><button class="btn-light" onclick="editDoctor('${d.id}')">تعديل البيانات</button><button class="btn-light" onclick="updateClinicCoordinates('${d.id}')">تحديث موقع العيادة</button><button class="${adminActive?"reject-btn":"approve-btn"}" onclick="toggleDoctorActive('${d.id}',${adminActive})">${adminActive?"إيقاف إدارياً":"رفع الإيقاف"}</button><button onclick="renewDoctorSubscription('${d.id}')">تجديد الاشتراك</button></div></div></article>`;
  }).join("");
+}
+
+async function updateClinicCoordinates(doctorId){
+ const d=managedDoctors.find(x=>x.id===doctorId);
+ if(!d?.clinic_id){setText("manageDoctorsError","لا توجد عيادة مرتبطة بهذا الطبيب.");return;}
+ const latitudeText=prompt("خط العرض لموقع العيادة:",d.clinics?.latitude??"");
+ if(latitudeText===null)return;
+ const longitudeText=prompt("خط الطول لموقع العيادة:",d.clinics?.longitude??"");
+ if(longitudeText===null)return;
+ const latRaw=latitudeText.trim(),lonRaw=longitudeText.trim();
+ if(Boolean(latRaw)!==Boolean(lonRaw)){setText("manageDoctorsError","أدخل خط العرض وخط الطول معاً، أو اتركهما فارغين لمسح الموقع.");return;}
+ let latitude=null,longitude=null;
+ if(latRaw&&lonRaw){
+  latitude=Number(latRaw);longitude=Number(lonRaw);
+  if(!Number.isFinite(latitude)||latitude < -90||latitude > 90||!Number.isFinite(longitude)||longitude < -180||longitude > 180){setText("manageDoctorsError","إحداثيات موقع العيادة غير صحيحة.");return;}
+ }
+ const {error}=await db.from("clinics").update({latitude,longitude}).eq("id",d.clinic_id);
+ if(error){setText("manageDoctorsError","تعذر تحديث إحداثيات العيادة: "+error.message);return;}
+ setText("manageDoctorsMessage","تم تحديث إحداثيات موقع العيادة.");
+ await loadDoctors();
+}
+
+function captureClinicLocation(){
+ const status=document.getElementById("clinicLocationCaptureMessage");
+ if(!navigator.geolocation){status.textContent="المتصفح لا يدعم تحديد الموقع.";return;}
+ status.textContent="جارٍ تحديد الموقع...";
+ navigator.geolocation.getCurrentPosition(position=>{
+  document.getElementById("clinicLatitude").value=position.coords.latitude.toFixed(6);
+  document.getElementById("clinicLongitude").value=position.coords.longitude.toFixed(6);
+  status.textContent="تم تحديد الموقع. تأكد أن جهازك موجود في العيادة قبل حفظ الطبيب.";
+ },error=>{
+  status.textContent=error.code===1?"اسمح للمتصفح باستخدام الموقع ثم حاول مجدداً.":"تعذر تحديد الموقع حالياً.";
+ },{enableHighAccuracy:true,timeout:15000,maximumAge:0});
 }
 
 async function editDoctor(id){
@@ -992,8 +1034,15 @@ async function loadDoctorOptions(){
  });
 }
 
-async function findOrCreateClinic(clinicName,clinicAddress,clinicMapsUrl){
+async function findOrCreateClinic(clinicName,clinicAddress,clinicMapsUrl,latitudeValue,longitudeValue){
  const cleanName=clinicName.trim(),cleanAddress=clinicAddress.trim(),cleanMapsUrl=clinicMapsUrl.trim();
+ const latitudeText=String(latitudeValue||"").trim(),longitudeText=String(longitudeValue||"").trim();
+ if(Boolean(latitudeText)!==Boolean(longitudeText))throw new Error("أدخل خط العرض وخط الطول معاً.");
+ let latitude=null,longitude=null;
+ if(latitudeText&&longitudeText){
+  latitude=Number(latitudeText);longitude=Number(longitudeText);
+  if(!Number.isFinite(latitude)||latitude < -90||latitude > 90||!Number.isFinite(longitude)||longitude < -180||longitude > 180)throw new Error("إحداثيات موقع العيادة غير صحيحة.");
+ }
  if(!cleanName)throw new Error("يرجى كتابة اسم العيادة.");
  if(!cleanAddress)throw new Error("يرجى كتابة عنوان العيادة بالتفصيل.");
  const mapsPattern=/^https:\/\/(www\.)?(google\.[^/]+\/maps|maps\.google\.[^/]+|maps\.app\.goo\.gl)(\/|$|\?)/i;
@@ -1001,11 +1050,13 @@ async function findOrCreateClinic(clinicName,clinicAddress,clinicMapsUrl){
  const {data:existing,error:searchError}=await db.from("clinics").select("id").eq("name",cleanName).limit(1).maybeSingle();
  if(searchError)throw new Error("تعذر البحث عن العيادة: "+searchError.message);
  if(existing){
-  const {error:updateError}=await db.from("clinics").update({address:cleanAddress,maps_url:cleanMapsUrl}).eq("id",existing.id);
+  const clinicUpdate={address:cleanAddress,maps_url:cleanMapsUrl};
+  if(latitude!==null){clinicUpdate.latitude=latitude;clinicUpdate.longitude=longitude;}
+  const {error:updateError}=await db.from("clinics").update(clinicUpdate).eq("id",existing.id);
   if(updateError)throw new Error("تعذر تحديث عنوان وموقع العيادة: "+updateError.message);
   return existing.id;
  }
- const {data:created,error:createError}=await db.from("clinics").insert({name:cleanName,address:cleanAddress,maps_url:cleanMapsUrl,city:"Najaf",is_active:true}).select("id").single();
+ const {data:created,error:createError}=await db.from("clinics").insert({name:cleanName,address:cleanAddress,maps_url:cleanMapsUrl,city:"Najaf",is_active:true,latitude,longitude}).select("id").single();
  if(createError)throw new Error("تعذر إنشاء العيادة: "+createError.message);
  if(!created?.id)throw new Error("لم يتم الحصول على رقم العيادة.");
  return created.id;
@@ -1025,12 +1076,14 @@ document.getElementById("doctorForm").addEventListener("submit",async event=>{
   const clinicName=document.getElementById("clinicName").value.trim();
   const clinicAddress=document.getElementById("clinicAddress").value.trim();
   const clinicMapsUrl=document.getElementById("clinicMapsUrl").value.trim();
+  const clinicLatitude=document.getElementById("clinicLatitude").value;
+  const clinicLongitude=document.getElementById("clinicLongitude").value;
   if(!clinicName)throw new Error("يرجى كتابة اسم العيادة.");
   if(!clinicAddress)throw new Error("يرجى كتابة عنوان العيادة بالتفصيل.");
   const mapsPattern=/^https:\/\/(www\.)?(google\.[^/]+\/maps|maps\.google\.[^/]+|maps\.app\.goo\.gl)(\/|$|\?)/i;
   if(!mapsPattern.test(clinicMapsUrl))throw new Error("يرجى إدخال رابط Google Maps صحيح يبدأ بـ https://.");
   setText("doctorMessage","جارٍ حفظ بيانات العيادة...");
-  const clinicId=await findOrCreateClinic(clinicName,clinicAddress,clinicMapsUrl);
+  const clinicId=await findOrCreateClinic(clinicName,clinicAddress,clinicMapsUrl,clinicLatitude,clinicLongitude);
   const payload={
    full_name:document.getElementById("doctorName").value.trim(),
    phone:document.getElementById("doctorPhone").value.trim(),
