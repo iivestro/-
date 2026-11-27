@@ -925,7 +925,7 @@ async function loadDoctors(){
  tbody.innerHTML=managedDoctors.map(d=>{
   const adminActive=d.admin_is_active!==false,subscriptionDate=d.subscription_expires_at?new Date(d.subscription_expires_at):null,validDate=subscriptionDate&&!Number.isNaN(subscriptionDate.getTime()),expired=!validDate||subscriptionDate<=new Date();
   let statusLabel="نشط",statusClass="approved";if(!adminActive){statusLabel="موقوف إدارياً";statusClass="rejected";}else if(expired){statusLabel="منتهي الاشتراك";statusClass="rejected";}
-  const dateOptions={year:"numeric",month:"long",day:"numeric",timeZone:"Asia/Baghdad"},startDate=d.subscription_started_at?new Date(d.subscription_started_at):d.created_at?new Date(d.created_at):null,startLabel=startDate&&!Number.isNaN(startDate.getTime())?startDate.toLocaleDateString("ar-IQ",dateOptions):"غير محدد",expiryLabel=validDate?subscriptionDate.toLocaleDateString("ar-IQ",dateOptions):"غير محدد",name=d.profile.full_name||"طبيب";
+  const dateOptions={year:"numeric",month:"long",day:"numeric",timeZone:"Asia/Baghdad"},startDate=d.subscription_started_at?new Date(d.subscription_started_at):null,startLabel=startDate&&!Number.isNaN(startDate.getTime())?startDate.toLocaleDateString("ar-IQ",dateOptions):"غير محدد",expiryLabel=validDate?subscriptionDate.toLocaleDateString("ar-IQ",dateOptions):"غير محدد",name=d.profile.full_name||"طبيب";
   return `<article class="admin-record-card"><div class="admin-record-head"><div class="admin-avatar">${d.photo_url?`<img src="${escapeHTML(d.photo_url)}" alt="">`:`<span>${escapeHTML(name.trim().slice(0,1)||"ط")}</span>`}</div><div class="admin-record-title"><strong>${escapeHTML(name)}</strong><span>${escapeHTML(d.specialties?.name_ar||"تخصص غير محدد")}</span></div></div><div class="admin-record-details"><div class="admin-detail"><small>العيادة</small><strong>${escapeHTML(d.clinics?.name||"غير محددة")}</strong></div><div class="admin-detail"><small>حالة الحساب</small><strong><span class="status ${statusClass}">${statusLabel}</span></strong></div><div class="admin-detail"><small>تاريخ الاشتراك</small><strong>${escapeHTML(startLabel)}</strong></div><div class="admin-detail"><small>تاريخ انتهاء الاشتراك</small><strong>${escapeHTML(expiryLabel)}</strong></div></div><div class="admin-record-foot"><span class="small">${expired?"يحتاج إلى تجديد":"الاشتراك فعال"}</span><div class="admin-card-actions"><button class="btn-light" onclick="editDoctor('${d.id}')">تعديل البيانات</button><button class="${adminActive?"reject-btn":"approve-btn"}" onclick="toggleDoctorActive('${d.id}',${adminActive})">${adminActive?"إيقاف إدارياً":"رفع الإيقاف"}</button><button onclick="renewDoctorSubscription('${d.id}')">تجديد الاشتراك</button></div></div></article>`;
  }).join("");
 }
@@ -1639,7 +1639,7 @@ db.auth.getSession().then(async({data})=>{
   }
 
   function getSubscriptionStart(center) {
-    return center.subscription_started_at || center.last_payment_at || center.created_at || null;
+    return center.subscription_started_at || center.last_payment_at || (center.subscription_expires_at ? new Date(new Date(center.subscription_expires_at).getTime() - 30 * 86400000) : null);
   }
 
   function getSubscriptionInfo(center) {
