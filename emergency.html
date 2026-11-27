@@ -283,6 +283,7 @@ let listTimer = null;
 let messageTimer = null;
 let loadingMessages = false;
 let renderedMessagesSignature = null;
+let renderedChatHeaderState = null;
 let renderedMessageLinks = new Map();
 let sending = false;
 
@@ -446,6 +447,7 @@ async function loadChats() {
 }
 
 function showNoSelection() {
+  renderedChatHeaderState = null;
   renderedMessagesSignature = null;
   renderedMessageLinks = new Map();
   $("chatHeader").replaceChildren();
@@ -463,6 +465,7 @@ function showNoSelection() {
 
 async function selectChat(chatId) {
   selectedChatId = chatId;
+  renderedChatHeaderState = null;
   renderedMessagesSignature = null;
   renderedMessageLinks = new Map();
   showError("globalError", "");
@@ -479,30 +482,34 @@ async function loadMessages(chatId, silent = false) {
     if (selectedChatId !== chatId) return;
 
     const chat = result.chat || {};
-    $("chatHeader").replaceChildren();
+    const headerState = [chatId,chat.status,chat.visitor_name,chat.created_at].join("|");
+    if (headerState !== renderedChatHeaderState) {
+      renderedChatHeaderState = headerState;
+      $("chatHeader").replaceChildren();
 
-    const info = document.createElement("div");
-    const title = document.createElement("h3");
-    title.textContent = chat.visitor_name || "محادثة المراجع";
+      const info = document.createElement("div");
+      const title = document.createElement("h3");
+      title.textContent = chat.visitor_name || "محادثة المراجع";
 
-    const sub = document.createElement("small");
-    sub.textContent = "تاريخ بدء المحادثة: " + formatDate(chat.created_at);
-    info.append(title,sub);
+      const sub = document.createElement("small");
+      sub.textContent = "تاريخ بدء المحادثة: " + formatDate(chat.created_at);
+      info.append(title,sub);
 
-    const status = document.createElement("span");
-    status.className = chat.status === "closed" ? "chat-status closed" : "chat-status";
-    status.textContent = chat.status === "closed" ? "مغلقة" : "مفتوحة";
+      const status = document.createElement("span");
+      status.className = chat.status === "closed" ? "chat-status closed" : "chat-status";
+      status.textContent = chat.status === "closed" ? "مغلقة" : "مفتوحة";
 
-    const endButton = document.createElement("button");
-    endButton.type = "button";
-    endButton.className = "chat-end-button";
-    endButton.textContent = chat.status === "open" ? "إنهاء المحادثة وحذفها" : "حذف المحادثة نهائياً";
-    endButton.title = chat.status === "open"
-      ? "إنهاء المحادثة وحذف جميع الرسائل والصور"
-      : "حذف المحادثة المغلقة ورسائلها وصورها";
-    endButton.addEventListener("click", () => endEmergencyChat(chatId,endButton));
+      const endButton = document.createElement("button");
+      endButton.type = "button";
+      endButton.className = "chat-end-button";
+      endButton.textContent = chat.status === "open" ? "إنهاء المحادثة وحذفها" : "حذف المحادثة نهائياً";
+      endButton.title = chat.status === "open"
+        ? "إنهاء المحادثة وحذف جميع الرسائل والصور"
+        : "حذف المحادثة المغلقة ورسائلها وصورها";
+      endButton.addEventListener("click", () => endEmergencyChat(chatId,endButton));
 
-    $("chatHeader").append(info,status,endButton);
+      $("chatHeader").append(info,status,endButton);
+    }
 
     const box = $("messages");
     const oldScroll = box.scrollTop;
