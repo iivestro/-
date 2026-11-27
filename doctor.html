@@ -347,7 +347,9 @@ await loadDoctor();
 }
 
 async function loadDoctor(){
-const {data:{user},error:authError}=await db.auth.getUser();
+// The server-backed profile lookup below still verifies role and approval under RLS.
+const {data:{session},error:authError}=await db.auth.getSession();
+const user=session?.user;
 if(authError||!user){
 stopDoctorSession("يرجى تسجيل الدخول.");
 return;
@@ -369,29 +371,34 @@ return;
 }
 
 let doctor=null;
-const {data:centerDoctor,error:centerDoctorError}=await db.from("center_doctors")
-.select("id,center_id,full_name,phone,specialty,qualification,experience_years,consultation_fee,bio,photo_url,is_active")
-.eq("profile_id",user.id).maybeSingle();
+// Run independent data requests in parallel to remove serial network waits.
+const [centerDoctorResult,independentDoctorResult,phoneResult]=await Promise.all([
+ db.from("center_doctors")
+  .select("id,center_id,full_name,phone,specialty,qualification,experience_years,consultation_fee,bio,photo_url,is_active")
+  .eq("profile_id",user.id).maybeSingle(),
+ db.from("doctors")
+  .select("id,qualification,experience_years,consultation_fee,bio,photo_url,is_active,specialties(name_ar),clinics(name,address,maps_url)")
+  .eq("profile_id",user.id).maybeSingle(),
+ db.rpc("get_my_private_phone")
+]);
+const {data:centerDoctor,error:centerDoctorError}=centerDoctorResult;
 if(centerDoctorError){showMessage("loginStatus","تعذر التحقق من ارتباط الطبيب بالمركز: "+centerDoctorError.message);return;}
 if(centerDoctor){
  if(centerDoctor.is_active===false){await blockInactiveDoctor();return;}
  isCenterDoctor=true;currentCenterDoctorId=centerDoctor.id;currentDoctorId=null;doctorFee=centerDoctor.consultation_fee;
  doctor={id:null,qualification:centerDoctor.qualification,experience_years:centerDoctor.experience_years,consultation_fee:centerDoctor.consultation_fee,bio:centerDoctor.bio,photo_url:centerDoctor.photo_url,is_active:centerDoctor.is_active,specialties:{name_ar:centerDoctor.specialty},clinics:null};
 }else{
- const {data:independentDoctor,error:doctorError}=await db.from("doctors")
- .select("id,qualification,experience_years,consultation_fee,bio,photo_url,is_active,specialties(name_ar),clinics(name,address,maps_url)")
- .eq("profile_id",user.id).maybeSingle();
+ const {data:independentDoctor,error:doctorError}=independentDoctorResult;
  if(doctorError||!independentDoctor){showMessage("loginStatus","تعذر تحميل بيانات الطبيب: "+(doctorError?.message||"لا توجد بيانات"));return;}
  if(independentDoctor.is_active===false){await blockInactiveDoctor();return;}
  doctor=independentDoctor;isCenterDoctor=false;currentCenterDoctorId=null;currentDoctorId=doctor.id;doctorFee=doctor.consultation_fee;
 }
 
-const {data:privatePhone,error:phoneError}=await db.rpc("get_my_private_phone");
+const {data:privatePhone,error:phoneError}=phoneResult;
 if(phoneError){
 showMessage("loginStatus","تعذر تحميل رقم الهاتف الخاص: "+phoneError.message);
 return;
 }
-
 if(!isCenterDoctor)currentDoctorId=doctor.id;
 doctorFee=doctor.consultation_fee;
 
