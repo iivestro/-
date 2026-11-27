@@ -485,8 +485,11 @@ async function login(){
 }
 
 async function loadAccount(){
- const {data:{user}}=await db.auth.getUser();
- if(!user)return;
+ // Use the cached browser session to avoid an extra Auth round trip.
+ // The following profiles query still verifies role and approval under RLS.
+ const {data:{session},error:sessionError}=await db.auth.getSession();
+ const user=session?.user;
+ if(sessionError||!user)return;
 
  el("portalTopbar").classList.remove("hidden");
 
