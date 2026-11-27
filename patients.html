@@ -44,6 +44,9 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .info{padding:8px 10px;background:var(--light);border-radius:8px;margin:6px 0;font-size:13px}
 .search-wrap{max-width:700px;margin:15px auto}
 .search-wrap input{margin:0}
+.nearest-doctor-toolbar{max-width:700px;margin:-5px auto 15px;display:grid;gap:6px}
+.nearest-doctor-toolbar button{width:100%;margin:0}
+.nearest-doctor-toolbar p{margin:0 4px}
 .portal-back{width:auto;margin:0 0 15px}
 #booking{grid-column:1/-1;border-top:1px solid var(--border);padding-top:15px;margin-top:15px}
 #myBookingsButton{position:fixed;bottom:20px;right:20px;z-index:30;border-radius:30px;padding:14px 22px;box-shadow:0 5px 20px #087fae44}
@@ -346,6 +349,10 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
   <div class="search-wrap">
    <input id="doctorSearch" type="search" placeholder="ابحث باسم الطبيب أو الاختصاص...">
   </div>
+  <div id="nearestDoctorToolbar" class="nearest-doctor-toolbar">
+   <button id="nearestDoctorButton" type="button" class="secondary" onclick="findNearestDoctor()">📍 ابحث عن أقرب طبيب إليّ</button>
+   <p id="nearestDoctorStatus" class="muted" aria-live="polite">يُستخدم موقعك لترتيب القائمة فقط، ولا يُحفظ في حسابك.</p>
+  </div>
   <div id="doctorList" class="msg">جاري تحميل الأطباء...</div>
   <p id="doctorSearchEmpty" class="hidden msg">لا يوجد طبيب مطابق لبحثك.</p>
  </section>
@@ -392,6 +399,7 @@ let selectedDoctor=null;
 let selectedCenterDoctor=null;
 let selectedSchedules=[];
 let currentCenterId=null;
+let patientLocation=null;
 let medicalCentersCache=[];
 let previousView="portals";
 let portalRefreshBusy=false;
@@ -810,6 +818,7 @@ function openDoctorsPortal(){
  el("doctors").classList.remove("hidden");
  el("doctorsTitle").textContent="الأطباء المعتمدون";
  el("doctorsIntro").textContent="استعرض الأطباء المعتمدين واحجز موعدك مع الطبيب مباشرة.";
+ el("nearestDoctorToolbar").classList.remove("hidden");
  el("doctorSearch").value="";
  loadDoctors();
  window.scrollTo({top:0,behavior:"smooth"});
@@ -921,6 +930,7 @@ async function openCenterDoctors(centerId,centerName){
 
  el("doctorsTitle").textContent="أطباء "+centerName;
  el("doctorsIntro").textContent="هذه قائمة الأطباء المرتبطين بهذا المركز. الحجز يتم مع الطبيب الذي تختاره.";
+ el("nearestDoctorToolbar").classList.add("hidden");
  el("doctorSearch").value="";
 
  await loadDoctors(centerId);
@@ -931,6 +941,39 @@ function normalizeSearch(value){
  return String(value||"").toLocaleLowerCase("ar").normalize("NFD")
   .replace(/[\u064B-\u065F\u0670]/g,"")
   .replace(/ـ/g,"").trim();
+}
+
+function clinicCoordinates(clinic){
+ if(!clinic||clinic.latitude==null||clinic.longitude==null)return null;
+ const latitude=Number(clinic.latitude),longitude=Number(clinic.longitude);
+ if(!Number.isFinite(latitude)||latitude < -90||latitude > 90||!Number.isFinite(longitude)||longitude < -180||longitude > 180)return null;
+ return {latitude,longitude};
+}
+
+function distanceBetweenKm(first,second){
+ const radians=value=>value*Math.PI/180;
+ const deltaLatitude=radians(second.latitude-first.latitude),deltaLongitude=radians(second.longitude-first.longitude);
+ const a=Math.sin(deltaLatitude/2)**2+Math.cos(radians(first.latitude))*Math.cos(radians(second.latitude))*Math.sin(deltaLongitude/2)**2;
+ return 6371*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function formatDistance(kilometers){
+ return kilometers<1?Math.max(1,Math.round(kilometers*1000))+" م":kilometers.toFixed(1)+" كم";
+}
+
+function findNearestDoctor(){
+ const button=el("nearestDoctorButton"),status=el("nearestDoctorStatus");
+ if(!navigator.geolocation){status.textContent="المتصفح لا يدعم تحديد الموقع.";return;}
+ button.disabled=true;status.textContent="جارٍ تحديد موقعك...";
+ navigator.geolocation.getCurrentPosition(async position=>{
+  patientLocation={latitude:position.coords.latitude,longitude:position.coords.longitude};
+  el("doctorsTitle").textContent="الأطباء الأقرب إليك";
+  status.textContent="تم تحديد موقعك. جارٍ ترتيب الأطباء...";
+  try{await loadDoctors();}finally{button.disabled=false;}
+ },error=>{
+  button.disabled=false;
+  status.textContent=error.code===1?"اسمح للمتصفح باستخدام موقعك ثم أعد المحاولة.":error.code===3?"انتهت مهلة تحديد الموقع؛ حاول مرة أخرى.":"تعذر تحديد موقعك حالياً.";
+ },{enableHighAccuracy:false,timeout:12000,maximumAge:300000});
 }
 
 function filterDoctors(){
@@ -954,7 +997,7 @@ async function loadDoctors(centerId=null){
  const list=el("doctorList");
  list.textContent="جاري تحميل الأطباء...";
  const {data:doctors,error}=await db.from("doctors")
-  .select("id,profile_id,qualification,experience_years,consultation_fee,bio,photo_url,specialties(name_ar),clinics(name,address,phone,maps_url)");
+  .select("id,profile_id,qualification,experience_years,consultation_fee,bio,photo_url,specialties(name_ar),clinics(name,address,phone,maps_url,latitude,longitude)");
  if(error){list.textContent="تعذر تحميل الأطباء: "+error.message;return;}
  if(!doctors||doctors.length===0){list.textContent="لا توجد سجلات أطباء حالياً.";return;}
  const profileIds=doctors.map(d=>d.profile_id).filter(Boolean);
@@ -965,6 +1008,20 @@ async function loadDoctors(centerId=null){
  const ids=new Set(approved.map(p=>p.id));
  const visible=doctors.filter(d=>ids.has(d.profile_id));
  if(!visible.length){list.textContent="لا يوجد أطباء معتمدون للعرض حالياً.";return;}
+ let locatedCount=0;
+ if(patientLocation){
+  visible.sort((first,second)=>{
+   const firstCoordinates=clinicCoordinates(first.clinics),secondCoordinates=clinicCoordinates(second.clinics);
+   if(!firstCoordinates&&!secondCoordinates)return 0;
+   if(!firstCoordinates)return 1;
+   if(!secondCoordinates)return -1;
+   return distanceBetweenKm(patientLocation,firstCoordinates)-distanceBetweenKm(patientLocation,secondCoordinates);
+  });
+  locatedCount=visible.filter(d=>clinicCoordinates(d.clinics)).length;
+  el("nearestDoctorStatus").textContent=locatedCount
+   ? "تم ترتيب "+locatedCount+" طبيباً حسب الأقرب. الأطباء دون إحداثيات دقيقة يظهرون في نهاية القائمة."
+   : "لم تُسجل إحداثيات مواقع العيادات بعد؛ أضفها من لوحة الإدارة لتفعيل الترتيب حسب القرب.";
+ }
  list.innerHTML="";
  visible.forEach(d=>{
   const profile=approved.find(p=>p.id===d.profile_id);
@@ -977,11 +1034,17 @@ async function loadDoctors(centerId=null){
   area.className="doctor-summary";
   title.className="doctor-name";title.textContent=profile.full_name||"طبيب";
   specialty.className="doctor-specialty";specialty.textContent=d.specialties?.name_ar||"اختصاص غير محدد";
-  subline.className="doctor-subline";subline.textContent="طبيب معتمد";
+  subline.className="doctor-subline";
+  const clinicLocation=clinicCoordinates(d.clinics);
+  const distance=patientLocation&&clinicLocation?distanceBetweenKm(patientLocation,clinicLocation):null;
+  subline.textContent=distance!==null?"يبعد عنك "+formatDistance(distance)+" · طبيب معتمد":"طبيب معتمد";
   area.append(title,specialty,subline);toggle.append(photo,area);toggle.setAttribute("aria-expanded","false");
   const details=document.createElement("div");details.className="doctor-details hidden";
   const info=(label,value)=>{const p=document.createElement("div");p.className="info";p.textContent=label+": "+(value??"غير محدد");details.append(p);};
   info("المؤهل العلمي",d.qualification);info("سنوات الخبرة",d.experience_years);info("أجور الاستشارة",d.consultation_fee);info("العيادة",d.clinics?.name);info("العنوان",d.clinics?.address);
+  if(d.clinics?.maps_url){
+   try{const mapUrl=new URL(d.clinics.maps_url);if(mapUrl.protocol==="https:"||mapUrl.protocol==="http:"){const mapLink=document.createElement("a");mapLink.href=mapUrl.href;mapLink.target="_blank";mapLink.rel="noopener noreferrer";mapLink.textContent="فتح موقع العيادة على الخريطة";details.append(mapLink);}}catch{}
+  }
   if(d.bio){const p=document.createElement("p");p.className="muted";p.textContent=d.bio;details.append(p);}
   const book=document.createElement("button");book.type="button";book.textContent="اختيار الطبيب وحجز موعد";book.onclick=()=>selectDoctor(d,profile.full_name||"طبيب");details.append(book);
   toggle.onclick=()=>{const opening=details.classList.contains("hidden");details.classList.toggle("hidden");toggle.setAttribute("aria-expanded",String(opening));};item.append(toggle,details);list.append(item);
