@@ -102,8 +102,12 @@ button{cursor:pointer}
 .chat-window{display:flex;flex-direction:column;min-height:590px}
 .chat-title{
   padding:16px 20px;border-bottom:1px solid var(--border);
-  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
 }
+.chat-end-button{background:#a83d3d;color:#fff;border:0;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700}
+.chat-end-button:hover{background:#8c3030}
+.chat-end-button:disabled{opacity:.6;cursor:wait}
+.success-message{color:var(--green);font-weight:700;text-align:center;padding:10px}
 .chat-title h3{margin:0 0 5px;font-size:16px}
 .chat-title small{color:var(--muted)}
 .messages{
@@ -124,6 +128,7 @@ button{cursor:pointer}
   border-bottom-left-radius:4px;
 }
 .message small{display:block;color:#718596;font-size:10px;margin-top:5px}
+.message-image-link{display:inline-block;max-width:100%;cursor:zoom-in}
 .message img{display:block;max-width:min(260px,72vw);max-height:280px;object-fit:contain;border-radius:12px;margin-top:8px;border:1px solid var(--border);background:#fff}
 
 .composer{
@@ -218,7 +223,7 @@ button{min-height:44px}
     </div>
 
     <div class="notice" style="margin-bottom:17px">
-      هذه البوابة مخصصة للمحادثات النصية مع المراجعين فقط. لا تُعد بديلاً عن خدمات الطوارئ الطبية المباشرة.
+      هذه البوابة مخصصة للرسائل والصور المرفقة مع المراجعين. لا تُعد بديلاً عن خدمات الطوارئ الطبية المباشرة.
     </div>
 
     <div class="dashboard">
@@ -277,10 +282,22 @@ let chats = [];
 let listTimer = null;
 let messageTimer = null;
 let loadingMessages = false;
+let renderedMessagesSignature = null;
+let renderedMessageLinks = new Map();
 let sending = false;
 
 function showError(element, message) {
-  $(element).textContent = message || "";
+  const box = $(element);
+  if (box) {
+    box.classList.remove("success-message");
+    box.textContent = message || "";
+  }
+}
+
+function showSuccess(message) {
+  const box = $("globalError");
+  box.classList.add("success-message");
+  box.textContent = message || "";
 }
 
 function escapeText(value) {
@@ -429,6 +446,8 @@ async function loadChats() {
 }
 
 function showNoSelection() {
+  renderedMessagesSignature = null;
+  renderedMessageLinks = new Map();
   $("chatHeader").replaceChildren();
   const title = document.createElement("h3");
   title.textContent = "محادثات الطوارئ";
@@ -444,6 +463,9 @@ function showNoSelection() {
 
 async function selectChat(chatId) {
   selectedChatId = chatId;
+  renderedMessagesSignature = null;
+  renderedMessageLinks = new Map();
+  showError("globalError", "");
   renderChats();
   await loadMessages(chatId);
 }
@@ -471,46 +493,80 @@ async function loadMessages(chatId, silent = false) {
     status.className = chat.status === "closed" ? "chat-status closed" : "chat-status";
     status.textContent = chat.status === "closed" ? "مغلقة" : "مفتوحة";
 
-    $("chatHeader").append(info,status);
+    const endButton = document.createElement("button");
+    endButton.type = "button";
+    endButton.className = "chat-end-button";
+    endButton.textContent = chat.status === "open" ? "إنهاء المحادثة وحذفها" : "حذف المحادثة نهائياً";
+    endButton.title = chat.status === "open"
+      ? "إنهاء المحادثة وحذف جميع الرسائل والصور"
+      : "حذف المحادثة المغلقة ورسائلها وصورها";
+    endButton.addEventListener("click", () => endEmergencyChat(chatId,endButton));
+
+    $("chatHeader").append(info,status,endButton);
 
     const box = $("messages");
     const oldScroll = box.scrollTop;
     const wasNearBottom = box.scrollHeight - box.clientHeight - oldScroll < 90;
-
-    box.replaceChildren();
-
     const messages = Array.isArray(result.messages) ? result.messages : [];
-    if (!messages.length) {
-      const empty = document.createElement("div");
-      empty.className = "empty";
-      empty.textContent = "لا توجد رسائل بعد. يمكنك بدء المحادثة بالرد على المراجع.";
-      box.appendChild(empty);
-    }
+    const signature = messages.map(msg => String(msg.id) + ":" + String(msg.attachment_path || "")).join("|");
 
-    messages.forEach(msg => {
-      const bubble = document.createElement("div");
-      bubble.className = "message " + (msg.sender_type === "doctor" ? "doctor" : "visitor");
+    if (signature !== renderedMessagesSignature) {
+      renderedMessagesSignature = signature;
+      renderedMessageLinks = new Map();
+      box.replaceChildren();
 
-      const content = document.createElement("div");
-      content.textContent = escapeText(msg.message || "");
-
-      const meta = document.createElement("small");
-      meta.textContent =
-        (msg.sender_type === "doctor" ? "الطبيب" : "المراجع") +
-        " · " + formatDate(msg.created_at);
-
-      if (msg.message) bubble.appendChild(content);
-      if (msg.attachment_url) {
-        const image = document.createElement("img");
-        image.src = msg.attachment_url;
-        image.alt = "صورة مرفقة من المراجع";
-        image.loading = "lazy";
-        image.referrerPolicy = "no-referrer";
-        bubble.appendChild(image);
+      if (!messages.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "لا توجد رسائل بعد. يمكنك بدء المحادثة بالرد على المراجع.";
+        box.appendChild(empty);
       }
-      bubble.appendChild(meta);
-      box.appendChild(bubble);
-    });
+
+      messages.forEach(msg => {
+        const bubble = document.createElement("div");
+        bubble.className = "message " + (msg.sender_type === "doctor" ? "doctor" : "visitor");
+
+        if (msg.message) {
+          const content = document.createElement("div");
+          content.textContent = escapeText(msg.message || "");
+          bubble.appendChild(content);
+        }
+
+        const meta = document.createElement("small");
+        meta.textContent =
+          (msg.sender_type === "doctor" ? "الطبيب" : "المراجع") +
+          " · " + formatDate(msg.created_at);
+
+        if (msg.attachment_url) {
+          const link = document.createElement("a");
+          link.className = "message-image-link";
+          link.href = msg.attachment_url;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.referrerPolicy = "no-referrer";
+          link.title = "اضغط لفتح الصورة بالحجم الكامل";
+          const image = document.createElement("img");
+          image.src = msg.attachment_url;
+          image.alt = "اضغط لفتح صورة المراجع بالحجم الكامل";
+          image.loading = "lazy";
+          image.referrerPolicy = "no-referrer";
+          image.addEventListener("error", () => {
+            if (link.href && image.src !== link.href) image.src = link.href;
+          });
+          link.appendChild(image);
+          bubble.appendChild(link);
+          renderedMessageLinks.set(String(msg.id),link);
+        }
+
+        bubble.appendChild(meta);
+        box.appendChild(bubble);
+      });
+    } else {
+      messages.forEach(msg => {
+        const link = renderedMessageLinks.get(String(msg.id));
+        if (link && msg.attachment_url) link.href = msg.attachment_url;
+      });
+    }
 
     if (wasNearBottom || !silent) box.scrollTop = box.scrollHeight;
     else box.scrollTop = oldScroll;
@@ -523,6 +579,30 @@ async function loadMessages(chatId, silent = false) {
     if (!silent) showError("globalError", error.message);
   } finally {
     loadingMessages = false;
+  }
+}
+
+
+async function endEmergencyChat(chatId,button) {
+  if (!chatId || button?.disabled) return;
+  if (!confirm("سيؤدي ذلك إلى إنهاء المحادثة وحذف جميع رسائلها وصورها نهائياً. لا يمكن استعادتها. هل تريد المتابعة؟")) return;
+
+  button.disabled = true;
+  try {
+    const result = await api("doctor_close", {chat_id:chatId});
+    chats = chats.filter(chat => chat.id !== chatId);
+    if (selectedChatId === chatId) {
+      selectedChatId = null;
+      showNoSelection();
+    }
+    renderChats();
+    showSuccess(result.message || "تم إنهاء المحادثة وحذف بياناتها.");
+    await loadChats();
+  } catch (error) {
+    showError("globalError", error.message || "تعذر إنهاء المحادثة وحذف بياناتها.");
+    if (selectedChatId === chatId) await loadMessages(chatId);
+  } finally {
+    if (button.isConnected) button.disabled = false;
   }
 }
 
