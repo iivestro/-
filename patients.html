@@ -1227,7 +1227,7 @@ async function loadMyAppointments(){
   const {data:{user}}=await db.auth.getUser();if(!user)return;
   const list=el("myAppointmentsList");list.textContent="جاري تحميل الحجوزات...";
   const [oldResult,centerResult,queueResult,homeRequestsResult]=await Promise.all([
-   db.from("appointments").select("id,requested_date,appointment_at,status,notes,rejection_reason,doctors(profile_id)").eq("patient_id",user.id).order("requested_date",{ascending:true}),
+   db.from("appointments").select("id,requested_date,appointment_at,status,notes,rejection_reason,doctors(profile_id,profiles!doctors_profile_id_fkey(full_name))").eq("patient_id",user.id).order("requested_date",{ascending:true}),
    db.from("center_appointments").select("id,requested_date,appointment_at,status,notes,rejection_reason,center_doctors(full_name,specialty),medical_centers(name)").eq("patient_id",user.id).order("requested_date",{ascending:true}),
    db.rpc("patient_appointment_queue_data"),
    db.from("home_service_requests").select("id,provider_id,description,status,quoted_price,arrival_date,arrival_time,scheduled_at,created_at").eq("patient_id",user.id).order("created_at",{ascending:false})
@@ -1247,9 +1247,6 @@ async function loadMyAppointments(){
    homeProviders=new Map((providerResult.data||[]).map(p=>[p.id,p]));
    homeQueueMap=new Map((homeQueueResult.data||[]).map(q=>[q.request_id,q]));
   }
-  const profileIds=oldRows.map(a=>a.doctors?.profile_id).filter(Boolean);
-  let profiles=[];
-  if(profileIds.length){const p=await db.from("profiles").select("id,full_name").in("id",profileIds);if(!p.error)profiles=p.data||[];}
   if(!oldRows.length&&!centerRows.length&&!homeRows.length){
    list.textContent=homeRequestsResult.error?"تعذر تحميل طلبات التمريض والمختبر. حاول تحديث الصفحة.":"ليس لديك حجوزات أو طلبات حالياً.";
    return;
@@ -1263,7 +1260,7 @@ async function loadMyAppointments(){
   }
   oldRows.forEach(a=>{
    const card=document.createElement("article");card.className="doctor";
-   const doc=profiles.find(p=>p.id===a.doctors?.profile_id);
+   const doc=a.doctors?.profiles;
    const title=document.createElement("strong");title.textContent="طبيب مستقل: "+(doc?.full_name||"غير معروف");
    const date=document.createElement("p");date.textContent=patientAppointmentDayTime(a.appointment_at,a.requested_date);
    const status=document.createElement("p");status.textContent="حالة الحجز: "+appointmentStatus(a.status);
