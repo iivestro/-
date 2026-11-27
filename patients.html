@@ -640,7 +640,7 @@ async function refreshPatientEmergencyMessages(){
    el("patientEmergencyMessages").replaceChildren();
    el("patientEmergencyConnection").textContent="انتهت المحادثة";
    el("patientEmergencyForm").classList.add("hidden");
-   patientEmergencyNotice("انتهت المحادثة، وحُذفت الرسائل والصور تلقائياً.",false);
+   patientEmergencyNotice("انتهت المحادثة، ولم تعد الرسائل والصور متاحة.",false);
   }else{
    patientEmergencyNotice(error.message||"تعذر تحديث المحادثة.");
   }
