@@ -1,0 +1,18 @@
+project_id = "oejkeqlqkwdfropylxsv"
+
+[functions."admin-create-doctor"]
+verify_jwt = false
+[functions."admin-create-medical-center"]
+verify_jwt = false
+[functions."admin-manage-emergency-doctor"]
+verify_jwt = true
+[functions."admin-create-center-doctor"]
+verify_jwt = true
+[functions."admin-add-home-service-provider"]
+verify_jwt = false
+[functions."emergency-chat"]
+verify_jwt = false
+[functions."patient-auth"]
+verify_jwt = false
+[functions."patient-api-v1"]
+verify_jwt = true

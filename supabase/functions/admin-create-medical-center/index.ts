@@ -46,6 +46,13 @@ function getPublishableKey(): string {
 }
 
 Deno.serve(async (req: Request) => {
+  const __requestOriginForSecurity = req.headers.get("Origin");
+  if (__requestOriginForSecurity && __requestOriginForSecurity !== "https://iivestro.github.io") {
+    return new Response(JSON.stringify({ error: "Origin not allowed" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json", "Vary": "Origin" },
+    });
+  }
   const cors = corsHeaders(req);
   const reply = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), {

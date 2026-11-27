@@ -22,8 +22,8 @@ CREATE TABLE private.v2_provider_geo (
 CREATE INDEX v2_support_owner_idx ON private.v2_support_tickets(user_id,created_at DESC);
 CREATE INDEX v2_support_admin_idx ON private.v2_support_tickets(status,created_at DESC);
 CREATE INDEX v2_queue_owner_idx ON private.v2_visit_queue(patient_id,service_date DESC);
-CREATE TABLE private.v2_visit_feature_switches(feature text PRIMARY KEY CHECK(feature IN('support','queue','nearby','reminders')),enabled boolean NOT NULL DEFAULT false);
-INSERT INTO private.v2_visit_feature_switches(feature) VALUES('support'),('queue'),('nearby'),('reminders');
+CREATE TABLE private.v2_visit_feature_switches(feature text PRIMARY KEY CHECK(feature IN('support','queue','nearby','reminders')),enabled boolean NOT NULL DEFAULT true);
+INSERT INTO private.v2_visit_feature_switches(feature,enabled) VALUES('support',true),('queue',true),('nearby',true),('reminders',true) ON CONFLICT(feature) DO UPDATE SET enabled=excluded.enabled;
 CREATE TABLE private.v2_reminder_ledger(kind text NOT NULL CHECK(kind IN('doctor','center')),target_id uuid NOT NULL,event_at timestamptz NOT NULL,recipient uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,created_at timestamptz NOT NULL DEFAULT now(),PRIMARY KEY(kind,target_id,event_at,recipient));
 DO $$ DECLARE t text; BEGIN FOREACH t IN ARRAY ARRAY['v2_support_tickets','v2_visit_queue','v2_provider_geo','v2_visit_feature_switches','v2_reminder_ledger'] LOOP EXECUTE format('ALTER TABLE private.%I ENABLE ROW LEVEL SECURITY',t); EXECUTE format('REVOKE ALL ON private.%I FROM PUBLIC,anon,authenticated',t);END LOOP;END $$;
 CREATE OR REPLACE FUNCTION public.patient_visit_action(p_action text,p_data jsonb DEFAULT '{}'::jsonb)
@@ -166,3 +166,39 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION public.v2_visit_reminder_tick() FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_visit_reminder_tick() TO service_role;
+
+-- Install the reminder runner once; repeated release application replaces the same job.
+DO $$
+BEGIN
+  IF to_regclass('private.v2_visit_feature_switches') IS NULL THEN
+    RAISE EXCEPTION 'Apply the visit-services schema before enabling its features';
+  END IF;
+  IF to_regprocedure('public.v2_visit_reminder_tick()') IS NULL THEN
+    RAISE EXCEPTION 'The visit reminder function is missing';
+  END IF;
+  IF to_regclass('cron.job') IS NULL THEN
+    RAISE EXCEPTION 'Enable pg_cron before enabling automatic visit reminders';
+  END IF;
+END;
+$$;
+
+INSERT INTO private.v2_visit_feature_switches(feature, enabled)
+VALUES ('support', true), ('queue', true), ('nearby', true), ('reminders', true)
+ON CONFLICT (feature) DO UPDATE SET enabled = EXCLUDED.enabled;
+
+DO $$
+DECLARE existing_job_id bigint;
+BEGIN
+  SELECT jobid INTO existing_job_id
+  FROM cron.job
+  WHERE jobname = 'patient-visit-reminders-v1';
+  IF existing_job_id IS NOT NULL THEN
+    PERFORM cron.unschedule(existing_job_id);
+  END IF;
+  PERFORM cron.schedule(
+    'patient-visit-reminders-v1',
+    '*/15 * * * *',
+    'SELECT public.v2_visit_reminder_tick();'
+  );
+END;
+$$;

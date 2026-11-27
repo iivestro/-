@@ -10,7 +10,7 @@ const corsHeaders = {
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store, private", "X-Content-Type-Options": "nosniff" },
   });
 
 async function sha256(value: string): Promise<string> {
@@ -47,6 +47,13 @@ async function attachSignedUrls(admin: ReturnType<typeof createClient>, messages
 }
 
 Deno.serve(async (req: Request) => {
+  const __requestOriginForSecurity = req.headers.get("Origin");
+  if (__requestOriginForSecurity && __requestOriginForSecurity !== "https://iivestro.github.io") {
+    return new Response(JSON.stringify({ error: "Origin not allowed" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json", "Vary": "Origin" },
+    });
+  }
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
@@ -179,10 +186,12 @@ Deno.serve(async (req: Request) => {
         .eq("id", chatId)
         .maybeSingle();
 
-      if (chatError || !chat || chat.access_token_hash !== await sha256(token)) {
+      if (chatError) return json({ error: "تعذر التحقق من المحادثة." }, 500);
+      if (!chat) return json({ error: "انتهت المحادثة وتم حذفها." }, 410);
+      if (chat.access_token_hash !== await sha256(token)) {
         return json({ error: "رابط المحادثة غير صالح." }, 403);
       }
-      if (chat.status !== "open") return json({ error: "هذه المحادثة مغلقة." }, 403);
+      if (chat.status !== "open") return json({ error: "انتهت المحادثة، والرسائل لم تعد متاحة." }, 410);
 
       if (action === "visitor_upload_url") {
         const mime = String(body.content_type || "");
@@ -241,7 +250,7 @@ Deno.serve(async (req: Request) => {
       return json({ chat: { id: chat.id, visitor_name: chat.visitor_name, status: chat.status, created_at: chat.created_at }, messages: withAttachments });
     }
 
-    if (action === "doctor_list" || action === "doctor_get" || action === "doctor_send") {
+    if (action === "doctor_list" || action === "doctor_get" || action === "doctor_send" || action === "doctor_close") {
       const doctor = await requireDoctor();
       const doctorLimit = action === "doctor_send" ? 20 : action === "doctor_list" ? 20 : 30;
       if (!(await enforceRateLimit(admin, "doctor:" + doctor.id + ":" + action, doctorLimit, 60))) {
@@ -266,7 +275,46 @@ Deno.serve(async (req: Request) => {
         .eq("id", chatId)
         .maybeSingle();
 
-      if (chatError || !chat) return json({ error: "المحادثة غير موجودة." }, 404);
+      if (chatError) return json({ error: "تعذر تحميل المحادثة." }, 500);
+      if (!chat) return json({ error: "المحادثة غير موجودة." }, 404);
+
+      if (action === "doctor_close") {
+        if (chat.status === "open") {
+          const now = new Date().toISOString();
+          const { error: closeError } = await admin
+            .from("emergency_chats")
+            .update({ status: "closed", updated_at: now, last_message_at: now })
+            .eq("id", chatId)
+            .eq("status", "open");
+          if (closeError) return json({ error: "تعذر إنهاء المحادثة." }, 500);
+        }
+
+        const { data: attachmentRows, error: attachmentError } = await admin
+          .from("emergency_chat_messages")
+          .select("attachment_path")
+          .eq("chat_id", chatId);
+        if (attachmentError) return json({ error: "تعذر تجهيز حذف مرفقات المحادثة." }, 500);
+
+        const attachmentPaths = [...new Set((attachmentRows || [])
+          .map((row) => String(row.attachment_path || ""))
+          .filter(Boolean))];
+        if (attachmentPaths.length) {
+          const { error: storageError } = await admin
+            .storage.from("emergency-chat-attachments")
+            .remove(attachmentPaths);
+          if (storageError) {
+            return json({ error: "أُغلقت المحادثة، لكن تعذر حذف صورها. أعد محاولة الحذف." }, 500);
+          }
+        }
+
+        const { error: deleteError } = await admin
+          .from("emergency_chats")
+          .delete()
+          .eq("id", chatId);
+        if (deleteError) return json({ error: "تعذر حذف سجل المحادثة. أعد محاولة الحذف." }, 500);
+
+        return json({ success: true, message: "تم إنهاء المحادثة وحذف رسائلها وصورها." });
+      }
 
       if (action === "doctor_send") {
         if (chat.status !== "open") return json({ error: "هذه المحادثة مغلقة." }, 403);

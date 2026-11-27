@@ -1,12 +1,50 @@
-<!doctype html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="refresh" content="0; url=../home-admin.html">
-<link rel="canonical" href="../home-admin.html">
-<title>بلسم | BALSAM</title>
-<script>location.replace("../home-admin.html"+location.search+location.hash);</script>
-</head>
-<body><p>تم نقل هذه الصفحة إلى بوابة بلسم الحالية.</p><p><a href="../home-admin.html">افتح بلسم</a></p></body>
-</html>
+<style id="balsam-staging-style">.balsam-staging-banner{margin:0;padding:9px 16px;background:#fff4cf;color:#694d00;border-bottom:1px solid #e6c75e;text-align:center;font:700 14px/1.5 Tahoma,Arial,sans-serif}.balsam-staging-banner strong{color:#8a2c12}</style><!doctype html><html lang="ar" dir="rtl">
+<link rel="stylesheet" href="balsam-theme.css?v=20261128-stage"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BALSAM | إدارة الخدمات المنزلية</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2"></script><style>body{font:16px Tahoma,Arial;background:#f4faff;color:#173b52;margin:0}main{max-width:900px;margin:auto;padding:24px}section,form{background:white;border:1px solid #cceaf6;border-radius:18px;padding:20px;margin:16px 0}input,button,select{font:inherit;padding:12px;border:1px solid #bcdce9;border-radius:10px;min-height:44px;box-sizing:border-box}input,select{display:block;width:100%;margin:8px 0}button{background:#087fae;color:white}a{color:#087fae}</style><style> :root{color-scheme:light;--brand:#036b91;--ink:#173b52;--line:#d6e8ef}*{box-sizing:border-box}body{font-family:Tahoma,Arial,sans-serif;background:radial-gradient(ellipse at top right,#dff5ff,transparent 55%),#f4f9fc;color:var(--ink);line-height:1.75}main{max-width:980px;padding:clamp(16px,4vw,36px);margin:auto}main>h1{font-size:clamp(25px,4vw,36px);letter-spacing:-.7px;color:#075575;margin:24px 0 4px}main>a:first-child{display:inline-flex;align-items:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 16px;text-decoration:none;font-weight:bold}main>p{color:#476779}section,form{border:1px solid var(--line);border-radius:22px;padding:clamp(16px,3vw,26px);box-shadow:0 8px 30px #164e6310;background:#fff}section section,section form{background:#f8fcfe;box-shadow:none;border-radius:16px}h2{font-size:21px;color:#075575;margin-top:0}h3{color:#075575}label{font-weight:600;color:#294b60}input,select,textarea{background:#f7fbfd;border:1px solid #b7d5e2;border-radius:12px;color:#173b52;max-width:100%;min-height:48px}input:focus,select:focus,textarea:focus{outline:3px solid #bae6fd;border-color:#0284c7}button{border:0;border-radius:12px;background:linear-gradient(135deg,#036b91,#087fae);color:white;font-weight:bold;min-height:46px;padding:12px 18px;margin:4px 0 4px 6px;box-shadow:0 4px 12px #036b9120;cursor:pointer}button:hover{filter:brightness(.94)}button:focus-visible,a:focus-visible{outline:3px solid #38bdf8;outline-offset:3px}button:disabled{opacity:.5;cursor:not-allowed}#notice:not(:empty){background:#e8f5fb;border:1px solid #c1e4f4;border-radius:12px;padding:12px 16px} [hidden]{display:none!important}@media(max-width:520px){main{padding:16px}section,form{padding:16px}button{max-width:100%}}@media(prefers-reduced-motion:reduce){*{transition:none!important}}</style><div class="balsam-staging-banner" role="note"><strong>نسخة تدريب منفصلة</strong> — استخدم بيانات اختبار فقط، ولا ترفع تقارير أو معلومات طبية حقيقية.</div>
+<main><a href="admin.html">العودة إلى الإدارة</a><h1>إدارة الرعاية المنزلية</h1><p id="notice" role="status"></p><div id="panel" hidden><section><h2>مقدمو الخدمات</h2><form id="add"><label>الاسم الكامل<input id="name" maxlength="150" autocomplete="name" required></label><label>رقم الهاتف<input id="phone" type="tel" inputmode="tel" maxlength="20" placeholder="07XXXXXXXXX" required></label><label>البريد الإلكتروني لتسجيل الدخول<input id="providerEmail" type="email" autocomplete="email" required></label><label>كلمة المرور الأولية<input id="providerPassword" type="password" minlength="10" autocomplete="new-password" placeholder="10 أحرف على الأقل" required></label><label>المحافظة<input id="governorate" maxlength="80" required></label><label>نوع الخدمة<select id="kind" required><option value="">اختر النوع</option><option value="laboratory">مختبر</option><option value="male">ممرض</option><option value="female">ممرضة</option></select></label><p class="muted">يُنشئ النظام حساب الدخول تلقائياً. أعطِ مقدم الخدمة البريد وكلمة المرور اللذين أدخلتهما ليتمكن من تسجيل الدخول.</p><button type="submit">إنشاء حساب مقدم الخدمة</button></form><div id="providers"></div></section></div></main><script>
+const db=supabase.createClient("https://sfaatbfiwwbvobpvhwxo.supabase.co","sb_publishable_CBPPwjIcmVbGK1fr8EHyYg_DlfldbK6");const el=id=>document.getElementById(id);const say=t=>el('notice').textContent=t;async function load(){
+ const {data:providers,error}=await db.from('home_service_providers')
+  .select('id,kind,display_name,governorate,phone,approved,subscription_started_at,subscription_expires_at')
+  .order('display_name');
+ if(error){say(error.message);return}
+ el('providers').replaceChildren();
+ for(const p of providers||[]){
+  const f=document.createElement('form');
+  const h=document.createElement('h3');
+  h.textContent=p.display_name+' — '+p.governorate+(p.phone?' — '+p.phone:'');
+  const a=document.createElement('label');
+  const c=document.createElement('input');
+  c.type='checkbox';c.checked=p.approved;c.style.width='auto';
+  a.append(c,document.createTextNode(' معتمد بعد التحقق من الترخيص'));
+  const b=document.createElement('button');
+  b.type='submit';b.textContent='حفظ حالة الاعتماد';
+  f.append(h,a,b);
+  f.onsubmit=async e=>{
+   e.preventDefault();b.disabled=true;
+   const {error}=await db.from('home_service_providers').update({approved:c.checked}).eq('id',p.id);
+   say(error?error.message:'تم حفظ حالة الاعتماد');b.disabled=false;
+  };
+  const renewal=document.createElement('div');
+  const info=document.createElement('p');
+  const started=p.subscription_started_at?new Date(p.subscription_started_at):null;
+  const expiry=p.subscription_expires_at?new Date(p.subscription_expires_at):null;
+  const dateOptions={year:'numeric',month:'long',day:'numeric',timeZone:'Asia/Baghdad'};
+  const dateText=value=>value&&!Number.isNaN(value.getTime())?value.toLocaleDateString('ar-IQ',dateOptions):'غير محدد';
+  info.textContent='تاريخ الاشتراك: '+dateText(started)+' — تاريخ انتهاء الاشتراك: '+dateText(expiry);
+  const renew=document.createElement('button');
+  renew.type='button';renew.textContent='تجديد الاشتراك';
+  renew.onclick=async()=>{
+   if(!confirm('تأكيد تجديد اشتراك '+p.display_name+' لمدة 30 يوماً؟'))return;
+   renew.disabled=true;
+   try{
+    const {error}=await db.rpc('home_service_renew',{p_provider:p.id,p_special_fee:null,p_trial:false});
+    if(error)throw error;
+    say('تم تجديد الاشتراك لمدة 30 يوماً.');
+    await load();
+   }catch(error){say(error.message||'تعذر تحديث الاشتراك.');renew.disabled=false}
+  };
+  renewal.append(info,renew);f.append(renewal);el('providers').append(f);
+ }
+}
+el('add').onsubmit=async e=>{e.preventDefault();const form=e.currentTarget,button=form.querySelector('button[type="submit"]');button.disabled=true;button.textContent='جارٍ إنشاء الحساب...';try{const {data,error}=await db.functions.invoke('admin-add-home-service-provider',{body:{display_name:el('name').value.trim(),phone:el('phone').value.trim(),email:el('providerEmail').value.trim(),password:el('providerPassword').value,governorate:el('governorate').value.trim(),kind:el('kind').value}});if(error){let detail='';try{detail=(await error.context?.json())?.error||''}catch{}throw new Error(detail||'تعذر إنشاء الحساب.')}say(data?.message||'تم إنشاء الحساب وإرساله للمراجعة.');form.reset();await load()}catch(error){say(error.message||'تعذر إنشاء الحساب.')}finally{button.disabled=false;button.textContent='إنشاء حساب مقدم الخدمة'}};
+(async()=>{const {data,error}=await db.rpc('is_admin');if(error||data!==true){say('سجل الدخول من لوحة المدير أولاً');return}el('panel').hidden=false;await load()})();
+</script></html>

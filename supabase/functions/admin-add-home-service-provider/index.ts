@@ -37,6 +37,13 @@ function normalizeIraqiPhone(value: string): string {
 }
 
 Deno.serve(async (req: Request) => {
+  const __requestOriginForSecurity = req.headers.get("Origin");
+  if (__requestOriginForSecurity && __requestOriginForSecurity !== "https://iivestro.github.io") {
+    return new Response(JSON.stringify({ error: "Origin not allowed" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json", "Vary": "Origin" },
+    });
+  }
   if (req.method === "OPTIONS") return new Response("ok", { headers: headers(req) });
   if (req.method !== "POST") return respond(req, { error: "الطريقة غير مسموحة." }, 405);
 

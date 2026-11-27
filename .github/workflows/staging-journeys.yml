@@ -1,0 +1,28 @@
+name: Staging patient read journeys
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: staging-patient-read-journeys
+  cancel-in-progress: false
+jobs:
+  staging-read-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: grafana/setup-k6-action@v1
+      - name: Check temporary test session
+        env:
+          STAGING_PATIENT_ACCESS_TOKEN: ${{ secrets.STAGING_PATIENT_ACCESS_TOKEN }}
+        run: test -n "$STAGING_PATIENT_ACCESS_TOKEN"
+      - name: Run staged patient read journeys
+        env:
+          STAGING_PATIENT_ACCESS_TOKEN: ${{ secrets.STAGING_PATIENT_ACCESS_TOKEN }}
+        run: k6 run --summary-export=staging-journeys-summary.json tests/load/staging-journeys.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: staging-patient-read-journeys-summary
+          path: staging-journeys-summary.json

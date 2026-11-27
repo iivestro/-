@@ -1,16 +1,6 @@
 "use strict";
-self.addEventListener("install",event=>self.skipWaiting());
-self.addEventListener("activate",event=>event.waitUntil((async()=>{
- await self.registration.unregister();
- const names=await caches.keys();
- await Promise.all(names.map(name=>caches.delete(name)));
- const clients=await self.clients.matchAll({type:"window",includeUncontrolled:true});
- for(const client of clients){
-  const current=new URL(client.url);
-  if(current.pathname.includes("/balsam-demo/")){
-   const filename=current.pathname.split("/").pop()||"index.html";
-   client.navigate(new URL("/-/"+filename+current.search+current.hash,self.location.origin).href);
-  }
- }
-})()));
-self.addEventListener("fetch",event=>{});
+const CACHE="balsam-staging-shell-v2";
+const SHELL=["./","./index.html","./balsam-theme.css","./manifest.webmanifest","./assets/balsam-192.png","./assets/balsam-512.png"];
+self.addEventListener("install",event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).catch(()=>{}));self.skipWaiting();});
+self.addEventListener("activate",event=>{event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(key=>key.startsWith("balsam-staging-")&&key!==CACHE).map(key=>caches.delete(key)));await self.clients.claim();})());});
+self.addEventListener("fetch",event=>{const request=event.request,url=new URL(request.url);if(request.method!=="GET"||url.origin!==self.location.origin||!url.pathname.includes("/balsam-demo/"))return;if(request.mode==="navigate"){event.respondWith(fetch(request).then(response=>{const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(request,copy));return response;}).catch(async()=>(await caches.match(request))||(await caches.match("./index.html"))));return;}if(/\.(?:css|png|svg|webmanifest)$/.test(url.pathname)){event.respondWith(caches.match(request).then(cached=>cached||fetch(request).then(response=>{const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(request,copy));return response;})));}});

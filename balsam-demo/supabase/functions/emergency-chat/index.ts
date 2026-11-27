@@ -211,7 +211,7 @@ Deno.serve(async (req: Request) => {
       return json(req, { chat: { id: chat.id, visitor_name: chat.visitor_name, status: chat.status }, messages: await decorateMessages(admin, rows || [], chatId) });
     }
 
-    if (action === "doctor_list" || action === "doctor_get" || action === "doctor_send") {
+    if (action === "doctor_list" || action === "doctor_get" || action === "doctor_send" || action === "doctor_close") {
       const doctor = await requireDoctor();
       if (!(await enforceRateLimit(admin, "doctor:" + doctor.id + ":" + action, action === "doctor_send" ? 20 : 30, 60))) {
         return json(req, { error: "طلبات كثيرة خلال وقت قصير. انتظر قليلاً ثم حاول." }, 429);
@@ -228,6 +228,28 @@ Deno.serve(async (req: Request) => {
       const { data: chat, error: chatError } = await admin.from("emergency_chats")
         .select("id,visitor_name,status,created_at").eq("id", chatId).maybeSingle();
       if (chatError || !chat) return json(req, { error: "المحادثة غير موجودة." }, 404);
+      if (action === "doctor_close") {
+        if (chat.status === "open") {
+          const now = new Date().toISOString();
+          const { error: closeError } = await admin.from("emergency_chats")
+            .update({ status: "closed", updated_at: now, last_message_at: now })
+            .eq("id", chatId).eq("status", "open");
+          if (closeError) return json(req, { error: "تعذر إنهاء المحادثة." }, 500);
+        }
+        const { data: rows, error: rowsError } = await admin.from("emergency_chat_messages")
+          .select("id,message").eq("chat_id", chatId);
+        if (rowsError) return json(req, { error: "تعذر تجهيز حذف رسائل المحادثة." }, 500);
+        const paths = [...new Set((rows || []).map(row => splitMessage(String(row.message || ""), chatId).path).filter(Boolean))] as string[];
+        if (paths.length) {
+          const { error: storageError } = await admin.storage.from(BUCKET).remove(paths);
+          if (storageError) return json(req, { error: "أُغلقت المحادثة، لكن تعذر حذف صورها. أعد المحاولة." }, 500);
+        }
+        const { error: messagesDeleteError } = await admin.from("emergency_chat_messages").delete().eq("chat_id", chatId);
+        if (messagesDeleteError) return json(req, { error: "تعذر حذف رسائل المحادثة. أعد المحاولة." }, 500);
+        const { error: chatDeleteError } = await admin.from("emergency_chats").delete().eq("id", chatId);
+        if (chatDeleteError) return json(req, { error: "تعذر حذف سجل المحادثة. أعد المحاولة." }, 500);
+        return json(req, { success: true, message: "تم إنهاء المحادثة وحذف رسائلها وصورها." });
+      }
       if (action === "doctor_send") {
         if (chat.status !== "open") return json(req, { error: "هذه المحادثة مغلقة." }, 403);
         try {

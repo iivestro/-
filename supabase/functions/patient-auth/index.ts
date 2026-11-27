@@ -31,6 +31,13 @@ async function digest(value: string): Promise<string> {
 }
 
 Deno.serve(async (req: Request) => {
+  const __requestOriginForSecurity = req.headers.get("Origin");
+  if (__requestOriginForSecurity && __requestOriginForSecurity !== "https://iivestro.github.io") {
+    return new Response(JSON.stringify({ error: "Origin not allowed" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json", "Vary": "Origin" },
+    });
+  }
   const headers = cors(req);
   const reply = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), { status, headers: { ...headers, "Content-Type": "application/json", "Cache-Control": "no-store" } });
@@ -105,6 +112,21 @@ Deno.serve(async (req: Request) => {
       user_metadata: { account_type: "patient", full_name: fullName, phone, age: String(age), governorate },
     });
     if (error || !data.user) return reply({ error: "تعذر إنشاء الحساب. تحقق من البيانات وحاول مجدداً." }, 400);
+
+    const { error: profileError } = await admin.from("profiles").upsert({
+      id: data.user.id,
+      full_name: fullName,
+      phone,
+      age,
+      governorate,
+      role: "patient",
+      approval_status: "approved",
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "id" });
+    if (profileError) {
+      await admin.auth.admin.deleteUser(data.user.id);
+      return reply({ error: "تعذر تجهيز ملف المراجع. حاول مجدداً." }, 500);
+    }
 
     const { data: signedIn, error: signInError } = await anon.auth.signInWithPassword({ email: internalEmail, password });
     if (signInError || !signedIn.session) return reply({ error: "تم إنشاء الحساب. سجّل الدخول بالاسم وكلمة المرور." }, 200);
