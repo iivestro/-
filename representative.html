@@ -320,17 +320,26 @@ function formatTime(time){
 
 async function initialize(){
  try{
-  const {data:{user},error}=await db.auth.getUser();
+  // The protected profile query below validates this cached session through RLS.
+  const {data:{session},error}=await db.auth.getSession();
+  const user=session?.user;
   if(error||!user){
    showBlocked("يرجى تسجيل الدخول أولاً من بوابة المندوبين.");
    return;
   }
   currentUser=user;
 
-  const {data:profile,error:profileError}=await db
-   .from("profiles")
-   .select("id,full_name,role,approval_status,governorate")
-   .eq("id",user.id).maybeSingle();
+  // These independent lookups can complete in one network round trip.
+  const [profileResult,repResult]=await Promise.all([
+   db.from("profiles")
+    .select("id,full_name,role,approval_status,governorate")
+    .eq("id",user.id).maybeSingle(),
+   db.from("rep_accounts")
+    .select("profile_id,status,employer_type,employer_name")
+    .eq("profile_id",user.id).maybeSingle()
+  ]);
+  const {data:profile,error:profileError}=profileResult;
+  const {data:rep,error:repError}=repResult;
 
   if(profileError)throw profileError;
   if(!profile||profile.role!=="representative"){
@@ -338,11 +347,6 @@ async function initialize(){
    showBlocked("هذا الحساب ليس حساب مندوب.");
    return;
   }
-
-  const {data:rep,error:repError}=await db
-   .from("rep_accounts")
-   .select("profile_id,status,employer_type,employer_name")
-   .eq("profile_id",user.id).maybeSingle();
 
   if(repError)throw repError;
   if(!rep){
@@ -581,9 +585,11 @@ async function refreshAll(){
  if(!currentUser)return;
  try{
   message("جارٍ تحديث البيانات...");
-  await loadDoctorsAndSlots();
-  await loadBookings();
-  await loadLatestRepresentativeNotification();
+  await Promise.all([
+   loadDoctorsAndSlots(),
+   loadBookings(),
+   loadLatestRepresentativeNotification()
+  ]);
   message("تم تحديث البيانات.");
  }catch(error){
   console.error(error);
