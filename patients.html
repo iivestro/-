@@ -195,6 +195,10 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
 .medical-records{margin:20px 0;background:linear-gradient(145deg,#fff,#f2faf9);border:1px solid #dcebea;border-radius:18px;padding:20px}
 .medical-records h3{margin:0 0 6px;color:#12656c}
 .medical-record-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:15px 0}
+.medical-history-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin:15px 0}
+.medical-history-form textarea{min-height:112px;resize:vertical;line-height:1.8}
+.medical-record-divider{height:1px;background:#dcebea;margin:22px 0 16px}
+.medical-records h4{margin:0 0 6px;color:#12656c;font-size:17px}
 .medical-record-list{display:grid;gap:10px;margin-top:14px}
 .medical-record-item{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border:1px solid #dcebea;border-radius:13px;background:white;padding:13px}
 .medical-record-item a{color:#087f83;font-weight:700;text-decoration:none}
@@ -345,8 +349,17 @@ button:focus-visible,a:focus-visible{outline:3px solid #36a69d;outline-offset:3p
   <button type="button" class="secondary portal-back" onclick="backToPrevious()">← العودة</button>
   <h2>حجوزاتي</h2>
   <section class="medical-records card" aria-labelledby="medicalRecordsTitle">
-   <h3 id="medicalRecordsTitle">السجل الطبي وتقاريري</h3>
-   <p class="muted">ارفع التحاليل والتقارير والوصفات الطبية. تبقى الملفات خاصة، ويستطيع الطبيب الذي لديك معه طلب أو موعد الاطلاع عليها.</p>
+   <h3 id="medicalRecordsTitle">سجلي الطبي</h3>
+   <p class="muted">اكتب الأمراض المزمنة والحالة أو الأعراض التي تعاني منها. يستطيع الطبيب المرتبط بطلب أو موعد معك الاطلاع عليها، وارفع تقاريرك الطبية أدناه.</p>
+   <div class="medical-history-form">
+    <div><label for="chronicConditions">الأمراض المزمنة</label><textarea id="chronicConditions" rows="4" maxlength="8000" placeholder="مثال: السكري، ارتفاع ضغط الدم، الربو..."></textarea></div>
+    <div><label for="currentComplaints">ما الذي تعاني منه حالياً؟</label><textarea id="currentComplaints" rows="4" maxlength="8000" placeholder="اكتب الأعراض أو الحالة الصحية الحالية..."></textarea></div>
+   </div>
+   <button id="saveMedicalHistoryButton" type="button" onclick="saveMedicalHistory()">حفظ معلومات السجل الطبي</button>
+   <p id="medicalHistoryMessage" class="msg" aria-live="polite"></p>
+   <div class="medical-record-divider" role="separator"></div>
+   <h4>التقارير والتحاليل الطبية</h4>
+   <p class="muted">ارفع تقريراً أو تحليلاً أو وصفة بصيغة PDF أو صورة. الملفات خاصة بحسابك.</p>
    <div class="medical-record-form">
     <div><label for="medicalRecordTitle">اسم التقرير</label><input id="medicalRecordTitle" type="text" maxlength="180" placeholder="مثال: تحليل الدم"></div>
     <div><label for="medicalRecordDate">تاريخ التقرير</label><input id="medicalRecordDate" type="date"></div>
@@ -1104,7 +1117,7 @@ async function loadMyAppointments(){
  const {data:{user}}=await db.auth.getUser();if(!user)return;
  const dateInput=el("medicalRecordDate");
  if(dateInput&&!dateInput.value){const now=new Date();dateInput.value=[now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");}
- if(!el("myAppointments").classList.contains("hidden"))await loadMedicalRecords();
+ if(!el("myAppointments").classList.contains("hidden"))await Promise.all([loadMedicalHistory(),loadMedicalRecords()]);
  const list=el("myAppointmentsList");list.textContent="جاري تحميل الحجوزات...";
  const [oldResult,centerResult,queueResult]=await Promise.all([
   db.from("appointments").select("id,requested_date,appointment_at,status,notes,rejection_reason,doctors(profile_id)").eq("patient_id",user.id).order("requested_date",{ascending:true}),
@@ -1147,6 +1160,50 @@ async function loadMyAppointments(){
   }
   list.append(card);
  });
+}
+
+async function loadMedicalHistory(){
+ const messageBox=el("medicalHistoryMessage");
+ const chronicInput=el("chronicConditions");
+ const complaintsInput=el("currentComplaints");
+ if(!messageBox||!chronicInput||!complaintsInput)return;
+ messageBox.textContent="جاري تحميل السجل الصحي...";
+ const {data:{user},error:authError}=await db.auth.getUser();
+ if(authError||!user){messageBox.textContent="انتهت الجلسة. سجّل الدخول مجدداً.";return;}
+ const {data,error}=await db.from("patient_medical_history")
+  .select("chronic_conditions,current_complaints,updated_at")
+  .eq("patient_id",user.id).maybeSingle();
+ if(error){messageBox.textContent="تعذر تحميل السجل الصحي. حاول تحديث الصفحة.";return;}
+ chronicInput.value=data?.chronic_conditions||"";
+ complaintsInput.value=data?.current_complaints||"";
+ messageBox.textContent=data?.updated_at
+  ?"آخر تحديث: "+new Intl.DateTimeFormat("ar-IQ",{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Baghdad"}).format(new Date(data.updated_at))
+  :"أضف معلوماتك الصحية واحفظها لتظهر في سجلك الطبي.";
+}
+
+async function saveMedicalHistory(){
+ const messageBox=el("medicalHistoryMessage");
+ const chronic=el("chronicConditions").value.trim();
+ const complaints=el("currentComplaints").value.trim();
+ if(chronic.length>8000||complaints.length>8000){messageBox.textContent="اختصر النص إلى 8000 حرف كحد أقصى لكل حقل.";return;}
+ const {data:{user},error:authError}=await db.auth.getUser();
+ if(authError||!user){messageBox.textContent="انتهت الجلسة. سجّل الدخول مجدداً.";return;}
+ const button=el("saveMedicalHistoryButton");
+ button.disabled=true;
+ messageBox.textContent="جاري حفظ معلوماتك الصحية...";
+ try{
+  const {error}=await db.from("patient_medical_history").upsert({
+   patient_id:user.id,
+   chronic_conditions:chronic,
+   current_complaints:complaints,
+   updated_at:new Date().toISOString()
+  },{onConflict:"patient_id"});
+  if(error)throw error;
+  messageBox.textContent="تم حفظ معلوماتك في سجلك الطبي.";
+ }catch(error){
+  console.warn("Medical history save failed:",error);
+  messageBox.textContent="تعذر حفظ السجل الطبي. تحقق من الاتصال وحاول مجدداً.";
+ }finally{button.disabled=false;}
 }
 
 async function loadMedicalRecords(){
