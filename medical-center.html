@@ -416,8 +416,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#109e9a;box-sh
 .appointment-picker h3{margin:0 0 5px;color:#123b55;font-size:20px}
 .appointment-picker p{margin:0;color:#6b8290;font-size:13px;line-height:1.7}
 .appointment-picker label{display:block;margin:15px 0 7px;color:#294e60;font-size:14px;font-weight:700}
-.appointment-picker input{width:100%;min-height:52px;margin:0;padding:12px 14px;border:1px solid #d4e5e8;border-radius:13px;background:#f8fcfc;color:#183447;font:inherit;font-size:16px}
-.appointment-picker input:focus{outline:0;border-color:#109e9a;box-shadow:0 0 0 4px rgba(16,158,154,.12);background:#fff}
+.appointment-picker input,.appointment-picker select{width:100%;min-height:52px;margin:0;padding:12px 14px;border:1px solid #d4e5e8;border-radius:13px;background:#f8fcfc;color:#183447;font:inherit;font-size:16px}
+.appointment-picker input:focus,.appointment-picker select:focus{outline:0;border-color:#109e9a;box-shadow:0 0 0 4px rgba(16,158,154,.12);background:#fff}
 .appointment-picker-actions{display:flex;gap:10px;margin-top:22px}
 .appointment-picker-actions button{flex:1;min-height:48px;margin:0}
 .appointment-picker-actions .picker-cancel{background:#edf4f5;color:#31566b;border:1px solid #d9e7e9;box-shadow:none}
@@ -852,7 +852,9 @@ function renderCenterManagement(doctors, appointments, patients) {
    const patient=a;
    const box=document.createElement("div");box.className="appointment";
    const who=document.createElement("strong");who.textContent="المراجع: "+(patient.patient_name||"غير معروف");
-   const when=document.createElement("p");when.textContent="اليوم المطلوب: "+a.requested_date+(a.appointment_at?" | وقت الحضور: "+new Date(a.appointment_at).toLocaleString("ar-IQ",{dateStyle:"medium",timeStyle:"short"}):" | لم تحدد الساعة بعد");
+   const when=document.createElement("p");
+   const requestedDay=a.appointment_at?new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Baghdad",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(a.appointment_at)):a.requested_date;
+   when.textContent=a.appointment_at?"موعد المراجع: "+centerDayLabel(requestedDay)+"، الساعة "+new Date(a.appointment_at).toLocaleTimeString("ar-IQ",{timeZone:"Asia/Baghdad",hour:"2-digit",minute:"2-digit"}):"اليوم المطلوب: "+centerDayLabel(a.requested_date)+" — بانتظار تحديد الساعة";
    const status=document.createElement("p");status.textContent="الحالة: "+({pending:"قيد الانتظار",approved:"مقبول سابقاً",confirmed:"مؤكد",completed:"مكتمل",rejected:"مرفوض",cancelled:"ملغي"}[a.status]||a.status);
    const notes=document.createElement("p");notes.textContent="ملاحظات: "+(a.notes||"لا توجد");
    box.append(who,when,status,notes);
@@ -918,35 +920,39 @@ async function saveCenterDoctorSchedule(doctorId,box,button){
 }
 
 
+function centerBaghdadDateOffset(offset=0){
+ const p=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Baghdad",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()).reduce((o,x)=>(o[x.type]=x.value,o),{});
+ const d=new Date(Date.UTC(Number(p.year),Number(p.month)-1,Number(p.day)+offset));
+ return d.getUTCFullYear()+"-"+String(d.getUTCMonth()+1).padStart(2,"0")+"-"+String(d.getUTCDate()).padStart(2,"0");
+}
+function centerDayLabel(value){
+ return value===centerBaghdadDateOffset(0)?"اليوم":value===centerBaghdadDateOffset(1)?"غداً":"اليوم أو غداً";
+}
+
 async function openAppointmentDateTimePicker(initialDate,initialTime="09:00"){
  return new Promise(resolve=>{
   const overlay=document.createElement("div");
   overlay.className="appointment-picker-overlay";
-  const today=new Date();today.setMinutes(today.getMinutes()-today.getTimezoneOffset());
-  const todayText=today.toISOString().slice(0,10);
-  const startDate=initialDate&&/^\d{4}-\d{2}-\d{2}$/.test(initialDate)&&initialDate>=todayText?initialDate:todayText;
-  overlay.innerHTML='<form class="appointment-picker" role="dialog" aria-modal="true" aria-labelledby="appointmentPickerTitle"><div class="appointment-picker-head"><div class="appointment-picker-icon">▦</div><div><h3 id="appointmentPickerTitle">تحديد موعد المراجع</h3><p>اختر اليوم من التقويم ثم حدد ساعة الحضور</p></div></div><label for="appointmentPickerDate">تاريخ الحضور</label><input id="appointmentPickerDate" type="date" required><label for="appointmentPickerTime">ساعة الحضور</label><input id="appointmentPickerTime" type="time" required><p class="appointment-picker-error" aria-live="polite"></p><div class="appointment-picker-actions"><button type="submit">تأكيد الموعد</button><button type="button" class="picker-cancel">إلغاء</button></div></form>';
+  overlay.innerHTML='<form class="appointment-picker" role="dialog" aria-modal="true" aria-labelledby="appointmentPickerTitle"><div class="appointment-picker-head"><div class="appointment-picker-icon">▦</div><div><h3 id="appointmentPickerTitle">تحديد موعد المراجع</h3><p>اختر اليوم أو غداً ثم حدد ساعة الحضور</p></div></div><label for="appointmentPickerDate">يوم المراجعة</label><select id="appointmentPickerDate" required><option value="'+centerBaghdadDateOffset(0)+'">اليوم</option><option value="'+centerBaghdadDateOffset(1)+'">غداً</option></select><label for="appointmentPickerTime">ساعة الحضور</label><input id="appointmentPickerTime" type="time" required><p class="appointment-picker-error" aria-live="polite"></p><div class="appointment-picker-actions"><button type="submit">تأكيد الموعد</button><button type="button" class="picker-cancel">إلغاء</button></div></form>';
   const form=overlay.querySelector("form"),dateInput=overlay.querySelector("#appointmentPickerDate"),timeInput=overlay.querySelector("#appointmentPickerTime"),error=overlay.querySelector(".appointment-picker-error");
-  dateInput.min=todayText;dateInput.value=startDate;timeInput.value=initialTime||"09:00";
+  const today=centerBaghdadDateOffset(0),tomorrow=centerBaghdadDateOffset(1);
+  if(initialDate===tomorrow)dateInput.value=tomorrow;
+  timeInput.value=initialTime||"09:00";
   const close=value=>{overlay.remove();resolve(value);};
   form.addEventListener("submit",event=>{
    event.preventDefault();error.textContent="";
    const date=dateInput.value,time=timeInput.value;
-   if(!date||!time){error.textContent="يرجى اختيار التاريخ والساعة.";return;}
-   const parts=date.split("-").map(Number);
-   const check=new Date(parts[0],parts[1]-1,parts[2],12);
-   if(check.getFullYear()!==parts[0]||check.getMonth()!==parts[1]-1||check.getDate()!==parts[2]){error.textContent="التاريخ المختار غير صحيح.";return;}
-   if(date<todayText){error.textContent="لا يمكن تحديد موعد بتاريخ سابق.";return;}
-   if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)){error.textContent="يرجى اختيار ساعة صحيحة.";return;}
-   const localDate=new Date(date+"T"+time+":00");
-   if(Number.isNaN(localDate.getTime())){error.textContent="تعذر قراءة التاريخ والوقت. أعد الاختيار.";return;}
-   close({date,time,iso:localDate.toISOString()});
+   if(![today,tomorrow].includes(date)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)){error.textContent="اختر اليوم أو غداً وساعة صحيحة.";return;}
+   const iso=new Date(date+"T"+time+":00+03:00").toISOString();
+   if(new Date(iso)<=new Date()){error.textContent="اختر ساعة مستقبلية.";return;}
+   close({date,time,iso});
   });
   form.querySelector(".picker-cancel").addEventListener("click",()=>close(null));
   overlay.addEventListener("click",event=>{if(event.target===overlay)close(null);});
-  document.body.append(overlay);dateInput.focus();
+  document.body.append(overlay);timeInput.focus();
  });
 }
+
 
 async function decideCenterAppointment(item,action){
  let appointmentAt=null,rejectionReason=null;

@@ -973,26 +973,22 @@ async function selectCenterDoctor(doctor){
  const panel=document.createElement("div");panel.id="booking";
  const heading=document.createElement("h3");heading.textContent="طلب موعد مع "+(doctor.full_name||"الطبيب");
  const msg=document.createElement("p");msg.id="scheduleMessage";msg.className="muted";msg.textContent="جاري تحميل أيام الدوام...";
- const label=document.createElement("label");label.textContent="اختر يوم المراجعة";
- const date=document.createElement("input");date.type="date";date.id="appointmentDate";
+ const label=document.createElement("label");label.textContent="يوم المراجعة (اليوم أو غداً)";
+ const date=document.createElement("select");date.id="appointmentDate";setPatientDayOptions(date);
  const notesLabel=document.createElement("label");notesLabel.textContent="ملاحظات (اختياري)";
  const notes=document.createElement("textarea");notes.id="appointmentNotes";notes.rows=3;
  const button=document.createElement("button");button.id="bookButton";button.textContent="إرسال طلب الحجز";
  const result=document.createElement("p");result.id="bookingMessage";result.className="msg";
  panel.append(heading,msg,label,date,notesLabel,notes,button,result);el("doctorList").prepend(panel);
- const now=new Date(),today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");
- date.min=today;date.value=today;
- const {data,error}=await db.from("center_doctor_schedules")
-  .select("day_of_week,start_time,end_time,is_available,unlimited_daily,max_daily_patients")
+ const {data,error}=await db.from("center_doctor_schedules").select("day_of_week,start_time,end_time,is_available,unlimited_daily,max_daily_patients")
   .eq("center_doctor_id",doctor.id).eq("is_available",true);
  if(error){msg.textContent="تعذر تحميل الدوام: "+error.message;button.disabled=true;return;}
  selectedSchedules=data||[];
+ if(!selectedSchedules.some(s=>Number(s.day_of_week)===new Date(date.value+"T12:00:00").getDay())&&
+    selectedSchedules.some(s=>Number(s.day_of_week)===new Date(baghdadDateOffset(1)+"T12:00:00").getDay()))date.value=baghdadDateOffset(1);
  if(!selectedSchedules.length){msg.textContent="لم يحدد الطبيب أيام دوام متاحة حالياً.";button.disabled=true;return;}
- date.addEventListener("change",checkCenterSelectedDay);
- button.addEventListener("click",bookCenterAppointment);
- checkCenterSelectedDay();
+ date.addEventListener("change",checkCenterSelectedDay);button.addEventListener("click",bookCenterAppointment);checkCenterSelectedDay();
 }
-
 function checkCenterSelectedDay(){
  const date=el("appointmentDate")?.value;if(!date)return;
  const day=new Date(date+"T12:00:00").getDay();
@@ -1022,79 +1018,54 @@ async function bookCenterAppointment(){
  await loadMyAppointments();
 }
 async function selectDoctor(doctor,name){
- selectedCenterDoctor=null;
- selectedDoctor=doctor;
- selectedSchedules=[];
-
- const old=el("booking");
- if(old)old.remove();
-
- const panel=document.createElement("div");
- panel.id="booking";
-
- const heading=document.createElement("h3");
- heading.textContent="حجز موعد مع الطبيب: "+name;
-
- const scheduleMessage=document.createElement("p");
- scheduleMessage.id="scheduleMessage";
- scheduleMessage.className="muted";
- scheduleMessage.textContent="جاري تحميل دوام الطبيب...";
-
- const dateLabel=document.createElement("label");
- dateLabel.textContent="تاريخ الموعد";
-
- const dateInput=document.createElement("input");
- dateInput.type="date";
- dateInput.id="appointmentDate";
-
- const notesLabel=document.createElement("label");
- notesLabel.textContent="ملاحظات (اختياري)";
-
- const notes=document.createElement("textarea");
- notes.id="appointmentNotes";
- notes.rows=3;
- notes.placeholder="اكتب ملاحظاتك هنا";
-
- const book=document.createElement("button");
- book.id="bookButton";
- book.textContent="إرسال طلب الحجز";
-
- const result=document.createElement("p");
- result.id="bookingMessage";
- result.className="msg";
-
+ selectedCenterDoctor=null;selectedDoctor=doctor;selectedSchedules=[];
+ const old=el("booking");if(old)old.remove();
+ const panel=document.createElement("div");panel.id="booking";
+ const heading=document.createElement("h3");heading.textContent="حجز موعد مع الطبيب: "+name;
+ const scheduleMessage=document.createElement("p");scheduleMessage.id="scheduleMessage";scheduleMessage.className="muted";scheduleMessage.textContent="جاري تحميل دوام الطبيب...";
+ const dateLabel=document.createElement("label");dateLabel.textContent="يوم المراجعة (اليوم أو غداً)";
+ const dateInput=document.createElement("select");dateInput.id="appointmentDate";setPatientDayOptions(dateInput);
+ const notesLabel=document.createElement("label");notesLabel.textContent="ملاحظات (اختياري)";
+ const notes=document.createElement("textarea");notes.id="appointmentNotes";notes.rows=3;notes.placeholder="اكتب ملاحظاتك هنا";
+ const book=document.createElement("button");book.id="bookButton";book.textContent="إرسال طلب الحجز";
+ const result=document.createElement("p");result.id="bookingMessage";result.className="msg";
  panel.append(heading,scheduleMessage,dateLabel,dateInput,notesLabel,notes,book,result);
  el("doctorList").prepend(panel);
-
- const today=new Date();
- const localToday=[today.getFullYear(),String(today.getMonth()+1).padStart(2,"0"),String(today.getDate()).padStart(2,"0")].join("-");
-
- dateInput.min=localToday;
- dateInput.value=localToday;
- dateInput.addEventListener("change",checkSelectedDay);
- book.addEventListener("click",bookAppointment);
-
- const {data,error}=await db.from("doctor_schedules")
-  .select("day_of_week,start_time,end_time,is_available,unlimited_daily,max_daily_patients")
-  .eq("doctor_id",doctor.id)
-  .eq("is_available",true);
-
- if(error){
-  scheduleMessage.textContent="تعذر تحميل الدوام: "+error.message;
-  return;
- }
-
+ dateInput.addEventListener("change",checkSelectedDay);book.addEventListener("click",bookAppointment);
+ const {data,error}=await db.from("doctor_schedules").select("day_of_week,start_time,end_time,is_available,unlimited_daily,max_daily_patients")
+  .eq("doctor_id",doctor.id).eq("is_available",true);
+ if(error){scheduleMessage.textContent="تعذر تحميل الدوام: "+error.message;return;}
  selectedSchedules=data||[];
-
- if(selectedSchedules.length===0){
-  scheduleMessage.textContent="الطبيب لم يحدد أوقات دوام متاحة حالياً.";
-  book.disabled=true;
-  return;
- }
-
+ if(!selectedSchedules.some(s=>Number(s.day_of_week)===new Date(dateInput.value+"T12:00:00").getDay())&&
+    selectedSchedules.some(s=>Number(s.day_of_week)===new Date(baghdadDateOffset(1)+"T12:00:00").getDay()))dateInput.value=baghdadDateOffset(1);
+ if(!selectedSchedules.length){scheduleMessage.textContent="الطبيب لم يحدد أوقات دوام متاحة حالياً.";book.disabled=true;return;}
  checkSelectedDay();
 }
-
+function baghdadDateOffset(offset=0){
+ const p=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Baghdad",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()).reduce((o,x)=>(o[x.type]=x.value,o),{});
+ const d=new Date(Date.UTC(Number(p.year),Number(p.month)-1,Number(p.day)+offset));
+ return d.getUTCFullYear()+"-"+String(d.getUTCMonth()+1).padStart(2,"0")+"-"+String(d.getUTCDate()).padStart(2,"0");
+}
+function setPatientDayOptions(select){
+ select.replaceChildren(new Option("اليوم",baghdadDateOffset(0)),new Option("غداً",baghdadDateOffset(1)));
+}
+function baghdadDayLabel(value){
+ const date=String(value||"").slice(0,10);
+ return date===baghdadDateOffset(0)?"اليوم":date===baghdadDateOffset(1)?"غداً":date||"غير محدد";
+}
+function patientAppointmentDayTime(appointmentAt,requestedDate){
+ const day=appointmentAt
+  ?new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Baghdad",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(appointmentAt))
+  :requestedDate;
+ if(!appointmentAt)return "اليوم المطلوب: "+baghdadDayLabel(day)+" — بانتظار تحديد الساعة";
+ return "موعدك: "+baghdadDayLabel(day)+"، الساعة "+new Date(appointmentAt).toLocaleTimeString("ar-IQ",{timeZone:"Asia/Baghdad",hour:"2-digit",minute:"2-digit"});
+}
+function appendQueuePosition(card,queueMap,serviceType,appointmentId){
+ const queue=queueMap.get(serviceType+":"+appointmentId);if(!queue)return;
+ const item=document.createElement("p");item.className="status-box status-pending";
+ item.textContent="دورك رقم "+queue.queue_position+" — قبلك "+queue.patients_ahead+" مراجع.";
+ card.append(item);
+}
 function checkSelectedDay(){
  const date=el("appointmentDate").value;
  if(!date)return;
@@ -1135,13 +1106,15 @@ async function loadMyAppointments(){
  if(dateInput&&!dateInput.value){const now=new Date();dateInput.value=[now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");}
  if(!el("myAppointments").classList.contains("hidden"))await loadMedicalRecords();
  const list=el("myAppointmentsList");list.textContent="جاري تحميل الحجوزات...";
- const [oldResult,centerResult]=await Promise.all([
+ const [oldResult,centerResult,queueResult]=await Promise.all([
   db.from("appointments").select("id,requested_date,appointment_at,status,notes,rejection_reason,doctors(profile_id)").eq("patient_id",user.id).order("requested_date",{ascending:true}),
-  db.from("center_appointments").select("id,requested_date,appointment_at,status,notes,rejection_reason,center_doctors(full_name,specialty),medical_centers(name)").eq("patient_id",user.id).order("requested_date",{ascending:true})
+  db.from("center_appointments").select("id,requested_date,appointment_at,status,notes,rejection_reason,center_doctors(full_name,specialty),medical_centers(name)").eq("patient_id",user.id).order("requested_date",{ascending:true}),
+  db.rpc("patient_appointment_queue_data")
  ]);
  if(oldResult.error){list.textContent="تعذر تحميل حجوزات الأطباء المستقلين: "+oldResult.error.message;return;}
  if(centerResult.error){list.textContent="تعذر تحميل حجوزات المراكز الطبية: "+centerResult.error.message;return;}
  const oldRows=oldResult.data||[],centerRows=centerResult.data||[];
+ const queueMap=new Map((queueResult.data||[]).map(q=>[q.service_type+":"+q.appointment_id,q]));
  const profileIds=oldRows.map(a=>a.doctors?.profile_id).filter(Boolean);
  let profiles=[];
  if(profileIds.length){const p=await db.from("profiles").select("id,full_name").in("id",profileIds);if(!p.error)profiles=p.data||[];}
@@ -1151,9 +1124,9 @@ async function loadMyAppointments(){
   const card=document.createElement("article");card.className="doctor";
   const doc=profiles.find(p=>p.id===a.doctors?.profile_id);
   const title=document.createElement("strong");title.textContent="طبيب مستقل: "+(doc?.full_name||"غير معروف");
-  const date=document.createElement("p");date.textContent="اليوم المطلوب: "+(a.requested_date||"غير محدد")+(a.appointment_at?" | ساعة الحضور: "+new Date(a.appointment_at).toLocaleString("ar-IQ",{dateStyle:"medium",timeStyle:"short"}):" | بانتظار تحديد الساعة");
+  const date=document.createElement("p");date.textContent=patientAppointmentDayTime(a.appointment_at,a.requested_date);
   const status=document.createElement("p");status.textContent="حالة الحجز: "+appointmentStatus(a.status);
-  card.append(title,date,status);
+  card.append(title,date,status);appendQueuePosition(card,queueMap,"doctor",a.id);
   if(a.rejection_reason){const reason=document.createElement("p");reason.textContent="سبب الرفض: "+a.rejection_reason;card.append(reason);}
   if(["pending","approved","confirmed"].includes(a.status)){
    const cancel=document.createElement("button");cancel.type="button";cancel.className="secondary";cancel.textContent="إلغاء الطلب";
@@ -1164,9 +1137,9 @@ async function loadMyAppointments(){
  centerRows.forEach(a=>{
   const card=document.createElement("article");card.className="doctor";
   const title=document.createElement("strong");title.textContent="مركز طبي: "+(a.medical_centers?.name||"غير معروف")+" — "+(a.center_doctors?.full_name||"الطبيب");
-  const date=document.createElement("p");date.textContent="اليوم المطلوب: "+(a.requested_date||"غير محدد")+(a.appointment_at?" | ساعة الحضور: "+new Date(a.appointment_at).toLocaleTimeString("ar-IQ",{hour:"2-digit",minute:"2-digit"}):" | بانتظار تحديد ساعة الحضور");
+  const date=document.createElement("p");date.textContent=patientAppointmentDayTime(a.appointment_at,a.requested_date);
   const status=document.createElement("p");status.textContent="حالة الطلب: "+appointmentStatus(a.status);
-  card.append(title,date,status);
+  card.append(title,date,status);appendQueuePosition(card,queueMap,"center",a.id);
   if(a.rejection_reason){const reason=document.createElement("p");reason.className="status-box status-rejected";reason.textContent="سبب الرفض: "+a.rejection_reason;card.append(reason);}
   if(["pending","approved","confirmed"].includes(a.status)){
    const cancel=document.createElement("button");cancel.type="button";cancel.className="secondary";cancel.textContent="إلغاء الطلب";

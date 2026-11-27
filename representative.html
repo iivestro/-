@@ -400,7 +400,7 @@ async function loadDoctorsAndSlots(){
   .from("rep_visit_slots")
   .select("id,doctor_id,visit_date,start_time,end_time,capacity,is_open")
   .eq("is_open",true)
-  .gte("visit_date",today)
+  .eq("visit_date",today)
   .order("visit_date",{ascending:true})
   .order("start_time",{ascending:true});
 
@@ -488,7 +488,7 @@ async function loadDoctorsAndSlots(){
    slotBox.className="slot";
    slotBox.innerHTML=`
     <div class="slot-top">
-     <strong>${escapeHTML(formatDate(slot.visit_date))}</strong>
+     <strong>استقبال اليوم</strong>
      <span class="badge">متاح</span>
     </div>
     <p>من ${escapeHTML(formatTime(slot.start_time))} إلى ${escapeHTML(formatTime(slot.end_time))}</p>

@@ -117,6 +117,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#109e9a;box-sh
 .appointment-picker p{margin:0;color:#6b8290;font-size:13px;line-height:1.7}
 .appointment-picker label{display:block;margin:15px 0 7px;color:#294e60;font-size:14px;font-weight:700}
 .appointment-picker input{width:100%;min-height:52px;margin:0;padding:12px 14px;border:1px solid #d4e5e8;border-radius:13px;background:#f8fcfc;color:#183447;font:inherit;font-size:16px}
+ .appointment-picker select{width:100%;min-height:52px;margin:0;padding:12px 14px;border:1px solid #d4e5e8;border-radius:13px;background:#f8fcfc;color:#183447;font:inherit;font-size:16px}
 .appointment-picker input:focus{outline:0;border-color:#109e9a;box-shadow:0 0 0 4px rgba(16,158,154,.12);background:#fff}
 .appointment-picker-actions{display:flex;gap:10px;margin-top:22px}
 .appointment-picker-actions button{flex:1;min-height:48px;margin:0}
@@ -218,10 +219,6 @@ button{min-height:44px;font-family:inherit}
 <p class="muted">أنشئ موعداً لاستقبال مندوبي المكاتب العلمية أو الشركات. سيظهر الموعد للمندوبين في بوابتهم ليتمكنوا من إرسال طلب زيارة.</p>
 <div class="rep-form-grid">
 <div>
-<label for="repSlotDate">تاريخ الزيارة</label>
-<input type="date" id="repSlotDate">
-</div>
-<div>
 <label for="repSlotStart">وقت البداية</label>
 <input type="time" id="repSlotStart" value="09:00">
 </div>
@@ -231,7 +228,7 @@ button{min-height:44px;font-family:inherit}
 </div>
 <div>
 <label for="repSlotCapacity">عدد المندوبين المسموح</label>
-<input type="number" id="repSlotCapacity" min="1" max="50" value="5">
+<input type="number" id="repSlotCapacity" min="1" max="30" value="5">
 </div>
 </div>
 <button id="addRepSlotButton" onclick="addRepVisitSlot()">إضافة موعد استقبال</button>
@@ -404,11 +401,6 @@ document.getElementById("login").style.display="none";
 document.getElementById("app").style.display="block";
 document.getElementById("headerActions").style.display="flex";
 
-const today=new Date();
-const localDate=new Date(today.getTime()-today.getTimezoneOffset()*60000).toISOString().slice(0,10);
-document.getElementById("repSlotDate").min=localDate;
-document.getElementById("repSlotDate").value=localDate;
-
 await Promise.all([loadSchedule(),loadAppointments(),...(isCenterDoctor?[]:[loadRepManagement()])]);
 if(isCenterDoctor){
  document.getElementById("panel-reps").style.display="none";
@@ -573,7 +565,7 @@ async function loadAppointments(){
    const card=document.createElement("div");card.className="appointment";
    const title=document.createElement("strong");title.textContent="طلب موعد من: "+(item.patient_name||"مراجع");
    const requested=item.requested_date||(item.appointment_at?new Date(item.appointment_at).toLocaleDateString("en-CA",{timeZone:"Asia/Baghdad"}):"غير محدد");
-   const date=document.createElement("p");date.textContent="اليوم المطلوب: "+requested+(item.appointment_at?" | ساعة الحضور: "+new Date(item.appointment_at).toLocaleTimeString("ar-IQ",{hour:"2-digit",minute:"2-digit"}):" | بانتظار تحديد الساعة");
+   const date=document.createElement("p");date.textContent=baghdadAppointmentLabel(item.appointment_at,requested);
    const patient=document.createElement("p");patient.textContent="العمر: "+(item.patient_age??"غير محدد")+" | المحافظة: "+(item.patient_governorate||"غير محددة");
    const notes=document.createElement("p");notes.textContent="ملاحظات: "+(item.appointment_notes||"لا توجد ملاحظات");
    const status=document.createElement("span");status.className="tag";status.textContent=statusArabic(item.appointment_status);
@@ -610,7 +602,7 @@ async function loadCenterDoctorAppointments(){
   mine.forEach(item=>{
    const card=document.createElement("div");card.className="appointment";
    const title=document.createElement("strong");title.textContent="طلب مراجعة من: "+(item.patient_name||"مراجع");
-   const date=document.createElement("p");date.textContent="اليوم المطلوب: "+item.requested_date+(item.appointment_at?" | ساعة الحضور: "+new Date(item.appointment_at).toLocaleString("ar-IQ",{dateStyle:"medium",timeStyle:"short"}):" | لم تحدد الساعة بعد");
+   const date=document.createElement("p");date.textContent=baghdadAppointmentLabel(item.appointment_at,item.requested_date);
    const patient=document.createElement("p");patient.textContent="العمر: "+(item.patient_age??"غير محدد")+" | المحافظة: "+(item.patient_governorate||"غير محددة");
    const notes=document.createElement("p");notes.textContent="ملاحظات: "+(item.appointment_notes||"لا توجد");
    const status=document.createElement("span");status.className="tag";status.textContent=statusArabic(item.appointment_status);
@@ -631,50 +623,31 @@ async function loadCenterDoctorAppointments(){
  finally{appointmentsLoading=false;}
 }
 
-async function openAppointmentDateTimePicker(initialDate,initialTime="09:00"){
+function openAppointmentDateTimePicker(initialDate,initialTime="09:00"){
  return new Promise(resolve=>{
-  const overlay=document.createElement("div");
-  overlay.className="appointment-picker-overlay";
-  const baghdadNowParts=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Baghdad",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date()).reduce((parts,item)=>(parts[item.type]=item.value,parts),{});
-  const todayText=baghdadNowParts.year+"-"+baghdadNowParts.month+"-"+baghdadNowParts.day;
-  const startDate=initialDate&&/^\d{4}-\d{2}-\d{2}$/.test(initialDate)&&initialDate>=todayText?initialDate:todayText;
-  overlay.innerHTML='<form class="appointment-picker" role="dialog" aria-modal="true" aria-labelledby="appointmentPickerTitle"><div class="appointment-picker-head"><div class="appointment-picker-icon">▦</div><div><h3 id="appointmentPickerTitle">تحديد موعد المراجع</h3><p>اختر اليوم من التقويم ثم حدد ساعة الحضور</p></div></div><label for="appointmentPickerDate">تاريخ الحضور</label><input id="appointmentPickerDate" type="date" required><label for="appointmentPickerTime">ساعة الحضور</label><input id="appointmentPickerTime" type="time" required><p class="appointment-picker-error" aria-live="polite"></p><div class="appointment-picker-actions"><button type="submit">تأكيد الموعد</button><button type="button" class="picker-cancel">إلغاء</button></div></form>';
-  const form=overlay.querySelector("form"),dateInput=overlay.querySelector("#appointmentPickerDate"),timeInput=overlay.querySelector("#appointmentPickerTime"),error=overlay.querySelector(".appointment-picker-error");
-  dateInput.min=todayText;dateInput.value=startDate;timeInput.value=initialTime||"09:00";
-  const baghdadMinimumTime=()=>{
-   const p=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Baghdad",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date(Date.now()+60000)).reduce((parts,item)=>(parts[item.type]=item.value,parts),{});
-   return p.hour+":"+p.minute;
-  };
-  const enforceFutureTime=()=>{
-   if(dateInput.value===todayText){
-    const minTime=baghdadMinimumTime();
-    timeInput.min=minTime;
-    if(!timeInput.value||timeInput.value<minTime)timeInput.value=minTime;
-   }else timeInput.min="";
-  };
-  dateInput.addEventListener("change",enforceFutureTime);
-  enforceFutureTime();
+  const overlay=document.createElement("div");overlay.className="appointment-picker-overlay";
+  const today=baghdadDateOffset(0),tomorrow=baghdadDateOffset(1);
+  overlay.innerHTML='<form class="appointment-picker" role="dialog" aria-modal="true" aria-labelledby="appointmentPickerTitle"><div class="appointment-picker-head"><div class="appointment-picker-icon">◷</div><div><h3 id="appointmentPickerTitle">تحديد موعد المراجع</h3><p>اختر اليوم أو غداً ثم حدد ساعة الحضور</p></div></div><label for="appointmentPickerDay">يوم المراجعة</label><select id="appointmentPickerDay"><option value="'+today+'">اليوم</option><option value="'+tomorrow+'">غداً</option></select><label for="appointmentPickerTime">ساعة الحضور</label><input id="appointmentPickerTime" type="time" required><p class="appointment-picker-error" aria-live="polite"></p><div class="appointment-picker-actions"><button type="submit">تأكيد الموعد</button><button type="button" class="picker-cancel">إلغاء</button></div></form>';
+  const form=overlay.querySelector("form"),dayInput=overlay.querySelector("#appointmentPickerDay"),timeInput=overlay.querySelector("#appointmentPickerTime"),error=overlay.querySelector(".appointment-picker-error");
+  if(initialDate===tomorrow)dayInput.value=tomorrow;
+  timeInput.value=initialTime||"09:00";
+  const futureTime=()=>new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Baghdad",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(new Date(Date.now()+60000));
+  const updateMinimum=()=>{timeInput.min=dayInput.value===today?futureTime():"";if(dayInput.value===today&&(!timeInput.value||timeInput.value<timeInput.min))timeInput.value=timeInput.min;};
+  dayInput.addEventListener("change",updateMinimum);updateMinimum();
   const close=value=>{overlay.remove();resolve(value);};
   form.addEventListener("submit",event=>{
    event.preventDefault();error.textContent="";
-   const date=dateInput.value,time=timeInput.value;
-   if(!date||!time){error.textContent="يرجى اختيار التاريخ والساعة.";return;}
-   const parts=date.split("-").map(Number);
-   const check=new Date(parts[0],parts[1]-1,parts[2],12);
-   if(check.getFullYear()!==parts[0]||check.getMonth()!==parts[1]-1||check.getDate()!==parts[2]){error.textContent="التاريخ المختار غير صحيح.";return;}
-   if(date<todayText){error.textContent="لا يمكن تحديد موعد بتاريخ سابق.";return;}
-   if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)){error.textContent="يرجى اختيار ساعة صحيحة.";return;}
+   const date=dayInput.value,time=timeInput.value;
+   if(!date||!time||!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)){error.textContent="اختر اليوم أو غداً وساعة صحيحة.";return;}
    const localDate=new Date(date+"T"+time+":00+03:00");
-   if(Number.isNaN(localDate.getTime())){error.textContent="تعذر قراءة التاريخ والوقت. أعد الاختيار.";return;}
-   if(localDate<=new Date()){error.textContent="اختر وقتاً مستقبلياً.";enforceFutureTime();return;}
+   if(Number.isNaN(localDate.getTime())||localDate<=new Date()){error.textContent="اختر وقتاً مستقبلياً.";updateMinimum();return;}
    close({date,time,iso:localDate.toISOString()});
   });
   form.querySelector(".picker-cancel").addEventListener("click",()=>close(null));
   overlay.addEventListener("click",event=>{if(event.target===overlay)close(null);});
-  document.body.append(overlay);dateInput.focus();
+  document.body.append(overlay);dayInput.focus();
  });
 }
-
 async function decideCenterDoctorAppointment(item,action){
  let at=null,reason=null;
  if(action==="confirm"||action==="reschedule"){
@@ -728,58 +701,41 @@ const d=new Date(dateValue+"T12:00:00");
 return d.toLocaleDateString("ar-IQ",{year:"numeric",month:"long",day:"numeric"});
 }
 
+function baghdadDateOffset(offset=0){
+ const p=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Baghdad",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()).reduce((o,x)=>(o[x.type]=x.value,o),{});
+ const date=new Date(Date.UTC(Number(p.year),Number(p.month)-1,Number(p.day)+offset));
+ return date.getUTCFullYear()+"-"+String(date.getUTCMonth()+1).padStart(2,"0")+"-"+String(date.getUTCDate()).padStart(2,"0");
+}
+function baghdadDayLabel(value){
+ const day=String(value||"").slice(0,10);
+ return day===baghdadDateOffset(0)?"اليوم":day===baghdadDateOffset(1)?"غداً":day||"غير محدد";
+}
+function baghdadAppointmentLabel(appointmentAt,requestedDate){
+ const day=appointmentAt?new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Baghdad",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(appointmentAt)):requestedDate;
+ if(!appointmentAt)return "اليوم المطلوب: "+baghdadDayLabel(day)+" — بانتظار تحديد الساعة";
+ return "الموعد: "+baghdadDayLabel(day)+"، الساعة "+new Date(appointmentAt).toLocaleTimeString("ar-IQ",{timeZone:"Asia/Baghdad",hour:"2-digit",minute:"2-digit"});
+}
 function formatRepTime(timeValue){
 return timeValue?timeValue.slice(0,5):"غير محدد";
 }
 
 async function addRepVisitSlot(){
-if(!currentDoctorId)return;
-const date=document.getElementById("repSlotDate").value;
-const start=document.getElementById("repSlotStart").value;
-const end=document.getElementById("repSlotEnd").value;
-const capacity=Number(document.getElementById("repSlotCapacity").value);
-const button=document.getElementById("addRepSlotButton");
-
-if(!date||!start||!end){
-showMessage("repSlotStatus","يرجى تحديد التاريخ ووقت البداية والنهاية.");
-return;
+ if(!currentDoctorId)return;
+ const start=document.getElementById("repSlotStart").value;
+ const end=document.getElementById("repSlotEnd").value;
+ const capacity=Number(document.getElementById("repSlotCapacity").value);
+ const button=document.getElementById("addRepSlotButton");
+ if(!start||!end){showMessage("repSlotStatus","حدد وقت البداية والنهاية.");return;}
+ if(start>=end){showMessage("repSlotStatus","وقت النهاية يجب أن يكون بعد وقت البداية.");return;}
+ if(!Number.isInteger(capacity)||capacity<1||capacity>30){showMessage("repSlotStatus","عدد المندوبين يجب أن يكون بين 1 و30.");return;}
+ button.disabled=true;showMessage("repSlotStatus","جارٍ إضافة استقبال اليوم...");
+ try{
+  const {error}=await db.rpc("doctor_create_rep_visit_slot",{p_start_time:start,p_end_time:end,p_capacity:capacity});
+  if(error)throw error;
+  showMessage("repSlotStatus","تمت إضافة فترة استقبال اليوم.");await loadRepManagement();
+ }catch(error){showMessage("repSlotStatus","تعذرت إضافة الفترة: "+error.message);}
+ finally{button.disabled=false;}
 }
-if(start>=end){
-showMessage("repSlotStatus","وقت النهاية يجب أن يكون بعد وقت البداية.");
-return;
-}
-if(!Number.isInteger(capacity)||capacity<1||capacity>50){
-showMessage("repSlotStatus","عدد المندوبين يجب أن يكون بين 1 و50.");
-return;
-}
-const today=new Date();
-const localToday=new Date(today.getTime()-today.getTimezoneOffset()*60000).toISOString().slice(0,10);
-if(date<localToday){
-showMessage("repSlotStatus","لا يمكن إنشاء موعد بتاريخ سابق.");
-return;
-}
-
-button.disabled=true;
-showMessage("repSlotStatus","جارٍ إضافة موعد الاستقبال...");
-try{
-const {error}=await db.from("rep_visit_slots").insert({
-doctor_id:currentDoctorId,
-visit_date:date,
-start_time:start,
-end_time:end,
-capacity:capacity,
-is_open:true
-});
-if(error)throw error;
-showMessage("repSlotStatus","تمت إضافة موعد استقبال المندوبين بنجاح.");
-await loadRepManagement();
-}catch(error){
-showMessage("repSlotStatus","تعذرت إضافة الموعد: "+error.message);
-}finally{
-button.disabled=false;
-}
-}
-
 async function loadRepManagement(){
 if(!currentDoctorId||repManagementLoading)return;
 repManagementLoading=true;
@@ -791,60 +747,31 @@ repManagementLoading=false;
 }
 
 async function loadRepVisitSlots(){
-if(!currentDoctorId)return;
-const container=document.getElementById("repSlotsList");
-container.innerHTML='<div class="rep-empty">جارٍ تحميل المواعيد...</div>';
-
-const {data:slots,error}=await db.from("rep_visit_slots")
-.select("id,doctor_id,visit_date,start_time,end_time,capacity,is_open,created_at")
-.eq("doctor_id",currentDoctorId)
-.order("visit_date",{ascending:true})
-.order("start_time",{ascending:true});
-
-if(error){
-container.innerHTML="";
-const errorBox=document.createElement("div");
-errorBox.className="rep-empty";
-errorBox.textContent="تعذر تحميل مواعيد المندوبين: "+error.message;
-container.appendChild(errorBox);
-return;
+ if(!currentDoctorId)return;
+ const container=document.getElementById("repSlotsList");
+ container.innerHTML='<div class="rep-empty">جارٍ تحميل مواعيد اليوم...</div>';
+ const {data:slots,error}=await db.from("rep_visit_slots")
+  .select("id,doctor_id,visit_date,start_time,end_time,capacity,is_open,created_at")
+  .eq("doctor_id",currentDoctorId).eq("visit_date",baghdadDateOffset(0))
+  .order("start_time",{ascending:true});
+ if(error){container.replaceChildren();const box=document.createElement("div");box.className="rep-empty";box.textContent="تعذر تحميل مواعيد المندوبين: "+error.message;container.append(box);return;}
+ if(!slots||!slots.length){container.innerHTML='<div class="rep-empty">لا توجد فترات استقبال لليوم. أضف وقت البداية والنهاية.</div>';return;}
+ const ids=slots.map(s=>s.id);
+ const {data:bookings}=await db.from("rep_appointments").select("id,slot_id,status").in("slot_id",ids);
+ const counts={};
+ (bookings||[]).forEach(b=>{if(b.status!=="rejected"&&b.status!=="cancelled")counts[b.slot_id]=(counts[b.slot_id]||0)+1;});
+ container.replaceChildren();
+ slots.forEach(slot=>{
+  const card=document.createElement("article");card.className="appointment";
+  const title=document.createElement("h4");title.textContent="استقبال المندوبين اليوم";
+  const time=document.createElement("p");time.textContent="من "+formatRepTime(slot.start_time)+" إلى "+formatRepTime(slot.end_time);
+  const capacity=document.createElement("p");capacity.textContent="عدد الحجوزات: "+(counts[slot.id]||0)+" من "+slot.capacity;
+  const status=document.createElement("span");status.className="tag";status.textContent=slot.is_open?"مفتوح للحجز":"مغلق";
+  const actions=document.createElement("div");actions.className="actions";
+  actions.appendChild(makeActionButton(slot.is_open?"إغلاق الفترة":"فتح الفترة",slot.is_open?"reject":"complete",()=>toggleRepSlot(slot.id,!slot.is_open)));
+  card.append(title,time,capacity,status,actions);container.append(card);
+ });
 }
-if(!slots||slots.length===0){
-container.innerHTML='<div class="rep-empty">لم تقم بإضافة مواعيد لاستقبال المندوبين حتى الآن.</div>';
-return;
-}
-
-const slotIds=slots.map(s=>s.id);
-const {data:bookings}=await db.from("rep_appointments")
-.select("id,slot_id,status").in("slot_id",slotIds);
-const counts={};
-(bookings||[]).forEach(b=>{
-if(b.status!=="rejected"&&b.status!=="cancelled")counts[b.slot_id]=(counts[b.slot_id]||0)+1;
-});
-
-container.innerHTML="";
-slots.forEach(slot=>{
-const card=document.createElement("article");
-card.className="appointment";
-const title=document.createElement("h4");
-title.textContent="موعد استقبال المندوبين";
-const date=document.createElement("p");
-date.textContent="التاريخ: "+formatRepDate(slot.visit_date);
-const time=document.createElement("p");
-time.textContent="الوقت: "+formatRepTime(slot.start_time)+" إلى "+formatRepTime(slot.end_time);
-const capacity=document.createElement("p");
-capacity.textContent="عدد الحجوزات: "+(counts[slot.id]||0)+" من "+slot.capacity;
-const status=document.createElement("span");
-status.className="tag";
-status.textContent=slot.is_open?"مفتوح للحجز":"مغلق";
-const actions=document.createElement("div");
-actions.className="actions";
-actions.appendChild(makeActionButton(slot.is_open?"إغلاق الموعد":"فتح الموعد",slot.is_open?"reject":"complete",()=>toggleRepSlot(slot.id,!slot.is_open)));
-card.append(title,date,time,capacity,status,actions);
-container.appendChild(card);
-});
-}
-
 async function toggleRepSlot(slotId,openState){
 if(!currentDoctorId)return;
 if(!confirm(openState?"هل تريد فتح هذا الموعد لاستقبال طلبات المندوبين؟":"هل تريد إغلاق هذا الموعد؟"))return;
@@ -909,7 +836,7 @@ const governorate=document.createElement("p");
 governorate.textContent="المحافظة: "+(item.governorate||"غير محددة");
 
 const visitDate=document.createElement("p");
-visitDate.textContent="موعد الزيارة: "+formatRepDate(item.visit_date);
+visitDate.textContent="موعد الزيارة: "+baghdadDayLabel(item.visit_date);
 
 const visitTime=document.createElement("p");
 visitTime.textContent=item.visit_at
@@ -942,29 +869,23 @@ container.appendChild(card);
 });
 }
 
-async function openRepVisitTimePicker(date,startValue,endValue){
+function openRepVisitTimePicker(date,startValue,endValue){
  return new Promise(resolve=>{
   const overlay=document.createElement("div");overlay.className="appointment-picker-overlay";
-  overlay.innerHTML='<form class="appointment-picker" role="dialog" aria-modal="true"><div class="appointment-picker-head"><div class="appointment-picker-icon">◷</div><div><h3>تحديد وقت دخول المندوب</h3><p>اختر ساعة ضمن فترة الاستقبال التي حددتها</p></div></div><label>تاريخ الزيارة</label><input type="date" disabled><label for="repVisitPickerTime">ساعة الدخول</label><input id="repVisitPickerTime" type="time" required><p class="appointment-picker-error" aria-live="polite"></p><div class="appointment-picker-actions"><button type="submit">قبول الزيارة</button><button type="button" class="picker-cancel">إلغاء</button></div></form>';
-  const form=overlay.querySelector("form"),dateInput=form.querySelector('input[type="date"]'),timeInput=overlay.querySelector("#repVisitPickerTime"),error=overlay.querySelector(".appointment-picker-error");
-  const endTime=formatRepTime(endValue);
-  const baghdadParts=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Baghdad",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date()).reduce((parts,item)=>(parts[item.type]=item.value,parts),{});
-  const baghdadToday=baghdadParts.year+"-"+baghdadParts.month+"-"+baghdadParts.day;
-  let minTime=formatRepTime(startValue);
-  if(date===baghdadToday){
-   const futureParts=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Baghdad",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date(Date.now()+60000)).reduce((parts,item)=>(parts[item.type]=item.value,parts),{});
-   const futureTime=futureParts.hour+":"+futureParts.minute;
-   if(futureTime>minTime)minTime=futureTime;
-  }
-  dateInput.value=date;timeInput.min=minTime;timeInput.max=endTime;timeInput.value=minTime;
-  const submitButton=form.querySelector('button[type="submit"]');
-  if(minTime>=endTime){error.textContent="لا توجد ساعة مستقبلية ضمن فترة الاستقبال المحددة.";submitButton.disabled=true;}
+  overlay.innerHTML='<form class="appointment-picker" role="dialog" aria-modal="true"><div class="appointment-picker-head"><div class="appointment-picker-icon">◷</div><div><h3>تحديد وقت دخول المندوب</h3><p>اختر ساعة ضمن فترة استقبال اليوم</p></div></div><label for="repVisitPickerTime">ساعة الدخول</label><input id="repVisitPickerTime" type="time" required><p class="appointment-picker-error" aria-live="polite"></p><div class="appointment-picker-actions"><button type="submit">قبول الزيارة</button><button type="button" class="picker-cancel">إلغاء</button></div></form>';
+  const form=overlay.querySelector("form"),timeInput=overlay.querySelector("#repVisitPickerTime"),error=overlay.querySelector(".appointment-picker-error");
+  const startTime=formatRepTime(startValue),endTime=formatRepTime(endValue);
+  const baghdadNow=()=>new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Baghdad",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(new Date(Date.now()+60000));
+  let minTime=startTime;if(baghdadNow()>minTime)minTime=baghdadNow();
+  timeInput.min=minTime;timeInput.max=endTime;timeInput.value=minTime;
+  const submit=form.querySelector('button[type="submit"]');
+  if(minTime>=endTime){error.textContent="لا توجد ساعة مستقبلية ضمن فترة الاستقبال.";submit.disabled=true;}
   const close=value=>{overlay.remove();resolve(value);};
   form.addEventListener("submit",event=>{
    event.preventDefault();const time=timeInput.value;
-   if(!time||time<minTime||time>=endTime){error.textContent="اختر ساعة مستقبلية داخل فترة الاستقبال المحددة.";return;}
-   const localDate=new Date(date+"T"+time+":00+03:00");if(Number.isNaN(localDate.getTime())){error.textContent="تعذر قراءة التاريخ والوقت.";return;}
-   if(localDate<=new Date()){error.textContent="اختر وقتاً مستقبلياً داخل فترة الاستقبال.";return;}
+   if(!time||time<minTime||time>=endTime){error.textContent="اختر ساعة مستقبلية داخل فترة الاستقبال.";return;}
+   const localDate=new Date(baghdadDateOffset(0)+"T"+time+":00+03:00");
+   if(Number.isNaN(localDate.getTime())||localDate<=new Date()){error.textContent="اختر وقتاً مستقبلياً اليوم.";return;}
    close(localDate.toISOString());
   });
   form.querySelector(".picker-cancel").addEventListener("click",()=>close(null));
@@ -972,7 +893,6 @@ async function openRepVisitTimePicker(date,startValue,endValue){
   document.body.append(overlay);timeInput.focus();
  });
 }
-
 async function updateRepAppointment(item,newStatus){
 if(!currentDoctorId)return;
 let visitAt=null;
