@@ -331,7 +331,7 @@ button{min-height:44px;font-family:inherit}
     <div class="section-title">
      <div>
       <h2>إدارة الأطباء والاشتراكات</h2>
-      <p class="muted">قيمة الاشتراك 50,000 دينار عراقي لكل 30 يوماً. يمكنك إيقاف الطبيب إدارياً أو تجديد اشتراكه.</p>
+      <p class="muted">يمكنك تجديد اشتراك الطبيب أو منحه شهراً مجانياً، مع متابعة حالة الاشتراك وتاريخ انتهائه.</p>
      </div>
      <button class="btn-light" onclick="loadDoctors()">تحديث قائمة الأطباء</button>
     </div>
@@ -903,7 +903,7 @@ async function loadDoctors(){
  setText("manageDoctorsError","");
  tbody.innerHTML='<div class="admin-empty">جارٍ تحميل الأطباء...</div>';
  const {data,error}=await db.from("doctors")
- .select("id,profile_id,specialty_id,clinic_id,qualification,experience_years,consultation_fee,is_active,admin_is_active,subscription_expires_at,subscription_fee,photo_url,bio,specialties(name_ar),clinics(name,address,phone,maps_url)")
+ .select("id,profile_id,specialty_id,clinic_id,qualification,experience_years,consultation_fee,is_active,admin_is_active,subscription_expires_at,subscription_is_trial,photo_url,bio,specialties(name_ar),clinics(name,address,phone,maps_url)")
  .order("created_at",{ascending:false});
  if(error){setText("manageDoctorsError","تعذر تحميل الأطباء: "+error.message);tbody.innerHTML='<div class="admin-empty">تعذر تحميل الأطباء.</div>';return;}
  managedDoctors=data||[];
@@ -925,8 +925,8 @@ async function loadDoctors(){
  tbody.innerHTML=managedDoctors.map(d=>{
   const adminActive=d.admin_is_active!==false,subscriptionDate=d.subscription_expires_at?new Date(d.subscription_expires_at):null,validDate=subscriptionDate&&!Number.isNaN(subscriptionDate.getTime()),expired=!validDate||subscriptionDate<=new Date();
   let statusLabel="نشط",statusClass="approved";if(!adminActive){statusLabel="موقوف إدارياً";statusClass="rejected";}else if(expired){statusLabel="منتهي الاشتراك";statusClass="rejected";}
-  const expiryLabel=validDate?subscriptionDate.toLocaleDateString("ar-IQ",{year:"numeric",month:"long",day:"numeric"}):"غير محدد",fee=Number(d.subscription_fee||50000).toLocaleString("en-US"),name=d.profile.full_name||"طبيب";
-  return `<article class="admin-record-card"><div class="admin-record-head"><div class="admin-avatar">${d.photo_url?`<img src="${escapeHTML(d.photo_url)}" alt="">`:`<span>${escapeHTML(name.trim().slice(0,1)||"ط")}</span>`}</div><div class="admin-record-title"><strong>${escapeHTML(name)}</strong><span>${escapeHTML(d.specialties?.name_ar||"تخصص غير محدد")}</span></div></div><div class="admin-record-details"><div class="admin-detail"><small>العيادة</small><strong>${escapeHTML(d.clinics?.name||"غير محددة")}</strong></div><div class="admin-detail"><small>حالة الحساب</small><strong><span class="status ${statusClass}">${statusLabel}</span></strong></div><div class="admin-detail"><small>انتهاء الاشتراك</small><strong>${escapeHTML(expiryLabel)}</strong></div><div class="admin-detail"><small>قيمة الاشتراك</small><strong>${fee} د.ع</strong></div></div><div class="admin-record-foot"><span class="small">${expired?"يحتاج إلى تجديد":"الاشتراك فعال"}</span><div class="admin-card-actions"><button class="btn-light" onclick="editDoctor('${d.id}')">تعديل البيانات</button><button class="${adminActive?"reject-btn":"approve-btn"}" onclick="toggleDoctorActive('${d.id}',${adminActive})">${adminActive?"إيقاف إدارياً":"رفع الإيقاف"}</button><button onclick="renewDoctorSubscription('${d.id}')">تجديد 30 يوماً</button></div></div></article>`;
+  const expiryLabel=validDate?subscriptionDate.toLocaleDateString("ar-IQ",{year:"numeric",month:"long",day:"numeric"}):"غير محدد",subscriptionType=d.subscription_is_trial?"شهر مجاني":"اشتراك اعتيادي",name=d.profile.full_name||"طبيب";
+  return `<article class="admin-record-card"><div class="admin-record-head"><div class="admin-avatar">${d.photo_url?`<img src="${escapeHTML(d.photo_url)}" alt="">`:`<span>${escapeHTML(name.trim().slice(0,1)||"ط")}</span>`}</div><div class="admin-record-title"><strong>${escapeHTML(name)}</strong><span>${escapeHTML(d.specialties?.name_ar||"تخصص غير محدد")}</span></div></div><div class="admin-record-details"><div class="admin-detail"><small>العيادة</small><strong>${escapeHTML(d.clinics?.name||"غير محددة")}</strong></div><div class="admin-detail"><small>حالة الحساب</small><strong><span class="status ${statusClass}">${statusLabel}</span></strong></div><div class="admin-detail"><small>انتهاء الاشتراك</small><strong>${escapeHTML(expiryLabel)}</strong></div><div class="admin-detail"><small>نوع الاشتراك</small><strong>${subscriptionType}</strong></div></div><div class="admin-record-foot"><span class="small">${expired?"يحتاج إلى تجديد":"الاشتراك فعال"}</span><div class="admin-card-actions"><button class="btn-light" onclick="editDoctor('${d.id}')">تعديل البيانات</button><button class="${adminActive?"reject-btn":"approve-btn"}" onclick="toggleDoctorActive('${d.id}',${adminActive})">${adminActive?"إيقاف إدارياً":"رفع الإيقاف"}</button><button onclick="renewDoctorSubscription('${d.id}')">تجديد الاشتراك</button><button class="btn-light" onclick="grantDoctorFreeMonth('${d.id}')">منح شهر مجاني</button></div></div></article>`;
  }).join("");
 }
 
@@ -972,13 +972,22 @@ async function toggleDoctorActive(id,currentAdminActive){
 async function renewDoctorSubscription(id){
  const d=managedDoctors.find(x=>x.id===id);
  if(!d)return;
- const {data:price,error:priceError}=await db.from("service_subscription_prices").select("monthly_fee,duration_days").eq("service","doctor").single();
- if(priceError){setText("manageDoctorsError",priceError.message);return;}
- if(!confirm("تأكيد استلام "+price.monthly_fee+" دينار وتجديد الاشتراك؟"))return;
+ if(!confirm("تأكيد تجديد اشتراك الطبيب "+(d.profile.full_name||"")+" لمدة 30 يوماً؟"))return;
  const {data:expiry,error}=await db.rpc("admin_renew_clinical_subscription",{p_kind:"doctor",p_id:id});
- const next=new Date(expiry);
  if(error){setText("manageDoctorsError","تعذر تجديد الاشتراك: "+error.message);return;}
- setText("manageDoctorsMessage","تم تمديد الاشتراك 30 يوماً حتى "+next.toLocaleDateString("ar-IQ")+". إذا كان الطبيب موقوفاً إدارياً فسيبقى موقوفاً.");
+ const next=new Date(expiry);
+ setText("manageDoctorsMessage","تم تجديد الاشتراك حتى "+next.toLocaleDateString("ar-IQ")+". إذا كان الطبيب موقوفاً إدارياً فسيبقى موقوفاً.");
+ await Promise.all([loadDoctors(),refreshDashboard()]);
+}
+
+async function grantDoctorFreeMonth(id){
+ const d=managedDoctors.find(x=>x.id===id);
+ if(!d)return;
+ if(!confirm("هل تمنح الطبيب "+(d.profile.full_name||"")+" شهراً مجانياً؟ سيتم تمديد الاشتراك 30 يوماً."))return;
+ const {data:expiry,error}=await db.rpc("admin_grant_free_month",{p_kind:"doctor",p_id:id});
+ if(error){setText("manageDoctorsError","تعذر منح الشهر المجاني: "+error.message);return;}
+ const next=new Date(expiry);
+ setText("manageDoctorsMessage","تم منح شهر مجاني للطبيب حتى "+next.toLocaleDateString("ar-IQ")+".");
  await Promise.all([loadDoctors(),refreshDashboard()]);
 }
 
@@ -1085,7 +1094,7 @@ async function loadRepresentatives(){
  setText("representativesError","");setText("representativesMessage","");
  tbody.innerHTML='<div class="admin-empty">جارٍ تحميل المندوبين...</div>';
  const {data,error}=await db.from("rep_accounts")
-  .select("profile_id,employer_type,employer_name,status,created_at,subscription_started_at,subscription_expires_at,subscription_fee,subscription_is_trial,profiles!rep_accounts_profile_id_fkey(full_name,governorate,approval_status,created_at)")
+  .select("profile_id,employer_type,employer_name,status,created_at,subscription_started_at,subscription_expires_at,subscription_is_trial,profiles!rep_accounts_profile_id_fkey(full_name,governorate,approval_status,created_at)")
   .order("created_at",{ascending:false});
  if(error){
   managedRepresentatives=[];
@@ -1110,9 +1119,9 @@ function representativeDate(value){
  return Number.isNaN(date.getTime())?"غير محدد":date.toLocaleDateString("ar-IQ",{year:"numeric",month:"long",day:"numeric",timeZone:"Asia/Baghdad"});
 }
 function representativeSubscriptionLabel(row){
- if(row.subscription_is_trial)return "تجريبي مجاني";
- const fee=Number(row.subscription_fee||0);
- return fee>0?"اشتراك مدفوع — "+fee.toLocaleString("ar-IQ")+" د.ع":"اشتراك غير محدد";
+ if(row.subscription_is_trial)return "شهر مجاني";
+ const expiry=row.subscription_expires_at?new Date(row.subscription_expires_at):null;
+ return expiry&&expiry>new Date()?"اشتراك فعّال":"يحتاج إلى تجديد";
 }
 function representativeCard(row){
  const status=row.status||"pending",name=row.profile?.full_name||"غير محدد";
@@ -1121,9 +1130,9 @@ function representativeCard(row){
  const expires=representativeDate(row.subscription_expires_at);
  let actions="";
  if(status==="pending")actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">موافقة وتفعيل الحساب</button><button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','rejected')">رفض الطلب</button>`;
- else if(status==="approved")actions=`<button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','suspended')">إيقاف الحساب</button><button type="button" onclick="rpZEAWYtiB6bJ16NuLbGCc6CZ6jJdKfb63('${row.profile_id}')">تأكيد استلام 20,000 د.ع وتجديد 30 يوماً</button>`; else if(status==="suspended")actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">إعادة التفعيل</button><button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','rejected')">رفض الحساب</button>`;
+ else if(status==="approved")actions=`<button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','suspended')">إيقاف الحساب</button><button type="button" onclick="rpZEAWYtiB6bJ16NuLbGCc6CZ6jJdKfb63('${row.profile_id}')">تجديد الاشتراك</button><button type="button" class="approve-btn" onclick="grantRepresentativeFreeMonth('${row.profile_id}')">منح شهر مجاني</button>`; else if(status==="suspended")actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">إعادة التفعيل</button><button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','rejected')">رفض الحساب</button>`;
  else if(status==="rejected")actions=`<button class="approve-btn" onclick="changeRepresentativeStatus('${row.profile_id}','approved')">قبول الحساب</button>`;
- else if(status==="approved")actions=`<button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','suspended')">إيقاف الحساب</button><button type="button" onclick="rpZEAWYtiB6bJ16NuLbGCc6CZ6jJdKfb63('${row.profile_id}')">تأكيد استلام 20,000 د.ع وتجديد 30 يوماً</button>`;
+ else if(status==="approved")actions=`<button class="reject-btn" onclick="changeRepresentativeStatus('${row.profile_id}','suspended')">إيقاف الحساب</button><button type="button" onclick="rpZEAWYtiB6bJ16NuLbGCc6CZ6jJdKfb63('${row.profile_id}')">تجديد الاشتراك</button><button type="button" class="approve-btn" onclick="grantRepresentativeFreeMonth('${row.profile_id}')">منح شهر مجاني</button>`;
  const subscription=representativeSubscriptionLabel(row);
  return `<article class="admin-record-card representative-record">
   <div class="admin-record-head"><div class="admin-avatar"><span>${escapeHTML(name.trim().slice(0,1)||"م")}</span></div><div class="admin-record-title"><strong>${escapeHTML(name)}</strong><span>${escapeHTML(representativeEmployerLabel(row.employer_type))}</span></div><span class="rep-status ${escapeHTML(status)}">${escapeHTML(representativeStatusLabel(status))}</span></div>
@@ -1328,7 +1337,7 @@ db.auth.getSession().then(async({data})=>{
  if(heading)heading.innerHTML='<th>اسم المندوب</th><th>الهاتف</th><th>المحافظة</th><th>نوع جهة العمل</th><th>اسم الجهة</th><th>تاريخ التسجيل</th><th>الحالة الإدارية</th><th>الاشتراك</th><th>الإجراءات</th>';
 
  const description=section.querySelector('.section-title p');
- if(description)description.textContent='إدارة حسابات المندوبين والاشتراكات. الاشتراك 20,000 دينار عراقي لكل 30 يوماً. المندوبون الحاليون مشمولون بالفترة المجانية المحددة في حساباتهم.';
+ if(description)description.textContent='إدارة حسابات المندوبين. يمكنك تجديد الاشتراك أو منح شهر مجاني، مع متابعة تاريخ انتهائه.';
 
  window.renderRepresentatives=function(){
   renderRepresentativeCards();
@@ -1338,7 +1347,7 @@ db.auth.getSession().then(async({data})=>{
   await originalLoadRepresentatives();
 
   const {data,error}=await db.from('rep_accounts')
-   .select('profile_id,subscription_started_at,subscription_expires_at,subscription_fee,subscription_is_trial');
+   .select('profile_id,subscription_started_at,subscription_expires_at,subscription_is_trial');
 
   if(error){
    setText('representativesError','تم تحميل بيانات المندوبين، لكن تعذر تحميل الاشتراكات: '+error.message);
@@ -1357,32 +1366,39 @@ db.auth.getSession().then(async({data})=>{
  };
 
  window.rpZEAWYtiB6bJ16NuLbGCc6CZ6jJdKfb63=async function(profileId){
-  const row=(managedRepresentatives||[]).find(function(item){
-   return item.profile_id===profileId;
-  });
-  if(!row)return;
+ const row=(managedRepresentatives||[]).find(function(item){return item.profile_id===profileId;});
+ if(!row)return;
+ const name=row.profile?.full_name||'المندوب';
+ if(!confirm('تأكيد تجديد اشتراك '+name+' لمدة 30 يوماً؟'))return;
+ setText('representativesError','');
+ setText('representativesMessage','جارٍ تجديد الاشتراك...');
+ const {data,error}=await db.rpc('admin_renew_representative_subscription',{p_profile_id:profileId});
+ if(error||!data){
+  setText('representativesMessage','');
+  setText('representativesError','تعذر تجديد الاشتراك: '+(error?.message||'لم تُرجع قاعدة البيانات تاريخ انتهاء الاشتراك.'));
+  return;
+ }
+ await window.loadRepresentatives();
+ setText('representativesMessage','تم تجديد اشتراك '+name+' لمدة 30 يوماً.');
+};
 
-  const name=row.profile?.full_name||'المندوب';
+window.grantRepresentativeFreeMonth=async function(profileId){
+ const row=(managedRepresentatives||[]).find(function(item){return item.profile_id===profileId;});
+ if(!row)return;
+ const name=row.profile?.full_name||'المندوب';
+ if(!confirm('هل تمنح '+name+' شهراً مجانياً؟ سيتم تمديد اشتراكه 30 يوماً.'))return;
+ setText('representativesError','');
+ setText('representativesMessage','جارٍ منح الشهر المجاني...');
+ const {data,error}=await db.rpc('admin_grant_free_month',{p_kind:'representative',p_id:profileId});
+ if(error||!data){
+  setText('representativesMessage','');
+  setText('representativesError','تعذر منح الشهر المجاني: '+(error?.message||'لم تُرجع قاعدة البيانات تاريخ انتهاء الاشتراك.'));
+  return;
+ }
+ await window.loadRepresentatives();
+ setText('representativesMessage','تم منح '+name+' شهراً مجانياً لمدة 30 يوماً.');
+};
 
-  if(!confirm('هل استلمت فعلياً مبلغ 20,000 دينار عراقي من '+name+'؟ سيؤدي التأكيد إلى تسجيل الدفعة وتجديد الاشتراك 30 يوماً. لا تؤكد قبل استلام المبلغ.'))return;
-
-  setText('representativesError','');
-  setText('representativesMessage','جارٍ تسجيل الدفعة وتجديد الاشتراك...');
-
-  const {data,error}=await db.rpc('admin_renew_representative_subscription',{
-   p_profile_id:profileId
-  });
-
-  if(error||!data){
-   setText('representativesMessage','');
-   setText('representativesError','تعذر تجديد الاشتراك: '+(error?.message||'لم تُرجع قاعدة البيانات تاريخ انتهاء الاشتراك.'));
-   return;
-  }
-
-  await window.loadRepresentatives();
-
-  setText('representativesMessage','تم تسجيل استلام 20,000 دينار وتجديد اشتراك '+name+' لمدة 30 يوماً.');
- };
 })();
 
 </script>
@@ -1405,7 +1421,6 @@ db.auth.getSession().then(async({data})=>{
   }
 
   const PAYMENT_DAYS = 30;
-  const PAYMENT_FEE = 50000;
   const IMAGE_BUCKET = "medical-center-images";
 
   let centers = [];
@@ -1739,7 +1754,7 @@ db.auth.getSession().then(async({data})=>{
 
       const { data, error } = await db
         .from("medical_centers")
-        .select("id,profile_id,name,city,address,phone,maps_url,is_active,created_at,last_payment_at,image_url,subscription_expires_at,subscription_fee")
+        .select("id,profile_id,name,city,address,phone,maps_url,is_active,created_at,last_payment_at,image_url,subscription_expires_at,subscription_is_trial")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -1800,7 +1815,7 @@ db.auth.getSession().then(async({data})=>{
     container.innerHTML=filtered.map(center=>{
       const subscription=getSubscriptionInfo(center),overdue=subscription.overdue,active=center.is_active===true;
       const doctorCount=centerDoctors.filter(d=>d.center_id===center.id).length;
-      const subscriptionLabel=overdue?"الاشتراك منتهي":"متبقي "+subscription.remaining+" يوم";
+      const subscriptionLabel=overdue?"الاشتراك منتهي":center.subscription_is_trial?"شهر مجاني — متبقي "+subscription.remaining+" يوم":"متبقي "+subscription.remaining+" يوم";
       const startLabel=subscription.start?formatDate(subscription.start):"غير محدد";
       const expiryLabel=subscription.expiry?formatDate(subscription.expiry):"غير محدد";
       const initials=String(center.name||"م").trim().slice(0,1);
@@ -1822,6 +1837,7 @@ db.auth.getSession().then(async({data})=>{
           <div class="mc-center-actions">
             <button type="button" class="mc-primary-action" onclick="mcChooseCenter('${center.id}')">إدارة الأطباء</button>
             <button type="button" onclick="mcRenewCenter('${center.id}')">تجديد الاشتراك</button>
+             <button type="button" onclick="mcGrantFreeMonth('${center.id}')">منح شهر مجاني</button>
             <button type="button" class="${active?"mc-danger-action":"mc-enable-action"}" onclick="mcToggleCenter('${center.id}')">${active?"إيقاف المركز":"إعادة التفعيل"}</button>
           </div>
         </article>`;
@@ -1923,44 +1939,43 @@ db.auth.getSession().then(async({data})=>{
   }
 
   async function renewCenter(centerId) {
-    const center = centers.find(c => c.id === centerId);
-    if (!center) return;
+ const center=centers.find(c=>c.id===centerId);
+ if(!center)return;
+ if(!confirm("تأكيد تجديد اشتراك مركز "+center.name+" لمدة 30 يوماً؟"))return;
+ message("mcPaymentError","");
+ message("mcPaymentMessage","جارٍ تجديد الاشتراك...");
+ try{
+  await getAdminSession();
+  const {data,error}=await db.rpc("admin_renew_clinical_subscription",{p_kind:"medical_center",p_id:centerId});
+  if(error)throw error;
+  if(!data)throw new Error("لم يتم تحديث المركز. تحقق من صلاحيات قاعدة البيانات.");
+  await loadMedicalCenters();
+  message("mcPaymentMessage","تم تجديد اشتراك مركز "+center.name+" لمدة 30 يوماً.");
+ }catch(error){
+  message("mcPaymentMessage","");
+  message("mcPaymentError","تعذر تجديد الاشتراك: "+error.message);
+ }
+}
 
-    if (!confirm(
-      "هل استلمت فعلياً مبلغ " +
-      PAYMENT_FEE.toLocaleString("en-US") +
-      " دينار من مركز " + center.name +
-      "؟ سيتم تسجيل تاريخ الدفع وتجديد الاشتراك 30 يوماً."
-    )) return;
+async function grantCenterFreeMonth(centerId) {
+ const center=centers.find(c=>c.id===centerId);
+ if(!center)return;
+ if(!confirm("هل تمنح مركز "+center.name+" شهراً مجانياً؟ سيتم تمديد الاشتراك 30 يوماً."))return;
+ message("mcPaymentError","");
+ message("mcPaymentMessage","جارٍ منح الشهر المجاني...");
+ try{
+  await getAdminSession();
+  const {data,error}=await db.rpc("admin_grant_free_month",{p_kind:"medical_center",p_id:centerId});
+  if(error)throw error;
+  await loadMedicalCenters();
+  message("mcPaymentMessage","تم منح مركز "+center.name+" شهراً مجانياً لمدة 30 يوماً.");
+ }catch(error){
+  message("mcPaymentMessage","");
+  message("mcPaymentError","تعذر منح الشهر المجاني: "+error.message);
+ }
+}
 
-    message("mcPaymentError", "");
-    message("mcPaymentMessage", "جارٍ تسجيل الدفعة...");
-
-    try {
-      await getAdminSession();
-
-      const { data, error } = await db.rpc("admin_renew_clinical_subscription",{p_kind:"medical_center",p_id:centerId});
-
-      if (error) throw error;
-      if (!data) {
-        throw new Error("لم يتم تحديث المركز. تحقق من صلاحيات قاعدة البيانات.");
-      }
-
-      await loadMedicalCenters();
-
-      message(
-        "mcPaymentMessage",
-        "تم تسجيل استلام الدفعة وتجديد اشتراك مركز " +
-        center.name + " وفق مدة الاشتراك المركزية."
-      );
-
-    } catch (error) {
-      message("mcPaymentMessage", "");
-      message("mcPaymentError", "تعذر تسجيل الدفعة: " + error.message);
-    }
-  }
-
-  async function toggleCenter(centerId) {
+async function toggleCenter(centerId) {
     const center = centers.find(c => c.id === centerId);
     if (!center) return;
 
@@ -2538,6 +2553,7 @@ db.auth.getSession().then(async({data})=>{
   });
 
   window.mcRenewCenter = renewCenter;
+  window.mcGrantFreeMonth = grantCenterFreeMonth;
   window.mcToggleCenter = toggleCenter;
   window.mcChooseCenter = chooseCenter;
   window.mcToggleCenterDoctor = toggleCenterDoctor;
