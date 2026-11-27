@@ -10,7 +10,7 @@ async function documents(container,id,folder,upload,publish=false){const bucket=
 function formatArrival(value,fallback){if(value)return String(value).slice(0,5);if(fallback)return new Date(fallback).toLocaleTimeString('ar-IQ',{timeZone:'Asia/Baghdad',hour:'2-digit',minute:'2-digit'});return ''}
 function baghdadDateOffset(offset=0){const p=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Baghdad',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).reduce((o,x)=>(o[x.type]=x.value,o),{});const d=new Date(Date.UTC(Number(p.year),Number(p.month)-1,Number(p.day)+offset));return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0')}
 function serviceDay(value){return value===baghdadDateOffset(0)?'اليوم':value===baghdadDateOffset(1)?'غداً':''}
-async async function load(){
+async function load(){
  const {data,error}=await db.from('home_service_requests').select('id,description,status,quoted_price,arrival_date,arrival_time,scheduled_at').order('created_at',{ascending:false});
  if(error){say(error.message);return}
  const {data:queueData}=await db.rpc('home_service_patient_queue_positions');
