@@ -67,6 +67,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .emergency-bubble.patient{align-self:flex-start;background:#e6f5f4;color:#174b60;border-bottom-left-radius:4px}
 .emergency-bubble.doctor{align-self:flex-end;background:#e8f7ed;color:#145c3b;border-bottom-right-radius:4px}
 .emergency-meta{font-size:11px;color:var(--muted);margin-bottom:4px}
+.emergency-attachment-link{display:inline-block;max-width:100%;cursor:zoom-in}
 .emergency-attachment{display:block;max-width:min(250px,70vw);max-height:260px;object-fit:contain;border-radius:12px;margin-top:8px;border:1px solid var(--border);background:white}
 .emergency-start{padding:25px;background:linear-gradient(140deg,#f3fbfa,#fff);border:1px solid var(--border);border-radius:20px;text-align:center}
 .emergency-icon{width:54px;height:54px;display:grid;place-items:center;margin:0 auto 10px;border-radius:17px;background:#fff0e8;color:#df7451;font-size:30px}
@@ -631,7 +632,18 @@ async function refreshPatientEmergencyMessages(){
    stopPatientEmergencyPolling();
   }
  }catch(error){
-  patientEmergencyNotice(error.message||"تعذر تحديث المحادثة.");
+  if((error.message||"").includes("انتهت المحادثة")){
+   stopPatientEmergencyPolling();
+   patientEmergencyChatId="";
+   patientEmergencyAccessToken="";
+   sessionStorage.removeItem(patientEmergencyStorageKey());
+   el("patientEmergencyMessages").replaceChildren();
+   el("patientEmergencyConnection").textContent="انتهت المحادثة";
+   el("patientEmergencyForm").classList.add("hidden");
+   patientEmergencyNotice("انتهت المحادثة، وحُذفت الرسائل والصور تلقائياً.",false);
+  }else{
+   patientEmergencyNotice(error.message||"تعذر تحديث المحادثة.");
+  }
  }finally{
   patientEmergencyRefreshBusy=false;
  }
@@ -663,13 +675,21 @@ function renderPatientEmergencyMessages(messages){
    bubble.appendChild(content);
   }
   if(item.attachment_url){
+   const link=document.createElement("a");
+   link.className="emergency-attachment-link";
+   link.href=item.attachment_url;
+   link.target="_blank";
+   link.rel="noopener noreferrer";
+   link.referrerPolicy="no-referrer";
+   link.title="اضغط لفتح الصورة بالحجم الكامل";
    const img=document.createElement("img");
    img.className="emergency-attachment";
    img.src=item.attachment_url;
-   img.alt="صورة مرفقة في محادثة الطوارئ";
+   img.alt="اضغط لفتح الصورة المرفقة بالحجم الكامل";
    img.loading="lazy";
    img.referrerPolicy="no-referrer";
-   bubble.appendChild(img);
+   link.appendChild(img);
+   bubble.appendChild(link);
   }
   box.appendChild(bubble);
  });
@@ -1149,50 +1169,107 @@ async function bookAppointment(){
  await loadMyAppointments();
 }
 async function loadMyAppointments(){
- const {data:{user}}=await db.auth.getUser();if(!user)return;
- const list=el("myAppointmentsList");list.textContent="جاري تحميل الحجوزات...";
- const [oldResult,centerResult,queueResult]=await Promise.all([
-  db.from("appointments").select("id,requested_date,appointment_at,status,notes,rejection_reason,doctors(profile_id)").eq("patient_id",user.id).order("requested_date",{ascending:true}),
-  db.from("center_appointments").select("id,requested_date,appointment_at,status,notes,rejection_reason,center_doctors(full_name,specialty),medical_centers(name)").eq("patient_id",user.id).order("requested_date",{ascending:true}),
-  db.rpc("patient_appointment_queue_data")
- ]);
- if(oldResult.error){list.textContent="تعذر تحميل حجوزات الأطباء المستقلين: "+oldResult.error.message;return;}
- if(centerResult.error){list.textContent="تعذر تحميل حجوزات المراكز الطبية: "+centerResult.error.message;return;}
- const oldRows=oldResult.data||[],centerRows=centerResult.data||[];
- const queueMap=new Map((queueResult.data||[]).map(q=>[q.service_type+":"+q.appointment_id,q]));
- const profileIds=oldRows.map(a=>a.doctors?.profile_id).filter(Boolean);
- let profiles=[];
- if(profileIds.length){const p=await db.from("profiles").select("id,full_name").in("id",profileIds);if(!p.error)profiles=p.data||[];}
- if(!oldRows.length&&!centerRows.length){list.textContent="ليس لديك حجوزات حالياً.";return;}
- list.innerHTML="";
- oldRows.forEach(a=>{
-  const card=document.createElement("article");card.className="doctor";
-  const doc=profiles.find(p=>p.id===a.doctors?.profile_id);
-  const title=document.createElement("strong");title.textContent="طبيب مستقل: "+(doc?.full_name||"غير معروف");
-  const date=document.createElement("p");date.textContent=patientAppointmentDayTime(a.appointment_at,a.requested_date);
-  const status=document.createElement("p");status.textContent="حالة الحجز: "+appointmentStatus(a.status);
-  card.append(title,date,status);appendQueuePosition(card,queueMap,"doctor",a.id);
-  if(a.rejection_reason){const reason=document.createElement("p");reason.textContent="سبب الرفض: "+a.rejection_reason;card.append(reason);}
-  if(["pending","approved","confirmed"].includes(a.status)){
-   const cancel=document.createElement("button");cancel.type="button";cancel.className="secondary";cancel.textContent="إلغاء الطلب";
-   cancel.onclick=()=>cancelIndependentAppointment(a.id,cancel);card.append(cancel);
+  const {data:{user}}=await db.auth.getUser();if(!user)return;
+  const list=el("myAppointmentsList");list.textContent="جاري تحميل الحجوزات...";
+  const [oldResult,centerResult,queueResult,homeRequestsResult]=await Promise.all([
+   db.from("appointments").select("id,requested_date,appointment_at,status,notes,rejection_reason,doctors(profile_id)").eq("patient_id",user.id).order("requested_date",{ascending:true}),
+   db.from("center_appointments").select("id,requested_date,appointment_at,status,notes,rejection_reason,center_doctors(full_name,specialty),medical_centers(name)").eq("patient_id",user.id).order("requested_date",{ascending:true}),
+   db.rpc("patient_appointment_queue_data"),
+   db.from("home_service_requests").select("id,provider_id,description,status,quoted_price,arrival_date,arrival_time,scheduled_at,created_at").eq("patient_id",user.id).order("created_at",{ascending:false})
+  ]);
+  if(oldResult.error){list.textContent="تعذر تحميل حجوزات الأطباء المستقلين: "+oldResult.error.message;return;}
+  if(centerResult.error){list.textContent="تعذر تحميل حجوزات المراكز الطبية: "+centerResult.error.message;return;}
+  const oldRows=oldResult.data||[],centerRows=centerResult.data||[];
+  const homeRows=homeRequestsResult.error?[]:(homeRequestsResult.data||[]);
+  const queueMap=new Map((queueResult.data||[]).map(q=>[q.service_type+":"+q.appointment_id,q]));
+  let homeProviders=new Map(),homeQueueMap=new Map();
+  if(homeRows.length){
+   const needsHomeQueue=homeRows.some(r=>["confirmed","en_route","arrived"].includes(r.status));
+   const [providerResult,homeQueueResult]=await Promise.all([
+    db.rpc("home_service_directory"),
+    needsHomeQueue?db.rpc("home_service_patient_queue_positions"):Promise.resolve({data:[],error:null})
+   ]);
+   homeProviders=new Map((providerResult.data||[]).map(p=>[p.id,p]));
+   homeQueueMap=new Map((homeQueueResult.data||[]).map(q=>[q.request_id,q]));
   }
-  list.append(card);
- });
- centerRows.forEach(a=>{
-  const card=document.createElement("article");card.className="doctor";
-  const title=document.createElement("strong");title.textContent="مركز طبي: "+(a.medical_centers?.name||"غير معروف")+" — "+(a.center_doctors?.full_name||"الطبيب");
-  const date=document.createElement("p");date.textContent=patientAppointmentDayTime(a.appointment_at,a.requested_date);
-  const status=document.createElement("p");status.textContent="حالة الطلب: "+appointmentStatus(a.status);
-  card.append(title,date,status);appendQueuePosition(card,queueMap,"center",a.id);
-  if(a.rejection_reason){const reason=document.createElement("p");reason.className="status-box status-rejected";reason.textContent="سبب الرفض: "+a.rejection_reason;card.append(reason);}
-  if(["pending","approved","confirmed"].includes(a.status)){
-   const cancel=document.createElement("button");cancel.type="button";cancel.className="secondary";cancel.textContent="إلغاء الطلب";
-   cancel.onclick=()=>cancelCenterAppointment(a.id,cancel);card.append(cancel);
+  const profileIds=oldRows.map(a=>a.doctors?.profile_id).filter(Boolean);
+  let profiles=[];
+  if(profileIds.length){const p=await db.from("profiles").select("id,full_name").in("id",profileIds);if(!p.error)profiles=p.data||[];}
+  if(!oldRows.length&&!centerRows.length&&!homeRows.length){
+   list.textContent=homeRequestsResult.error?"تعذر تحميل طلبات التمريض والمختبر. حاول تحديث الصفحة.":"ليس لديك حجوزات أو طلبات حالياً.";
+   return;
   }
-  list.append(card);
- });
+  list.replaceChildren();
+  if(homeRequestsResult.error){
+   const warning=document.createElement("p");
+   warning.className="status-box status-pending";
+   warning.textContent="تعذر تحميل طلبات التمريض والمختبر حالياً.";
+   list.append(warning);
+  }
+  oldRows.forEach(a=>{
+   const card=document.createElement("article");card.className="doctor";
+   const doc=profiles.find(p=>p.id===a.doctors?.profile_id);
+   const title=document.createElement("strong");title.textContent="طبيب مستقل: "+(doc?.full_name||"غير معروف");
+   const date=document.createElement("p");date.textContent=patientAppointmentDayTime(a.appointment_at,a.requested_date);
+   const status=document.createElement("p");status.textContent="حالة الحجز: "+appointmentStatus(a.status);
+   card.append(title,date,status);appendQueuePosition(card,queueMap,"doctor",a.id);
+   if(a.rejection_reason){const reason=document.createElement("p");reason.textContent="سبب الرفض: "+a.rejection_reason;card.append(reason);}
+   if(["pending","approved","confirmed"].includes(a.status)){
+    const cancel=document.createElement("button");cancel.type="button";cancel.className="secondary";cancel.textContent="إلغاء الطلب";
+    cancel.onclick=()=>cancelIndependentAppointment(a.id,cancel);card.append(cancel);
+   }
+   list.append(card);
+  });
+  centerRows.forEach(a=>{
+   const card=document.createElement("article");card.className="doctor";
+   const title=document.createElement("strong");title.textContent="مركز طبي: "+(a.medical_centers?.name||"غير معروف")+" — "+(a.center_doctors?.full_name||"الطبيب");
+   const date=document.createElement("p");date.textContent=patientAppointmentDayTime(a.appointment_at,a.requested_date);
+   const status=document.createElement("p");status.textContent="حالة الطلب: "+appointmentStatus(a.status);
+   card.append(title,date,status);appendQueuePosition(card,queueMap,"center",a.id);
+   if(a.rejection_reason){const reason=document.createElement("p");reason.className="status-box status-rejected";reason.textContent="سبب الرفض: "+a.rejection_reason;card.append(reason);}
+   if(["pending","approved","confirmed"].includes(a.status)){
+    const cancel=document.createElement("button");cancel.type="button";cancel.className="secondary";cancel.textContent="إلغاء الطلب";
+    cancel.onclick=()=>cancelCenterAppointment(a.id,cancel);card.append(cancel);
+   }
+   list.append(card);
+  });
+  homeRows.forEach(r=>{
+   const provider=homeProviders.get(r.provider_id);
+   const serviceLabel=provider?.kind==="laboratory"?"طلب مختبر منزلي":
+    provider?.kind==="nurse"?(provider.gender==="female"?"طلب ممرضة منزلية":"طلب ممرض منزلي"):"طلب خدمة منزلية";
+   const card=document.createElement("article");card.className="doctor";
+   const title=document.createElement("strong");
+   title.textContent=serviceLabel+(provider?.display_name?" — "+provider.display_name:"");
+   const description=document.createElement("p");description.textContent="الخدمة المطلوبة: "+(r.description||"غير محددة");
+   const status=document.createElement("p");status.className="status-box "+(["pending","quoted"].includes(r.status)?"status-pending":r.status==="cancelled"?"status-rejected":"");
+   status.textContent="حالة الطلب: "+homeServiceStatus(r.status);
+   card.append(title,description,status);
+   const requestDate=r.arrival_date?new Date(String(r.arrival_date)+"T12:00:00"):r.scheduled_at?new Date(r.scheduled_at):null;
+   const date=document.createElement("p");
+   if(requestDate&&!Number.isNaN(requestDate.getTime())){
+    const day=new Intl.DateTimeFormat("ar-IQ",{dateStyle:"medium",timeZone:"Asia/Baghdad"}).format(requestDate);
+    const time=r.arrival_time?String(r.arrival_time).slice(0,5):r.scheduled_at?new Intl.DateTimeFormat("ar-IQ",{hour:"2-digit",minute:"2-digit",timeZone:"Asia/Baghdad"}).format(new Date(r.scheduled_at)):"";
+    date.textContent="موعد الخدمة: "+day+(time?"، الساعة "+time:"، بانتظار تحديد الساعة");
+   }else{
+    date.textContent="موعد الخدمة: بانتظار تحديد الموعد";
+   }
+   card.append(date);
+   if(r.quoted_price!==null){
+    const price=document.createElement("p");price.textContent="السعر المعروض: "+Number(r.quoted_price).toLocaleString("ar-IQ")+" د.ع";card.append(price);
+   }
+   const homeQueue=homeQueueMap.get(r.id);
+   if(homeQueue){
+    const queue=document.createElement("p");
+    queue.textContent="دورك رقم "+homeQueue.queue_position+" — قبلك "+homeQueue.patients_ahead+" مراجع.";
+    card.append(queue);
+   }
+   if(r.status==="quoted"){
+    const offer=document.createElement("p");offer.className="muted";offer.textContent="افتح طلبات الخدمات المنزلية لمراجعة العرض والرد عليه.";card.append(offer);
+   }
+   list.append(card);
+  });
 }
+
 
 async function loadMedicalHistory(){
  const messageBox=el("medicalHistoryMessage");
@@ -1310,6 +1387,20 @@ async function cancelCenterAppointment(id,button){
  await loadMyAppointments();
 }
 
+function homeServiceStatus(status){
+ const labels={
+  pending:"بانتظار رد مقدم الخدمة",
+  quoted:"بانتظار موافقتك على العرض",
+  confirmed:"تم قبول الطلب",
+  en_route:"مقدم الخدمة في الطريق",
+  arrived:"وصل مقدم الخدمة",
+  completed:"مكتمل",
+  results_ready:"نتائج المختبر جاهزة",
+  cancelled:"ملغي"
+ };
+ return labels[status]||"قيد المعالجة";
+}
+
 function appointmentStatus(status){
  const labels={
   pending:"قيد الانتظار",
@@ -1321,6 +1412,7 @@ function appointmentStatus(status){
  };
  return labels[status]||status||"غير محدد";
 }
+
 
 function openMyAppointments(){
  previousView=currentCenterId?"centerDoctors":
