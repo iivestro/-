@@ -1,0 +1,21 @@
+{
+  "build": {
+    "training": {
+      "distribution": "internal",
+      "env": {
+        "BALSAM_ENV": "training"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "env": {
+        "BALSAM_ENV": "production"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
+    }
+  }
+}
