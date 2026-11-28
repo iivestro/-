@@ -1,0 +1,45 @@
+name: Balsam mobile training builds
+on:
+  push:
+    branches: [mobile/balsam-native]
+    paths: ['mobile/**', '.github/workflows/balsam-mobile.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+defaults:
+  run:
+    working-directory: mobile
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - run: npm install && npm test && npx expo prebuild --platform android --no-install
+      - run: cd android && ./gradlew assembleRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: balsam-training-apk
+          path: mobile/android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+  ios:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm install && npm test && npx expo prebuild --platform ios
+      - name: Build simulator application
+        run: |
+          cd ios
+          workspace=$(find . -maxdepth 1 -name '*.xcworkspace' -print -quit)
+          scheme=$(basename "$workspace" .xcworkspace)
+          xcodebuild -workspace "$workspace" -scheme "$scheme" -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build CODE_SIGNING_ALLOWED=NO
+      - uses: actions/upload-artifact@v4
+        with:
+          name: balsam-ios-simulator
+          path: mobile/ios/build/Build/Products/Release-iphonesimulator/*.app
+          if-no-files-found: error
